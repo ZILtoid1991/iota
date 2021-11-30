@@ -1,0 +1,7 @@
+name "iota"
+description "Multimedia I/O library for D"
+authors "laszl"
+copyright "Copyright © 2021, laszl"
+license "BSL-1.0"
+target "library"
+dependency "wasapi" version="*" platform="windows"
