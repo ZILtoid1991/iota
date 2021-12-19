@@ -1,6 +1,11 @@
 import std.stdio;
+import iota.audio.device;
+import iota.audio.output;
 
-void main()
-{
-	writeln("Edit source/app.d to start your project.");
+void main() {
+	version (Windows) {
+		writeln("Please select driver:");
+		writeln("1) Windows Audio Stream API");
+	}
+	string arg = readln();
 }

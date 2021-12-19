@@ -4,4 +4,7 @@ authors "laszl"
 copyright "Copyright © 2021, laszl"
 license "BSL-1.0"
 target "library"
-dependency "wasapi" version="*" platform="windows"
+dependency "bitleveld" version="*"
+subPackage "test" {
+    dependency "iota" version="*"
+}

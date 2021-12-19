@@ -1,6 +1,7 @@
 {
 	"fileVersion": 1,
 	"versions": {
+		"bitleveld": "0.1.0",
 		"wasapi": "0.1.3"
 	}
 }
