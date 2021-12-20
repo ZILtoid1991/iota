@@ -96,6 +96,20 @@ public struct SampleFormat {
 			return (flags & Flag.BigEndian) != 0;
 	}
 }
+public immutable SampleFormat[] predefinedFormats = [
+	//Little endian formats (does anyone still using big endian?)
+	SampleFormat(0x08, 0x01, 0x00, 0x00),	//8 bit unsigned integer
+	SampleFormat(0x08, 0x02, 0x00, 0x00),	//8 bit signed integer
+	SampleFormat(0x10, 0x01, 0x00, 0x00),	//16 bit unsigned integer
+	SampleFormat(0x10, 0x02, 0x00, 0x00),	//16 bit signed integer
+	SampleFormat(0x18, 0x01, 0x00, 0x00),	//24 bit unsigned integer
+	SampleFormat(0x18, 0x02, 0x00, 0x00),	//24 bit signed integer
+	SampleFormat(0x18, 0x11, 0x00, 0x00),	//24 bit unsigned integer (padded to 32 bit word)
+	SampleFormat(0x18, 0x12, 0x00, 0x00),	//24 bit signed integer (padded to 32 bit word)
+	SampleFormat(0x20, 0x01, 0x00, 0x00),	//32 bit unsigned integer
+	SampleFormat(0x20, 0x02, 0x00, 0x00),	//32 bit signed integer
+	SampleFormat(0x20, 0x03, 0x00, 0x00),	//32 bit floating-point
+];
 /** 
  * Used to set audio specifications, etc.
  *

@@ -575,8 +575,8 @@ const DEVPKEY_DeviceDisplay_RequiresUninstallElevation = DEFINE_DEVPROPKEY!(0x78
 const DEVPKEY_DeviceDisplay_AlwaysShowDeviceAsConnected = DEFINE_DEVPROPKEY!(0x78c34fc8, 0x104a, 0x4aca, 0x9e, 0xa4, 
 	0x52, 0x4d, 0x52, 0x99, 0x6e, 0x57, 0x65); // DEVPROP_TYPE_BOOLEAN
 
-alias REFPROPERTYKEY = ref const(PROPERTYKEY);
-alias REFPROPVARIANT = ref PROPVARIANT;
+alias REFPROPERTYKEY = const(PROPERTYKEY)*;
+alias REFPROPVARIANT = PROPVARIANT*;
 
 enum ERole //__MIDL___MIDL_itf_mmdeviceapi_0000_0000_0002
 {	

@@ -16,7 +16,7 @@ version (Windows) {
 /** 
  * The type of the initialized driver, or none if no driver was initialized yet.
  */
-package static DriverType initializedDriver;
+public static DriverType initializedDriver;
 /** 
  * Initializes the audio driver, then sets up the device list.
  * Params:
@@ -29,11 +29,13 @@ public int initDriver(DriverType type = OS_PREFERRED_DRIVER) {
 			return AudioInitializationStatus.AllOk;
 		case WASAPI:
 			version (Windows) {
+				lastErrorCode = CoInitialize(null);
 				lastErrorCode = CoCreateInstance(&CLSID_MMDeviceEnumerator, null, CLSCTX_ALL, &IID_IMMDeviceEnumerator, 
 						cast(void**)&immEnum);
 				switch (lastErrorCode) {
 					case S_OK: return initDriverWASAPI();
-					case E_NOINTERFACE: return AudioInitializationStatus.DriverNotAvailable;
+					case REGDB_E_CLASSNOTREG, E_NOINTERFACE, CLASS_E_NOAGGREGATION: return AudioInitializationStatus.DriverNotAvailable;
+					case E_POINTER: return AudioInitializationStatus.InternalError;
 					default: return AudioInitializationStatus.Unknown;
 				}
 			} else {
@@ -57,7 +59,7 @@ public int initDriver(DriverType type = OS_PREFERRED_DRIVER) {
 /** 
  * Returns the list of names of output devices, or null if there are none or driver haven't been initialized.
  */
-public string[] getOutputDeviceNames() nothrow {
+public string[] getOutputDeviceNames() {
 	version (Windows) {
 		if (initializedDriver == DriverType.WASAPI) {
 			string[] result;
@@ -67,16 +69,17 @@ public string[] getOutputDeviceNames() nothrow {
 			result.length = nOfDevices;
 			for (uint i ; i < result.length ; i++) {
 				IMMDevice ppDevice;
+				IPropertyStore properties;
 				lastErrorCode = deviceList.Item(i, ppDevice);
-				LPWSTR str;
-				if (lastErrorCode == S_OK) ppDevice.GetId(str);
-				else str = null;
-				result[i] = toUTF8(fromStringz(str));
-				try {
-					CoTaskMemFree(str);
-				} catch (Exception e) {
-					
+				PROPVARIANT str;
+				if (lastErrorCode == S_OK) {
+					ppDevice.OpenPropertyStore(STGM_READ, properties);
+					properties.GetValue(DEVPKEY_Device_FriendlyName, str);
 				}
+				result[i] = toUTF8(fromStringz(str.pwszVal));
+				CoTaskMemFree(str.pwszVal);
+				properties.Release();
+				ppDevice.Release();
 			}
 			return result;
 		} else {
@@ -132,7 +135,7 @@ public abstract class AudioDevice {
 	protected AudioSpecs	_specs;
 	/// Tells whether the device is in shared or exclusive mode.
 	/// In some cases, this can be set, in others it's either shared or exclusive.
-	protected AudioShareMode _shareMode;
+	protected AudioShareMode _shareMode = AudioShareMode.Shared;
 	/** 
 	 * Called when device is disconnected.
 	 */

@@ -21,6 +21,7 @@ package IMMDeviceEnumerator immEnum;
 package IMMDeviceCollection deviceList;
 
 shared static ~this() {
+	CoUninitialize();
 	if (immEnum !is null) immEnum.Release();
 	if (deviceList !is null) deviceList.Release();
 }
@@ -32,7 +33,13 @@ package int initDriverWASAPI() {
 	if (immEnum) {
 		lastErrorCode = immEnum.EnumAudioEndpoints(EDataFlow.eRender, DEVICE_STATE_ACTIVE, deviceList);
 		switch (lastErrorCode) {
-			case S_OK: return AudioInitializationStatus.AllOk;
+			case S_OK:
+				if (deviceList !is null){
+					initializedDriver = DriverType.WASAPI;
+					return AudioInitializationStatus.AllOk;
+				} else {
+					return AudioInitializationStatus.UninitializedDriver;
+				}
 			case E_OUTOFMEMORY: return AudioInitializationStatus.OutOfMemory;
 			case E_POINTER, E_INVALIDARG: return AudioInitializationStatus.InternalError;
 			default: return AudioInitializationStatus.Unknown;
@@ -87,9 +94,11 @@ public class WASAPIDevice : AudioDevice {
 	 */
 	public override AudioSpecs requestSpecs(AudioSpecs reqSpecs, int flags = 0) {
 		if (reqSpecs.bufferSize_slmp) {
-			reqSpecs.bufferSize_time = usecs(cast(long)(cast(real)reqSpecs.bufferSize_slmp * reqSpecs.sampleRate * 1_000_000));
+			reqSpecs.bufferSize_time = 
+					hnsecs(cast(long)((1 / cast(real)reqSpecs.sampleRate) * reqSpecs.bufferSize_slmp * 10_000_000.0));
 		} else if (cast(bool)reqSpecs.bufferSize_time) {
-			reqSpecs.bufferSize_slmp = cast(uint)((cast(real)reqSpecs.sampleRate * reqSpecs.bufferSize_time.total!"usecs"()) / 
+			reqSpecs.bufferSize_slmp = 
+					cast(uint)(((1 / cast(real)reqSpecs.sampleRate) * reqSpecs.bufferSize_time.total!"usecs"()) / 
 					1_000_000);
 		}
 		if (reqSpecs.outputChannels) {
@@ -109,7 +118,7 @@ public class WASAPIDevice : AudioDevice {
 			waudioSpecs.nSamplesPerSec = reqSpecs.sampleRate;
 			waudioSpecs.nChannels = reqSpecs.outputChannels;
 			waudioSpecs.wBitsPerSample = reqSpecs.format.bits;
-			waudioSpecs.nBlockAlign = waudioSpecs.wBitsPerSample / 8;
+			waudioSpecs.nBlockAlign = cast(ushort)((waudioSpecs.wBitsPerSample / 8) * reqSpecs.outputChannels);
 			waudioSpecs.nAvgBytesPerSec = waudioSpecs.nBlockAlign * waudioSpecs.nSamplesPerSec;
 			WAVEFORMATEX* closestMatch;
 			werrCode = audioClient.IsFormatSupported(
@@ -118,6 +127,9 @@ public class WASAPIDevice : AudioDevice {
 			switch (werrCode) {
 				case S_OK: break;
 				case S_FALSE, AUDCLNT_E_UNSUPPORTED_FORMAT:
+					waudioSpecs = *closestMatch;
+					reqSpecs.sampleRate = closestMatch.nSamplesPerSec;
+					reqSpecs.format.bits = cast(ubyte)closestMatch.wBitsPerSample;
 					break;
 				case E_POINTER, E_INVALIDARG: 
 					errCode = AudioInitializationStatus.InternalError; 
@@ -132,6 +144,7 @@ public class WASAPIDevice : AudioDevice {
 					errCode = AudioInitializationStatus.Unknown; 
 					break;
 			}
+			CoTaskMemFree(closestMatch);
 		}
 		return _specs = reqSpecs;
 	}
@@ -170,7 +183,7 @@ public class WASAPIOutputStream : OutputStream {
 	package this(IAudioClient backend, uint frameSize) nothrow @nogc {
 		this.backend = backend;
 		this.frameSize = frameSize;
-		eventHandle = CreateEvent(null, FALSE, TRUE, null);
+		eventHandle = CreateEvent(null, FALSE, FALSE, null);
 		werrCode = backend.SetEventHandle(eventHandle);
 		switch (werrCode) {
 			case S_OK: break;
@@ -207,14 +220,18 @@ public class WASAPIOutputStream : OutputStream {
 	protected void audioThread() @nogc nothrow {
 		const size_t cbufferSize = bufferSize * (frameSize / 8);
 		while (statusCode & StatusFlags.IsRunning) {
+			werrCode = WaitForSingleObject(eventHandle, 500);
+			if (werrCode != WAIT_OBJECT_0) {
+				//backend.Stop();
+				errCode = StreamRuntimeStatus.Unknown;
+			}
 			ubyte* data;
 			werrCode = buffer.GetBuffer(bufferSize, data);
 			switch (werrCode) {
 				case AUDCLNT_E_BUFFER_ERROR, AUDCLNT_E_BUFFER_TOO_LARGE, AUDCLNT_E_BUFFER_SIZE_ERROR, AUDCLNT_E_OUT_OF_ORDER, 
 						AUDCLNT_E_BUFFER_OPERATION_PENDING:
 					errCode = StreamRuntimeStatus.InternalError;
-					backend.Stop();
-					statusCode &= ~StatusFlags.IsRunning;
+					//backend.Stop();
 					return;
 				case AUDCLNT_E_DEVICE_INVALIDATED:
 					errCode = StreamRuntimeStatus.DeviceNotFound;
@@ -227,8 +244,7 @@ public class WASAPIOutputStream : OutputStream {
 			switch (werrCode) {
 				case AUDCLNT_E_INVALID_SIZE, AUDCLNT_E_BUFFER_SIZE_ERROR, AUDCLNT_E_OUT_OF_ORDER:
 					errCode = StreamRuntimeStatus.InternalError;
-					backend.Stop();
-					statusCode &= ~StatusFlags.IsRunning;
+					//backend.Stop();
 					return;
 				case AUDCLNT_E_DEVICE_INVALIDATED:
 					errCode = StreamRuntimeStatus.DeviceNotFound;
@@ -236,7 +252,6 @@ public class WASAPIOutputStream : OutputStream {
 				case S_OK: break;
 				default: errCode = StreamRuntimeStatus.Unknown; break;
 			}
-			werrCode = WaitForSingleObject(eventHandle, 1000);
 		}
 	}
 	/** 
