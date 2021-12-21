@@ -47,6 +47,7 @@ public abstract class OutputStream {
 	 * Suspends the audio thread by allowing it to escape normally and close things safely, or suspending it on the
 	 * backend.
 	 * Returns: 0, or an error code if there was a failure.
+	 * Note: It's wise to put this function into a mutex, or a `synchronized` block.
 	 */
 	public abstract int suspendAudioThread() @nogc nothrow;
 }
