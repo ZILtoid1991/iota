@@ -167,7 +167,7 @@ public class WASAPIDevice : AudioDevice {
 				}
 				return null;
 			}
-			return new WASAPIOutputStream(audioClient, _specs.outputChannels * _specs.bits);
+			return new WASAPIOutputStream(audioClient, _specs.outputChannels * _specs.bits, _specs.bufferSize_slmp);
 		} else
 			return null;
 	}
@@ -180,7 +180,7 @@ public class WASAPIOutputStream : OutputStream {
 	protected IAudioRenderClient buffer;
 	protected HANDLE		eventHandle;
 	public HRESULT			werrCode;
-	package this(IAudioClient backend, uint frameSize) nothrow @nogc {
+	package this(IAudioClient backend, uint frameSize, uint bufferSize) nothrow @nogc {
 		this.backend = backend;
 		this.frameSize = frameSize;
 		eventHandle = CreateEvent(null, FALSE, FALSE, null);
@@ -193,7 +193,8 @@ public class WASAPIOutputStream : OutputStream {
 			case AUDCLNT_E_SERVICE_NOT_RUNNING: errCode = StreamRuntimeStatus.NoAudioService; return;
 			default: errCode = StreamRuntimeStatus.Unknown; break;
 		}
-		werrCode = backend.GetBufferSize(bufferSize);
+		this.bufferSize = bufferSize;
+		/+werrCode = backend.GetBufferSize(bufferSize);
 		switch (werrCode) {
 			case AUDCLNT_E_NOT_INITIALIZED, E_POINTER: errCode = StreamRuntimeStatus.InternalError; return;
 			case AUDCLNT_E_DEVICE_INVALIDATED: errCode = StreamRuntimeStatus.DeviceNotFound; return;
@@ -201,6 +202,9 @@ public class WASAPIOutputStream : OutputStream {
 			case S_OK: break;
 			default: errCode = StreamRuntimeStatus.Unknown; break;
 		}
+		UINT32 padding;
+		backend.GetCurrentPadding(padding);
+		bufferSize -= padding;+/
 		werrCode = backend.GetService(IID_IAudioRenderClient, cast(void**)&buffer);
 		switch (werrCode) {
 			case E_POINTER, AUDCLNT_E_NOT_INITIALIZED, AUDCLNT_E_WRONG_ENDPOINT_TYPE:
@@ -213,25 +217,27 @@ public class WASAPIOutputStream : OutputStream {
 		}
 	}
 	~this() {
-		if (backend !is null) backend.Release();
 		if (buffer !is null) buffer.Release();
+		if (backend !is null) backend.Release();
 		CloseHandle(eventHandle);
 	}
 	protected void audioThread() @nogc nothrow {
 		const size_t cbufferSize = bufferSize * (frameSize / 8);
 		while (statusCode & StatusFlags.IsRunning) {
-			werrCode = WaitForSingleObject(eventHandle, 500);
+			werrCode = WaitForSingleObject(eventHandle, 500);	// Does this even do here something?
 			if (werrCode != WAIT_OBJECT_0) {
-				//backend.Stop();
+				backend.Stop();
 				errCode = StreamRuntimeStatus.Unknown;
 			}
 			ubyte* data;
-			werrCode = buffer.GetBuffer(bufferSize, data);
+			do {		// To do: This is really janky and costs way too much CPU cycles. Make waiting either more precise, or working (does it work at all?)
+				werrCode = buffer.GetBuffer(bufferSize, data);
+			} while (werrCode == AUDCLNT_E_BUFFER_TOO_LARGE);
 			switch (werrCode) {
-				case AUDCLNT_E_BUFFER_ERROR, AUDCLNT_E_BUFFER_TOO_LARGE, AUDCLNT_E_BUFFER_SIZE_ERROR, AUDCLNT_E_OUT_OF_ORDER, 
+				case AUDCLNT_E_BUFFER_ERROR, AUDCLNT_E_BUFFER_SIZE_ERROR, AUDCLNT_E_OUT_OF_ORDER, 
 						AUDCLNT_E_BUFFER_OPERATION_PENDING:
 					errCode = StreamRuntimeStatus.InternalError;
-					//backend.Stop();
+					backend.Stop();
 					return;
 				case AUDCLNT_E_DEVICE_INVALIDATED:
 					errCode = StreamRuntimeStatus.DeviceNotFound;
@@ -244,10 +250,11 @@ public class WASAPIOutputStream : OutputStream {
 			switch (werrCode) {
 				case AUDCLNT_E_INVALID_SIZE, AUDCLNT_E_BUFFER_SIZE_ERROR, AUDCLNT_E_OUT_OF_ORDER:
 					errCode = StreamRuntimeStatus.InternalError;
-					//backend.Stop();
+					backend.Stop();
 					return;
 				case AUDCLNT_E_DEVICE_INVALIDATED:
 					errCode = StreamRuntimeStatus.DeviceNotFound;
+					backend.Stop();
 					return;
 				case S_OK: break;
 				default: errCode = StreamRuntimeStatus.Unknown; break;
@@ -275,11 +282,16 @@ public class WASAPIOutputStream : OutputStream {
 	 * Returns: 0, or an error code if there was a failure.
 	 */
 	public override int suspendAudioThread() @nogc nothrow {
-		werrCode = backend.Stop();
-		if (werrCode != S_OK) {
-			
+		if (errCode) {
+			backend.Stop();
+			return errCode;
+		} else {
+			werrCode = backend.Stop();
+			if (werrCode != S_OK) {
+
+			}
+			statusCode &= ~StatusFlags.IsRunning;
+			return errCode = StreamRuntimeStatus.AllOk;
 		}
-		statusCode &= ~StatusFlags.IsRunning;
-		return errCode = StreamRuntimeStatus.AllOk;
 	}
 }
