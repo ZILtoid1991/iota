@@ -21,9 +21,9 @@ package IMMDeviceEnumerator immEnum;
 package IMMDeviceCollection deviceList;
 
 shared static ~this() {
-	CoUninitialize();
 	if (immEnum !is null) immEnum.Release();
 	if (deviceList !is null) deviceList.Release();
+	CoUninitialize();
 }
 /** 
  * Contains the last error code returned during driver or device initialization.
@@ -167,7 +167,9 @@ public class WASAPIDevice : AudioDevice {
 				}
 				return null;
 			}
-			return new WASAPIOutputStream(audioClient, _specs.outputChannels * _specs.bits, _specs.bufferSize_slmp);
+			IAudioClient temp = audioClient;
+			audioClient = null;
+			return new WASAPIOutputStream(temp, _specs.outputChannels * _specs.bits, _specs.bufferSize_slmp);
 		} else
 			return null;
 	}
@@ -224,15 +226,15 @@ public class WASAPIOutputStream : OutputStream {
 	protected void audioThread() @nogc nothrow {
 		const size_t cbufferSize = bufferSize * (frameSize / 8);
 		while (statusCode & StatusFlags.IsRunning) {
-			werrCode = WaitForSingleObject(eventHandle, 500);	// Does this even do here something?
+			werrCode = WaitForSingleObject(eventHandle, 500);
 			if (werrCode != WAIT_OBJECT_0) {
 				backend.Stop();
 				errCode = StreamRuntimeStatus.Unknown;
 			}
 			ubyte* data;
-			do {		// To do: This is really janky and costs way too much CPU cycles. Make waiting either more precise, or working (does it work at all?)
+			do {		// To do: This is a bit janky, and there's like some glitches in the test audio.
 				werrCode = buffer.GetBuffer(bufferSize, data);
-			} while (werrCode == AUDCLNT_E_BUFFER_TOO_LARGE);
+			} while (werrCode == AUDCLNT_E_BUFFER_TOO_LARGE && (statusCode & StatusFlags.IsRunning));
 			switch (werrCode) {
 				case AUDCLNT_E_BUFFER_ERROR, AUDCLNT_E_BUFFER_SIZE_ERROR, AUDCLNT_E_OUT_OF_ORDER, 
 						AUDCLNT_E_BUFFER_OPERATION_PENDING:
@@ -259,6 +261,7 @@ public class WASAPIOutputStream : OutputStream {
 				case S_OK: break;
 				default: errCode = StreamRuntimeStatus.Unknown; break;
 			}
+			ResetEvent(eventHandle);
 		}
 	}
 	/** 

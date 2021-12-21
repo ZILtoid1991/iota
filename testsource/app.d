@@ -58,7 +58,9 @@ int main(string[] args) {
 		}
 		Thread.sleep(dur!"seconds"(10));
 		const int errCode2 = outStream.errCode;
-		errCode = outStream.suspendAudioThread();
+		synchronized {
+			errCode = outStream.suspendAudioThread();
+		}
 		if (errCode != AudioInitializationStatus.AllOk && errCode2 != StreamRuntimeStatus.AllOk) {
 			writeln("Audio stream failed to shut down! Error code: ", errCode, " ; Windows error code: ", woutStream.werrCode,
 					"Stream error code: ", errCode2);
