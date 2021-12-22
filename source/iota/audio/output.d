@@ -18,7 +18,8 @@ public abstract class OutputStream {
 	protected uint		statusCode;
 	public enum StatusFlags {
 		IsRunning			=	1<<0,	///Set if thread is running.
-		
+		BufferOverrun		=	1<<8,	///Set if a buffer overrun event have happened.
+		BufferUnderrun		=	1<<9,	///Set if a buffer underrun event have happened.
 	}
 	/** 
 	 * Returns the thread ID of the stream thread.

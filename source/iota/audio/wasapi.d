@@ -29,6 +29,7 @@ shared static ~this() {
  * Contains the last error code returned during driver or device initialization.
  */
 public static HRESULT lastErrorCode;
+
 package int initDriverWASAPI() {
 	if (immEnum) {
 		lastErrorCode = immEnum.EnumAudioEndpoints(EDataFlow.eRender, DEVICE_STATE_ACTIVE, deviceList);

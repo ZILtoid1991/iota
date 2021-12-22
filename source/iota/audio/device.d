@@ -12,6 +12,8 @@ version (Windows) {
 	import core.sys.windows.windows;
 	import core.sys.windows.objidl;
 	import core.sys.windows.wtypes;
+} else version (linux) {
+	public import iota.audio.alsa;
 }
 /** 
  * The type of the initialized driver, or none if no driver was initialized yet.
@@ -45,12 +47,14 @@ public int initDriver(DriverType type = OS_PREFERRED_DRIVER) {
 
 			break;
 		case ALSA:
-
+			version (linux) {
+				initializedDriver = DriverType.ALSA;
+				return AudioInitializationStatus.AllOk;
+			} else {
+				return AudioInitializationStatus.OSNotSupported;
+			}
 			break;
 		case JACK:
-
-			break;
-		case PulseAudio:
 
 			break;
 	}
@@ -85,6 +89,25 @@ public string[] getOutputDeviceNames() {
 		} else {
 			return null;
 		}
+	} else version (linux) {
+		if (initializedDriver == DriverType.ALSA) {
+			string[] result;
+			if (!devicenames.length) {
+				int cardIndex = -1;
+				do {
+					lastErrorCode = snd_card_next(&cardIndex);
+					if (cardIndex != -1) {
+						char* str;
+						lastErrorCode = snd_card_get_name(cardIndex, &str);
+						devicenames ~= str;
+					}
+				} while (cardIndex != -1);
+			}
+			foreach (char* key; devicenames) {
+				result = fromStringz(key).idup;
+			}
+			return result;
+		} else return null;
 	}
 }
 /** 
@@ -106,6 +129,18 @@ public int openDevice(int devID, ref AudioDevice device) {
 			if (dev is null) return AudioInitializationStatus.DeviceNotFound;
 			device = new WASAPIDevice(dev);
 			return AudioInitializationStatus.AllOk;
+		} else {
+			return AudioInitializationStatus.UninitializedDriver;
+		}
+	} else version (linux) {
+		if (initializedDriver == DriverType.ALSA) {
+			lastErrorCode = snd_card_load(devID);
+			if (lastErrorCode) {
+
+			}
+			snd_ctl_t* ctlHandle;
+			lastErrorCode = snd_ctl_open(ctlHandle, devicenames[devID], 0);
+
 		} else {
 			return AudioInitializationStatus.UninitializedDriver;
 		}

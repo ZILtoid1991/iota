@@ -9,9 +9,8 @@ enum DriverType {
 	None,			///No driver have been initialized, etc.
 	WASAPI,			///Windows Audio Stream API
 	DirectAudio,	///Direct Audio API (Legacy)
-	ALSA,
-	JACK,
-	PulseAudio,
+	ALSA,			///Advanced Linux Sound Architecture
+	JACK,			///JACK Audio Connection Kit
 }
 version (windows) {
 	static immutable DriverType OS_PREFERRED_DRIVER = DriverType.WASAPI;
