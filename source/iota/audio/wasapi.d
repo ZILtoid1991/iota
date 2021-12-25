@@ -70,6 +70,8 @@ public class WASAPIDevice : AudioDevice {
 		if (werrCode == S_OK) {
 
 		}
+		this._nOfOutputs = -1;
+		this._nOfInputs = -1;
 	}
 	~this() {
 		if (backend !is null)
@@ -94,14 +96,7 @@ public class WASAPIDevice : AudioDevice {
 	 * In case of a failure, `errCode` is also set with the corresponding flags.
 	 */
 	public override AudioSpecs requestSpecs(AudioSpecs reqSpecs, int flags = 0) {
-		if (reqSpecs.bufferSize_slmp) {
-			reqSpecs.bufferSize_time = 
-					hnsecs(cast(long)((1 / cast(real)reqSpecs.sampleRate) * reqSpecs.bufferSize_slmp * 10_000_000.0));
-		} else if (cast(bool)reqSpecs.bufferSize_time) {
-			reqSpecs.bufferSize_slmp = 
-					cast(uint)(((1 / cast(real)reqSpecs.sampleRate) * reqSpecs.bufferSize_time.total!"usecs"()) / 
-					1_000_000);
-		}
+		reqSpecs.mirrorBufferSizes();
 		if (reqSpecs.outputChannels) {
 			werrCode = backend.Activate(IID_IAudioClient, CLSCTX_ALL, null, cast(void**)&audioClient);
 			if (werrCode != S_OK) {
@@ -131,6 +126,7 @@ public class WASAPIDevice : AudioDevice {
 					waudioSpecs = *closestMatch;
 					reqSpecs.sampleRate = closestMatch.nSamplesPerSec;
 					reqSpecs.format.bits = cast(ubyte)closestMatch.wBitsPerSample;
+					reqSpecs.mirrorBufferSizes();
 					break;
 				case E_POINTER, E_INVALIDARG: 
 					errCode = AudioInitializationStatus.InternalError; 
@@ -235,8 +231,10 @@ public class WASAPIOutputStream : OutputStream {
 			ubyte* data;
 			do {		// To do: This is a bit janky, and there's like some glitches in the test audio.
 				werrCode = buffer.GetBuffer(bufferSize, data);
+				if (werrCode == AUDCLNT_E_BUFFER_TOO_LARGE) statusCode |= StatusFlags.BufferOverrun;	//Set buffer overrun flag if protection was engaged.
 			} while (werrCode == AUDCLNT_E_BUFFER_TOO_LARGE && (statusCode & StatusFlags.IsRunning));
 			switch (werrCode) {
+				case AUDCLNT_E_BUFFER_TOO_LARGE: return;
 				case AUDCLNT_E_BUFFER_ERROR, AUDCLNT_E_BUFFER_SIZE_ERROR, AUDCLNT_E_OUT_OF_ORDER, 
 						AUDCLNT_E_BUFFER_OPERATION_PENDING:
 					errCode = StreamRuntimeStatus.InternalError;

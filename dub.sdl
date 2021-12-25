@@ -5,6 +5,7 @@ copyright "Copyright © 2021, laszl"
 license "BSL-1.0"
 targetType "library"
 dependency "bitleveld" version="*"
+libs "asound" platform="linux"
 subPackage {
     name "test"
     sourcePaths "testsource/"

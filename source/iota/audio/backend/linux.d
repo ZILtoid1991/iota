@@ -2,6 +2,9 @@ module iota.audio.backend.linux;
 
 version (linux):
 
+import core.stdc.stdint;
+import core.stdc.config;
+
 // Begining of ALSA bindings (most done by Adam D. Ruppe)
 // Minimal, only needed functions have bindings.
 
@@ -40,12 +43,15 @@ enum snd_ctl_elem_type_t {
 
 struct snd_ctl_t {}
 struct snd_sctl_t {}
+struct snd_ctl_card_info_t {}
 
 int snd_card_get_name(int card, char** name);
 int snd_card_load(int card);
 int snd_card_next(int* rcard);
 int snd_ctl_open(snd_ctl_t** ctlp, const (char*) name, int mode);
 int snd_ctl_close(snd_ctl_t* ctl);
+int snd_ctl_card_info(snd_ctl_t* ctl, snd_ctl_card_info_t* info);
+void snd_ctl_card_info_clear(snd_ctl_card_info_t* obj);
 
 // pcm
 
@@ -187,6 +193,7 @@ int snd_pcm_hw_params_any(snd_pcm_t*, snd_pcm_hw_params_t*);
 int snd_pcm_hw_params_set_access(snd_pcm_t*, snd_pcm_hw_params_t*, snd_pcm_access_t);
 int snd_pcm_hw_params_set_format(snd_pcm_t*, snd_pcm_hw_params_t*, snd_pcm_format);
 int snd_pcm_hw_params_set_rate_near(snd_pcm_t*, snd_pcm_hw_params_t*, uint*, int*);
+int snd_pcm_hw_params_get_channels_max 	(const (snd_pcm_hw_params_t)* params, uint* val);
 int snd_pcm_sw_params_malloc(snd_pcm_sw_params_t**);
 void snd_pcm_sw_params_free(snd_pcm_sw_params_t*);
 int snd_pcm_sw_params_current(snd_pcm_t *pcm, snd_pcm_sw_params_t *params);

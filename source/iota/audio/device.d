@@ -53,7 +53,6 @@ public int initDriver(DriverType type = OS_PREFERRED_DRIVER) {
 			} else {
 				return AudioInitializationStatus.OSNotSupported;
 			}
-			break;
 		case JACK:
 
 			break;
@@ -134,12 +133,13 @@ public int openDevice(int devID, ref AudioDevice device) {
 		}
 	} else version (linux) {
 		if (initializedDriver == DriverType.ALSA) {
-			lastErrorCode = snd_card_load(devID);
+			snd_pcm_t* pcmHandle;
+			lastErrorCode = snd_ctl_open(pcmHandle, devID >= 0 ? devicenames[devID] : "default", 0);
 			if (lastErrorCode) {
-
+				return AudioInitializationStatus.DeviceNotFound;
 			}
-			snd_ctl_t* ctlHandle;
-			lastErrorCode = snd_ctl_open(ctlHandle, devicenames[devID], 0);
+			device = new ALSADevice(pcmHandle);
+			
 
 		} else {
 			return AudioInitializationStatus.UninitializedDriver;

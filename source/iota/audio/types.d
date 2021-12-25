@@ -143,6 +143,17 @@ public struct AudioSpecs {
 		}
 		return result;
 	}
+	/** 
+	 * Mirrors the buffer sizes if one is set to T.init.
+	 */
+	public void mirrorBufferSizes() {
+		import core.time : hnsecs;
+		if (bufferSize_slmp) {
+			bufferSize_time = hnsecs(cast(long)((1 / cast(real)sampleRate) * bufferSize_slmp * 10_000_000.0));
+		} else if (cast(bool)bufferSize_time) {
+			bufferSize_slmp = cast(uint)((bufferSize_time.total!"hnsecs" / 10_000_000.0) / (1 / cast(real)sampleRate));
+		}
+	}
 }
 /** 
  * Tells the stream initializer which specs are needed, or tells it to recommend a spec.
