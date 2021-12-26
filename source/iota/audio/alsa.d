@@ -30,6 +30,15 @@ package void flushNames() {
 		free(key);
 }
 /** 
+ * Returns the error string from an error code.
+ * Params:
+ *   errCode = 
+ */
+public string getErrorString(int errCode) {
+	import std.string : fromStringz;
+	return fromStringz(snd_strerror(errCode)).idup;
+}
+/** 
  * Implements an ALSA device.
  */
 public class ALSADevice : AudioDevice {
@@ -53,76 +62,91 @@ public class ALSADevice : AudioDevice {
 	}
 
 	override public AudioSpecs requestSpecs(AudioSpecs reqSpecs, int flags = 0) {
-		snd_pcm_hw_params_set_access(pcmHandle, pcmParams,  snd_pcm_access_t.ND_PCM_ACCESS_RW_INTERLEAVED);
+		reqSpecs.mirrorBufferSizes();
+		alsaerrCode = snd_pcm_hw_params_set_access(pcmHandle, pcmParams, snd_pcm_access_t.SND_PCM_ACCESS_RW_INTERLEAVED);
+		if (alsaerrCode) {errCode = StreamInitializationStatus.UnsupportedFormat; return AudioSpecs.init;}
 		switch (reqSpecs.format.bits) {
 			case 0x08:
 				switch (reqSpecs.format.flags & SampleFormat.Flag.Type_Test) {
 					case SampleFormat.Flag.Type_Unsigned:
-						snd_pcm_hw_params_set_format(pcmHandle, pcmParams, snd_pcm_format.SND_PCM_FORMAT_U8);
+						alsaerrCode = snd_pcm_hw_params_set_format(pcmHandle, pcmParams, snd_pcm_format.SND_PCM_FORMAT_U8);
 						break;
 					case SampleFormat.Flag.Type_Signed:
-						snd_pcm_hw_params_set_format(pcmHandle, pcmParams, snd_pcm_format.SND_PCM_FORMAT_S8);
+						alsaerrCode = snd_pcm_hw_params_set_format(pcmHandle, pcmParams, snd_pcm_format.SND_PCM_FORMAT_S8);
 						break;
 					default:
-						return AudioSpecs.init;
+						errCode = StreamInitializationStatus.UnsupportedFormat; return AudioSpecs.init;
 				}
 				break;
 			case 0x10:
 				switch (reqSpecs.format.flags & SampleFormat.Flag.Type_Test) {
 					case SampleFormat.Flag.Type_Unsigned:
-						snd_pcm_hw_params_set_format(pcmHandle, pcmParams, snd_pcm_format.SND_PCM_FORMAT_U16_LE);
+						alsaerrCode = snd_pcm_hw_params_set_format(pcmHandle, pcmParams, snd_pcm_format.SND_PCM_FORMAT_U16_LE);
 						break;
 					case SampleFormat.Flag.Type_Signed:
-						snd_pcm_hw_params_set_format(pcmHandle, pcmParams, snd_pcm_format.SND_PCM_FORMAT_S16_LE);
+						alsaerrCode = snd_pcm_hw_params_set_format(pcmHandle, pcmParams, snd_pcm_format.SND_PCM_FORMAT_S16_LE);
 						break;
 					default:
-						return AudioSpecs.init;
+						errCode = StreamInitializationStatus.UnsupportedFormat; return AudioSpecs.init;
 				}
 				break;
 			case 0x18:
 				switch (reqSpecs.format.flags & SampleFormat.Flag.Type_Test) {
 					case SampleFormat.Flag.Type_Unsigned:
-						snd_pcm_hw_params_set_format(pcmHandle, pcmParams, snd_pcm_format.SND_PCM_FORMAT_U24_LE);
+						alsaerrCode = snd_pcm_hw_params_set_format(pcmHandle, pcmParams, snd_pcm_format.SND_PCM_FORMAT_U24_LE);
 						break;
 					case SampleFormat.Flag.Type_Signed:
-						snd_pcm_hw_params_set_format(pcmHandle, pcmParams, snd_pcm_format.SND_PCM_FORMAT_S24_LE);
+						alsaerrCode = snd_pcm_hw_params_set_format(pcmHandle, pcmParams, snd_pcm_format.SND_PCM_FORMAT_S24_LE);
 						break;
 					default:
-						return AudioSpecs.init;
+						errCode = StreamInitializationStatus.UnsupportedFormat; return AudioSpecs.init;
 				}
 				break;
 			case 0x20:
 				switch (reqSpecs.format.flags & SampleFormat.Flag.Type_Test) {
 					case SampleFormat.Flag.Type_Float:
-						snd_pcm_hw_params_set_format(pcmHandle, pcmParams, snd_pcm_format.SND_PCM_FORMAT_FLOAT_LE);
+						alsaerrCode = snd_pcm_hw_params_set_format(pcmHandle, pcmParams, snd_pcm_format.SND_PCM_FORMAT_FLOAT_LE);
 						break;
 					case SampleFormat.Flag.Type_Unsigned:
-						snd_pcm_hw_params_set_format(pcmHandle, pcmParams, snd_pcm_format.SND_PCM_FORMAT_U32_LE);
+						alsaerrCode = snd_pcm_hw_params_set_format(pcmHandle, pcmParams, snd_pcm_format.SND_PCM_FORMAT_U32_LE);
 						break;
 					case SampleFormat.Flag.Type_Signed:
-						snd_pcm_hw_params_set_format(pcmHandle, pcmParams, snd_pcm_format.SND_PCM_FORMAT_S32_LE);
+						alsaerrCode = snd_pcm_hw_params_set_format(pcmHandle, pcmParams, snd_pcm_format.SND_PCM_FORMAT_S32_LE);
 						break;
 					default:
-						return AudioSpecs.init;
+						errCode = StreamInitializationStatus.UnsupportedFormat; return AudioSpecs.init;
 				}
 				break;
 			default: 
-				return AudioSpecs.init;
+				errCode = StreamInitializationStatus.UnsupportedFormat; return AudioSpecs.init;
 		}
-		snd_pcm_hw_params_set_channels(pcmHandle, pcmParams, reqSpecs.outputChannels);
-		snd_pcm_hw_params_set_rate_near(pcmHandle, pcmParams, cast(uint*)reqSpecs.sampleRate, 0);
+		if (alsaerrCode) {errCode = StreamInitializationStatus.UnsupportedFormat; return AudioSpecs.init;}
+		alsaerrCode = snd_pcm_hw_params_set_channels(pcmHandle, pcmParams, reqSpecs.outputChannels);
+		if (alsaerrCode) {errCode = StreamInitializationStatus.UnsupportedFormat; return AudioSpecs.init;}
+		//snd_pcm_hw_params_set_access(pcmHandle, pcmParams, snd_pcm_access_t.SND_PCM_ACCESS_RW_INTERLEAVED);
+		int something;
+		alsaerrCode = snd_pcm_hw_params_set_rate_near(pcmHandle, pcmParams, cast(uint*)&reqSpecs.sampleRate, &something);
+		if (alsaerrCode) {errCode = StreamInitializationStatus.UnsupportedFormat; return AudioSpecs.init;}
 		snd_pcm_uframes_t bufferlen = reqSpecs.bufferSize_slmp;
-		snd_pcm_hw_params_set_buffer_size_near(pcmHandle, pcmParams, &bufferlen);
-		reqSpecs.bufferSize_slmp = bufferlen;
+		alsaerrCode = snd_pcm_hw_params_set_buffer_size_near(pcmHandle, pcmParams, &bufferlen);
+		if (alsaerrCode) {errCode = StreamInitializationStatus.UnsupportedFormat; return AudioSpecs.init;}
+		reqSpecs.bufferSize_slmp = cast(uint)bufferlen;
+		reqSpecs.bufferSize_time = Duration.init;
+		reqSpecs.mirrorBufferSizes();
+		alsaerrCode = snd_pcm_hw_params(pcmHandle, pcmParams);
+		if (alsaerrCode) {errCode = StreamInitializationStatus.UnsupportedFormat; return AudioSpecs.init;}
+		snd_pcm_nonblock(pcmHandle, 0);
 		return _specs = reqSpecs;
 	}
 
 	override public OutputStream createOutputStream() {
 		alsaerrCode = snd_pcm_prepare(pcmHandle);
-		if (alsaerrCode)
-			return OutputStream.init; // TODO: Implement better error-handling
-		else
-			return new OutputStream(this);
+		if (alsaerrCode) {
+			errCode = StreamInitializationStatus.Unknown;
+			return null; // TODO: Implement better error-handling
+		} else {
+			return new ALSAOutStream(this);
+		}
 	}
 }
 /**
@@ -132,27 +156,51 @@ public class ALSAOutStream : OutputStream {
 	/// Due to how ALSA works, the pcm handle is accessed from there directly, also keeps a reference of it to avoid
 	/// calling the destructor.
 	protected ALSADevice		dev;
+	/// Buffer for outputting audio data.
+	protected ubyte[]			buffer;
+	/// Contains buffer size in samples.
+	protected uint				bufferSize;
+	/// Contains the last ALSA specific error code.
+	public int					alsaerrCode;
 
 	package this (ALSADevice dev) {
 		this.dev = dev;
+		buffer.length = (dev.specs().bufferSize_slmp * dev.specs().bits * dev.specs().outputChannels) / 8;
 	}
 	~this() {
 		
 	}
 	protected void audioThread() @nogc nothrow {
+		snd_pcm_sframes_t currBufferSize;
 		while (statusCode & StatusFlags.IsRunning) {
-
+			callback_buffer(buffer);
+			do {
+				currBufferSize = snd_pcm_writei(dev.pcmHandle, cast(const(void*))buffer.ptr, bufferSize);
+				if (currBufferSize < 0) {
+					errCode = StreamRuntimeStatus.Unknown;
+					return;
+				}
+			} while (currBufferSize < bufferSize && statusCode & StatusFlags.IsRunning);
+			alsaerrCode = snd_pcm_wait(dev.pcmHandle, 1000);
+			if (!alsaerrCode) {
+				statusCode |= StatusFlags.BufferUnderrun;
+			}
 		}
 	}
 	override public int runAudioThread() @nogc nothrow {
-		if (callback_buffer is null) return StreamRuntimeStatus.BufferCallbackNotSet;
+		if (callback_buffer is null) return errCode = StreamRuntimeStatus.BufferCallbackNotSet;
+		alsaerrCode = snd_pcm_start(dev.pcmHandle);
+		if (alsaerrCode) {
+			return errCode = StreamRuntimeStatus.Unknown;
+		}
 		statusCode |= StatusFlags.IsRunning;
 		_threadID = createLowLevelThread(&audioThread);
-		return StreamRuntimeStatus.AllOk;
+		return errCode = StreamRuntimeStatus.AllOk;
 	}
 
 	override public int suspendAudioThread() @nogc nothrow {
+		alsaerrCode = snd_pcm_drain(dev.pcmHandle);
 		statusCode &= ~StatusFlags.IsRunning;
-		return StreamRuntimeStatus.AllOk; // TODO: implement
+		return errCode;
 	}
 }

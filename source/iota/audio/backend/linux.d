@@ -180,7 +180,10 @@ struct snd_pcm_sw_params_t {}
 int snd_pcm_open(snd_pcm_t**, const char*, snd_pcm_stream_t, int);
 int snd_pcm_close(snd_pcm_t*);
 int snd_pcm_pause(snd_pcm_t*, int);
+int	snd_pcm_start(snd_pcm_t *pcm);
+int snd_pcm_drain(snd_pcm_t *pcm);
 int snd_pcm_prepare(snd_pcm_t*);
+int snd_pcm_nonblock(snd_pcm_t* pcm, int nonblock);
 int snd_pcm_hw_params(snd_pcm_t*, snd_pcm_hw_params_t*);
 int snd_pcm_hw_params_set_periods(snd_pcm_t*, snd_pcm_hw_params_t*, uint, int);
 int snd_pcm_hw_params_set_periods_near(snd_pcm_t*, snd_pcm_hw_params_t*, uint*, int);
@@ -210,6 +213,8 @@ snd_pcm_sframes_t snd_pcm_readi(snd_pcm_t*, void*, snd_pcm_uframes_t size);
 int snd_pcm_wait(snd_pcm_t *pcm, int timeout);
 snd_pcm_sframes_t snd_pcm_avail(snd_pcm_t *pcm);
 snd_pcm_sframes_t snd_pcm_avail_update(snd_pcm_t *pcm);
+
+const(char)* snd_strerror(int errnum);
 
 int snd_pcm_recover (snd_pcm_t* pcm, int err, int silent);
 

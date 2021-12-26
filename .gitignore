@@ -13,6 +13,7 @@
 
 # Executables
 *.exe
+iota_test
 
 # DUB
 .dub

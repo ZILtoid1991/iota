@@ -103,7 +103,7 @@ public string[] getOutputDeviceNames() {
 				} while (cardIndex != -1);
 			}
 			foreach (char* key; devicenames) {
-				result = fromStringz(key).idup;
+				result ~= fromStringz(key).idup;
 			}
 			return result;
 		} else return null;
@@ -134,13 +134,14 @@ public int openDevice(int devID, ref AudioDevice device) {
 	} else version (linux) {
 		if (initializedDriver == DriverType.ALSA) {
 			snd_pcm_t* pcmHandle;
-			lastErrorCode = snd_ctl_open(pcmHandle, devID >= 0 ? devicenames[devID] : "default", 0);
+			//lastErrorCode = snd_ctl_open(&pcmHandle, devID >= 0 ? devicenames[devID] : "default", 0);
+			lastErrorCode = snd_pcm_open(&pcmHandle, devID >= 0 ? devicenames[devID] : "default", 
+					snd_pcm_stream_t.SND_PCM_STREAM_PLAYBACK, 0);
 			if (lastErrorCode) {
 				return AudioInitializationStatus.DeviceNotFound;
 			}
 			device = new ALSADevice(pcmHandle);
-			
-
+			return AudioInitializationStatus.AllOk;
 		} else {
 			return AudioInitializationStatus.UninitializedDriver;
 		}

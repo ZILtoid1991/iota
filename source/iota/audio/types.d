@@ -12,8 +12,10 @@ enum DriverType {
 	ALSA,			///Advanced Linux Sound Architecture
 	JACK,			///JACK Audio Connection Kit
 }
-version (windows) {
+version (Windows) {
 	static immutable DriverType OS_PREFERRED_DRIVER = DriverType.WASAPI;
+} else version (linux) {
+	static immutable DriverType OS_PREFERRED_DRIVER = DriverType.ALSA;
 } else {
 	static immutable DriverType OS_PREFERRED_DRIVER = DriverType.None;
 }
@@ -153,6 +155,30 @@ public struct AudioSpecs {
 		} else if (cast(bool)bufferSize_time) {
 			bufferSize_slmp = cast(uint)((bufferSize_time.total!"hnsecs" / 10_000_000.0) / (1 / cast(real)sampleRate));
 		}
+	}
+
+	public string toString() const @safe { 
+		import std.format : format;
+		string result;
+		result ~= format("%s bits ", this.format.bits);
+		switch (this.format.flags & SampleFormat.Flag.Type_Test) {
+			case SampleFormat.Flag.Type_Signed:
+				result ~= "signed; ";
+				break;
+			case SampleFormat.Flag.Type_Unsigned:
+				result ~= "unsigned; ";
+				break;
+			case SampleFormat.Flag.Type_Float:
+				result ~= "floating point; ";
+				break;
+			default: break;
+		}
+		result ~= format("sample rate: %s Hz; ", sampleRate);
+		result ~= format("input channels: %s ; ", inputChannels);
+		result ~= format("output channels: %s ; ", outputChannels);
+		result ~= format("buffer size (in samples): %s ; ", bufferSize_slmp);
+		result ~= format("buffer size (in time): %s ms; ", (cast(real)bufferSize_time.total!"hnsecs" / 10_000.0));
+		return result;
 	}
 }
 /** 

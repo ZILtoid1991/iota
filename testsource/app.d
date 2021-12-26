@@ -5,15 +5,18 @@ import iota.audio.device;
 import iota.audio.output;
 
 int main(string[] args) {
+	writeln("Please select driver:");
 	version (Windows) {
-		writeln("Please select driver:");
 		writeln("1) Windows Audio Stream API");
+	} else version (linux) {
+		writeln("1) ALSA");
 	}
 	string cmdIn = readln();
-	int errCode = initDriver(DriverType.WASAPI);
+	int errCode = initDriver();
 	if (errCode != AudioInitializationStatus.AllOk) {
 		writeln("Driver failed to initialize! Error code: ", errCode);
 		version (Windows) writeln("Windows error code: ", lastErrorCode);
+		else version (linux) writeln("Linux error code: ", lastErrorCode);
 		return 0;
 	}
 	string[] deviceList = getOutputDeviceNames();
@@ -25,6 +28,7 @@ int main(string[] args) {
 	} else {
 		writeln("No devices were found");
 		version (Windows) writeln("Windows error code: ", lastErrorCode);
+		else version (linux) writeln("Linux error code: ", lastErrorCode);
 	}
 	cmdIn = readln();
 	AudioDevice device;
@@ -67,6 +71,49 @@ int main(string[] args) {
 			return 0;
 		}
 		writeln("Callback time:", renderer.callbackTime);
+	} else version (linux) {
+		if (errCode != AudioInitializationStatus.AllOk) {
+			writeln("Device failed to initialize! Error code: ", errCode, " ; Linux error message: ", 
+					getErrorString(lastErrorCode));
+			return 0;
+		}
+		AudioSpecs givenSpecs = device.requestSpecs(AudioSpecs(predefinedFormats[3], 48_000, 0x00, 0x02, 1024, Duration.init));
+		writeln("Received specs: ", givenSpecs.toString);
+		ALSADevice ldevice = cast(ALSADevice)device;
+		if (ldevice.alsaerrCode) {
+			writeln("Failed to request audio specifications! Error code: ", errCode, " ; ALSA error message: ", 
+					getErrorString(ldevice.alsaerrCode));
+			return 0;
+		}
+		RenderingThread renderer = new RenderingThread();
+		OutputStream outStream = device.createOutputStream();
+		if (outStream is null) {
+			writeln("Stream failed to initialize! Error code: ", device.errCode, " ; ALSA error message: ", 
+					getErrorString(ldevice.alsaerrCode));
+			return 0;
+		}
+		ALSAOutStream aoutstream = cast(ALSAOutStream)outStream;
+		if (givenSpecs.format.bits == 16)
+			outStream.callback_buffer = &renderer.renderingCallback16;
+		else if (givenSpecs.format.bits == 32)
+			outStream.callback_buffer = &renderer.renderingCallback32;
+		errCode = outStream.runAudioThread();
+		if (errCode != AudioInitializationStatus.AllOk) {
+			writeln("Audio stream failed to start! Error code: ", errCode, " ; ALSA error message: ", 
+					getErrorString(aoutstream.alsaerrCode));
+			return 0;
+		}
+		Thread.sleep(dur!"seconds"(10));
+		const int errCode2 = outStream.errCode;
+		synchronized {
+			errCode = outStream.suspendAudioThread();
+		}
+		if (errCode != AudioInitializationStatus.AllOk && errCode2 != StreamRuntimeStatus.AllOk) {
+			writeln("Audio stream failed to shut down! Error code: ", errCode, " ; ALSA error message: ", 
+					getErrorString(aoutstream.alsaerrCode), "Stream error code: ", errCode2);
+			return 0;
+		}
+		writeln("Callback time:", renderer.callbackTime, " Last buffer size:", renderer.lastBufferSize);
 	}
 	return 0;
 }
@@ -75,10 +122,12 @@ public class RenderingThread {
 	protected int phasePos;
 	protected const int phaseLenght = 480, cycleLenght = 960;
 	public int callbackTime;
+	public size_t lastBufferSize;
 	this() {
 
 	}
 	void renderingCallback16(ubyte[] buffer) @nogc nothrow {
+		lastBufferSize = buffer.length;
 		callbackTime++;
 		short[] buffer2 = cast(short[])(cast(void[])buffer);
 		for (int i ; i < buffer2.length ; i+=2) {
