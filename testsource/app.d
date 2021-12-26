@@ -39,6 +39,7 @@ int main(string[] args) {
 			return 0;
 		}
 		AudioSpecs givenSpecs = device.requestSpecs(AudioSpecs(predefinedFormats[9], 48_000, 0x00, 0x02, 512, Duration.init));
+		writeln("Received specs: ", givenSpecs.toString);
 		WASAPIDevice wdevice = cast(WASAPIDevice)device;
 		if (device.errCode != AudioInitializationStatus.AllOk) {
 			writeln("Failed to request audio specifications! Error code: ", errCode, " ; Windows error code: ", wdevice.werrCode);

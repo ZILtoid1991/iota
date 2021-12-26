@@ -6,6 +6,7 @@ Input-output (audio, controls, etc) library for D. Intended as a D language nati
 |Component                 |Windows                             |Linux                               |
 |--------------------------|------------------------------------|------------------------------------|
 |Audio                     |Preliminary, output stream works    |Under development                   |
+|MIDI                      |Not yet implemented                 |Not yet implemented                 |
 |Keyboard                  |Not yet implemented                 |Not yet implemented                 |
 |Mouse                     |Not yet implemented                 |Not yet implemented                 |
 |Game controllers          |Not yet implemented                 |Not yet implemented                 |
