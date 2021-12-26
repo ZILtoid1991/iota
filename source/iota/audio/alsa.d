@@ -124,18 +124,35 @@ public class ALSADevice : AudioDevice {
 		alsaerrCode = snd_pcm_hw_params_set_channels(pcmHandle, pcmParams, reqSpecs.outputChannels);
 		if (alsaerrCode) {errCode = StreamInitializationStatus.UnsupportedFormat; return AudioSpecs.init;}
 		//snd_pcm_hw_params_set_access(pcmHandle, pcmParams, snd_pcm_access_t.SND_PCM_ACCESS_RW_INTERLEAVED);
-		int something;
+		int something = 0;
 		alsaerrCode = snd_pcm_hw_params_set_rate_near(pcmHandle, pcmParams, cast(uint*)&reqSpecs.sampleRate, &something);
 		if (alsaerrCode) {errCode = StreamInitializationStatus.UnsupportedFormat; return AudioSpecs.init;}
-		snd_pcm_uframes_t bufferlen = reqSpecs.bufferSize_slmp;
+		uint periods = (reqSpecs.bits() * reqSpecs.outputChannels) / 8;
+		alsaerrCode = snd_pcm_hw_params_set_periods_near(pcmHandle, pcmParams, &periods, 0);
+		if (alsaerrCode) {errCode = StreamInitializationStatus.UnsupportedFormat; return AudioSpecs.init;}
+		snd_pcm_uframes_t bufferlen = reqSpecs.bufferSize_slmp * periods;
 		alsaerrCode = snd_pcm_hw_params_set_buffer_size_near(pcmHandle, pcmParams, &bufferlen);
 		if (alsaerrCode) {errCode = StreamInitializationStatus.UnsupportedFormat; return AudioSpecs.init;}
-		reqSpecs.bufferSize_slmp = cast(uint)bufferlen;
+		reqSpecs.bufferSize_slmp = cast(uint)(bufferlen / periods);
 		reqSpecs.bufferSize_time = Duration.init;
 		reqSpecs.mirrorBufferSizes();
 		alsaerrCode = snd_pcm_hw_params(pcmHandle, pcmParams);
 		if (alsaerrCode) {errCode = StreamInitializationStatus.UnsupportedFormat; return AudioSpecs.init;}
-		snd_pcm_nonblock(pcmHandle, 0);
+		// Set up software parameters
+		snd_pcm_sw_params_t* swparams;
+		alsaerrCode = snd_pcm_sw_params_malloc(&swparams);
+		scope (exit)
+			snd_pcm_sw_params_free(swparams);
+		if (alsaerrCode) {errCode = StreamInitializationStatus.OutOfMemory; return AudioSpecs.init;}
+		alsaerrCode = snd_pcm_sw_params_current(pcmHandle, swparams);
+		if (alsaerrCode) {errCode = StreamInitializationStatus.OutOfMemory; return AudioSpecs.init;}
+		alsaerrCode = snd_pcm_sw_params_set_avail_min(pcmHandle, swparams, reqSpecs.bufferSize_slmp);
+		if (alsaerrCode) {errCode = StreamInitializationStatus.UnsupportedFormat; return AudioSpecs.init;}
+		alsaerrCode = snd_pcm_sw_params_set_start_threshold(pcmHandle, swparams, 0);
+		if (alsaerrCode) {errCode = StreamInitializationStatus.UnsupportedFormat; return AudioSpecs.init;}
+		alsaerrCode = snd_pcm_sw_params(pcmHandle, swparams);
+		if (alsaerrCode) {errCode = StreamInitializationStatus.UnsupportedFormat; return AudioSpecs.init;}
+		//snd_pcm_nonblock(pcmHandle, 0);
 		return _specs = reqSpecs;
 	}
 
