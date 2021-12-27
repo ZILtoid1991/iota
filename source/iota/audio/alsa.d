@@ -183,6 +183,7 @@ public class ALSAOutStream : OutputStream {
 	package this (ALSADevice dev) {
 		this.dev = dev;
 		buffer.length = (dev.specs().bufferSize_slmp * dev.specs().bits * dev.specs().outputChannels) / 8;
+		this.bufferSize = dev.specs().bufferSize_slmp;
 	}
 	~this() {
 		
