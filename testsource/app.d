@@ -38,7 +38,9 @@ int main(string[] args) {
 			writeln("Device failed to initialize! Error code: ", errCode, " ; Windows error code: ", lastErrorCode);
 			return 0;
 		}
-		AudioSpecs givenSpecs = device.requestSpecs(AudioSpecs(predefinedFormats[9], 48_000, 0x00, 0x02, 512, Duration.init));
+		AudioSpecs givenSpecs = device.requestSpecs(
+			AudioSpecs(predefinedFormats[PredefinedFormats.FP32], 48_000, 0x00, 0x02, 512, Duration.init)
+		);
 		writeln("Received specs: ", givenSpecs.toString);
 		WASAPIDevice wdevice = cast(WASAPIDevice)device;
 		if (device.errCode != AudioInitializationStatus.AllOk) {
@@ -52,9 +54,11 @@ int main(string[] args) {
 			return 0;
 		}
 		WASAPIOutputStream woutStream = cast(WASAPIOutputStream)outStream;
-		if (givenSpecs.format.bits == 16)
+		if ((givenSpecs.format.flags & SampleFormat.Flag.Type_Test) == SampleFormat.Flag.Type_Float) {
+			outStream.callback_buffer = &renderer.renderingCallbackFP;
+		} else if (givenSpecs.format.bits == 16) {
 			outStream.callback_buffer = &renderer.renderingCallback16;
-		else if (givenSpecs.format.bits == 32)
+		} else if (givenSpecs.format.bits == 32)
 			outStream.callback_buffer = &renderer.renderingCallback32;
 		errCode = outStream.runAudioThread();
 		if (errCode != AudioInitializationStatus.AllOk) {

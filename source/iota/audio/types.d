@@ -97,6 +97,9 @@ public struct SampleFormat {
 			return (flags & Flag.BigEndian) != 0;
 	}
 }
+/**
+ * Contains commonly used predefined formats.
+ */
 public immutable SampleFormat[] predefinedFormats = [
 	//Little endian formats (does anyone still using big endian?)
 	SampleFormat(0x08, 0x01, 0x00, 0x00),	//8 bit unsigned integer
@@ -111,6 +114,19 @@ public immutable SampleFormat[] predefinedFormats = [
 	SampleFormat(0x20, 0x02, 0x00, 0x00),	//32 bit signed integer
 	SampleFormat(0x20, 0x03, 0x00, 0x00),	//32 bit floating-point
 ];
+public enum PredefinedFormats {
+	UI8,		//8 bit unsigned integer
+	SI8,		//8 bit signed integer
+	UI16,		//16 bit unsigned integer
+	SI16,		//16 bit signed integer
+	UI24UP,		//24 bit unsigned integer
+	SI24UP,		//24 bit signed integer
+	UI24,		//24 bit unsigned integer (padded to 32 bit word)
+	SI24,		//24 bit signed integer (padded to 32 bit word)
+	UI32,		//32 bit unsigned integer
+	SI32,		//32 bit signed integer
+	FP32,		//32 bit floating-point
+}
 /** 
  * Used to set audio specifications, etc.
  *
@@ -156,7 +172,9 @@ public struct AudioSpecs {
 			bufferSize_slmp = cast(uint)((bufferSize_time.total!"hnsecs" / 10_000_000.0) / (1 / cast(real)sampleRate));
 		}
 	}
-
+	/**
+	 * Returns a string representation of this struct.
+	 */
 	public string toString() const @safe { 
 		import std.format : format;
 		string result;
