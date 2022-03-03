@@ -224,3 +224,8 @@ public enum AudioShareMode : ubyte {
 	Shared,
 	Exlusive
 }
+public enum MIDIInitializationStatus {
+	AllOk	=	0,
+	DevicesNotFound,
+	OSNotSupported
+}
