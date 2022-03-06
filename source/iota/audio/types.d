@@ -224,8 +224,30 @@ public enum AudioShareMode : ubyte {
 	Shared,
 	Exlusive
 }
+/** 
+ * Defines MIDI initialization status codes.
+ */
 public enum MIDIInitializationStatus {
-	AllOk	=	0,
-	DevicesNotFound,
-	OSNotSupported
+	AllOk	=	0,		///No errors were encountered, operation was successful.
+	DevicesNotFound,	///No devices are found.
+	InitError,			///Initialization error otherwise not specified.
+	OSNotSupported		///OS not (yet) supported.
+}
+/** 
+ * Defines MIDI device initialization status codes.
+ */
+public enum MIDIDeviceInitStatus {
+	AllOk	=	0,		///No errors were encountered, operation was successful.
+	InvalidDeviceID,	///Invalid device ID.
+	DeviceDisconnected,	///Device disconnected, or invalidated.
+	InitError,			///Initialization error otherwise not specified.
+	OutOfMemory,		///Out of memory error.
+	OSNotSupported		///OS not (yet) supported.
+}
+/** 
+ * Defines MIDI device status codes.
+ */
+public enum MIDIDeviceStatus {
+	AllOk	=	0,		///No errors were encountered, operation was successful.
+	DeviceDisconnected,	///Device disconnected, or invalidated.
 }

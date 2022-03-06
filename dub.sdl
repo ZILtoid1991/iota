@@ -7,8 +7,14 @@ targetType "library"
 dependency "bitleveld" version="*"
 libs "asound" platform="linux"
 subPackage {
-    name "test"
+    name "audiotest"
     sourcePaths "testsource/"
+    dependency "iota" version="*"
+    targetType "executable"
+}
+subPackage {
+    name "miditest"
+    sourcePaths "miditest/"
     dependency "iota" version="*"
     targetType "executable"
 }
