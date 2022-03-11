@@ -24,11 +24,17 @@ Deinitialization is automatic through destructors and bug free. Windows-specific
 
 Error handling is quite preliminary with one having to rely on returned error codes. ALSA documentation is quite scarce, and often don't contain more than what one can get out from function names, let alone the possible returned error codes. Device selection might contain non-PCM devices, so initializing with default device (-1) is recommended instead for now.
 
+Audio is tested and confirmed working on Raspberry Pi devices.
+
 ## MIDI
 
 ### Windows
 
 Both input and output works, but might suffer from some caveat that stems from the Windows MIDI API. There's a chance that calling a MIDI system function within the MIDI input callback will cause a lockup.
+
+## Others
+
+Preliminary work on keyboard, mouse, etc. controls have been started.
 
 # Examples
 
