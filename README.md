@@ -6,7 +6,7 @@ Input-output (audio, controls, etc) library for D. Intended as a D language nati
 |Component                 |Windows                             |Linux                               |
 |--------------------------|------------------------------------|------------------------------------|
 |Audio                     |Preliminary, output stream works    |Output works + some issues          |
-|MIDI                      |Not yet implemented                 |Not yet implemented                 |
+|MIDI                      |Input+Output, with some caveat      |Not yet implemented                 |
 |Keyboard                  |Not yet implemented                 |Not yet implemented                 |
 |Mouse                     |Not yet implemented                 |Not yet implemented                 |
 |Pen Tablet                |Not yet implemented                 |Not yet implemented                 |
@@ -23,6 +23,12 @@ Deinitialization is automatic through destructors and bug free. Windows-specific
 ### Linux
 
 Error handling is quite preliminary with one having to rely on returned error codes. ALSA documentation is quite scarce, and often don't contain more than what one can get out from function names, let alone the possible returned error codes. Device selection might contain non-PCM devices, so initializing with default device (-1) is recommended instead for now.
+
+## MIDI
+
+### Windows
+
+Both input and output works, but might suffer from some caveat that stems from the Windows MIDI API. There's a chance that calling a MIDI system function within the MIDI input callback will cause a lockup.
 
 # Examples
 

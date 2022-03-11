@@ -71,7 +71,7 @@ public string[] getMIDIOutputDevs() @safe nothrow {
  *   bufSize = The input buffer size if applicable (1024 by default).
  * Returns: 0 if the operation is successful, or an error code.
  */
-public int openInput(ref MIDIInput input, uint num, size_t bufSize = 1024) {
+public int openMIDIInput(ref MIDIInput input, uint num, size_t bufSize = 1024) {
 	version (Windows) {
 		WindowsMIDIInput wmi = new WindowsMIDIInput(num, bufSize);
 		switch (wmi.lastErrorCode) {
@@ -81,6 +81,29 @@ public int openInput(ref MIDIInput input, uint num, size_t bufSize = 1024) {
 				return MIDIDeviceInitStatus.InvalidDeviceID;
 			case MMSYSERR_NOERROR:
 				input = wmi;
+				return MIDIDeviceInitStatus.AllOk;
+			default:
+				return MIDIDeviceInitStatus.InitError;
+		}
+	} else return lastStatusCode = MIDIDeviceInitStatus.OSNotSupported;
+}
+/** 
+ * Opens an output for a MIDI stream.
+ * Params:
+ *   output = Stream returned here.
+ *   num = The ID of the device.
+ * Returns: 
+ */
+public int openMIDIOutput(ref MIDIOutput output, uint num) {
+	version (Windows) {
+		WindowsMIDIOutput wmi = new WindowsMIDIOutput(num);
+		switch (wmi.lastErrorCode) {
+			case MMSYSERR_NOMEM:
+				return MIDIDeviceInitStatus.OutOfMemory;
+			case MMSYSERR_BADDEVICEID:
+				return MIDIDeviceInitStatus.InvalidDeviceID;
+			case MMSYSERR_NOERROR:
+				output = wmi;
 				return MIDIDeviceInitStatus.AllOk;
 			default:
 				return MIDIDeviceInitStatus.InitError;

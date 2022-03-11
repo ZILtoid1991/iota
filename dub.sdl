@@ -6,6 +6,7 @@ license "BSL-1.0"
 targetType "library"
 dependency "bitleveld" version="*"
 libs "asound" platform="linux"
+libs "winmm" platform="windows"
 subPackage {
     name "audiotest"
     sourcePaths "testsource/"

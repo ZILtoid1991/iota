@@ -78,6 +78,19 @@ public class WindowsMIDIInput : MIDIInput {
 					LPMIDIHDR data = cast(LPMIDIHDR)(cast(void*)param1);
 					midiInCallback((cast(ubyte*)data.lpData)[0..data.dwBytesRecorded], param2);
 					break;
+				case MIM_DATA:
+					size_t data = param1;
+					int i = 3;
+					if ((data & 0xf0) == 0xc0 || (data & 0xf0) == 0xD0) i = 2;
+					if ((data & 0xf0) == 0xf0 && (data & 0x0f) > 0x05) i = 1;
+					ubyte* dp = cast(ubyte*)&data;
+					midiInCallback(dp[0..i], param2);
+					break;
+				case MIM_ERROR:
+					size_t data = param1;
+					ubyte* dp = cast(ubyte*)&data;
+					midiInCallback(dp[0..size_t.sizeof], param2);
+					break;
 				default:
 					break;
 			}
