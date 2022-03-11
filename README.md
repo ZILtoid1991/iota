@@ -24,7 +24,7 @@ Deinitialization is automatic through destructors and bug free. Windows-specific
 
 Error handling is quite preliminary with one having to rely on returned error codes. ALSA documentation is quite scarce, and often don't contain more than what one can get out from function names, let alone the possible returned error codes. Device selection might contain non-PCM devices, so initializing with default device (-1) is recommended instead for now.
 
-Audio is tested and confirmed working on Raspberry Pi devices.
+Audio is tested and confirmed working on 64 bit Raspberry Pi devices, which probably means all 64 bit ARM SoCs are supported under Linux.
 
 ## MIDI
 
