@@ -1,14 +1,17 @@
 module iota.controls.types;
 
-public import core.time;
+public import iota.etc.window;
 /*
- * If version `iota_uint_as_timestamp` is supplied, then uint will be used as the type for timestamps. If not, then 
- * MonoTime will be used instead, wuth greater resolution.
+ * If `iota_hi_prec_timestamp` is supplied as a version identifier, then MonoTime will be used for timestamps, 
+ * otherwise uint will be used.
+ *
+ * However it's not ensured that higher precision will be actually provided, or that it'll be useful.
  */
-version (iota_uint_as_timestamp) {
-	alias Timestamp = uint;
-} else {
+version (iota_hi_prec_timestamp) {
+	public import core.time;
 	alias Timestamp = MonoTime;
+} else {
+	alias Timestamp = uint;
 }
 /** 
  * Defines the types of the input devices.
@@ -20,9 +23,9 @@ public enum InputDeviceType : ubyte {
 	GameController,		///Joysticks, gamepads, etc.
 	Pen,				///Graphics tablet, etc.
 	TouchScreen,
-	Gyro,				///Built-in Gyro device
-	System,				///Misc. system related input device
-	MIDI,				///If enabled, MIDI devices can function as regular input devices creating regular input events from key press and control change commands
+	Gyro,				///Built-in Gyro device.
+	System,				///Misc. system related input devices and events.
+	MIDI,				///If enabled, MIDI devices can function as regular input devices creating regular input events from key press and control change commands.
 }
 /**
  * Defines possible input event types.
@@ -31,6 +34,7 @@ public enum InputEventType {
 	init,
 	Keyboard,
 	TextInput,
+	TextCommand,
 	TextEdit,
 	MouseClick,
 	MouseMove,
@@ -39,6 +43,48 @@ public enum InputEventType {
 	GCAxis,
 	GCHat,
 	Pen,
+	DeviceAdded,
+	DeviceRemoved,
+	WindowClose,
+	ApplExit,
+}
+/** 
+ * Defines text command event types.
+ */
+public enum TextCommandType {
+	init,
+	Cursor,
+	CursorV,
+
+	Home,
+	End,
+	PageUp,
+	PageDown,
+
+	Delete,
+
+	Insert,
+
+	NewLine,
+	NewPara,
+	
+}
+/** 
+ * Defines return codes for event polling.
+ */
+public enum EventPollStatus {
+	Done			=	0,
+	HasMore			=	1,
+	DeviceInvalidated,
+	DeviceError,
+	NoDevsFound,
+}
+/** 
+ * Defines text edit event flags.
+ */
+public enum TextCommandFlags {
+	PerWord = 1<<0,		///Modifies cursor and delete to work on a per-word basis (essentially holding down the Ctrl key)
+	Select = 1<<1,		///Modifies cursor and other nav commands
 }
 /**
  * Contains basic info about the input device.
@@ -46,7 +92,8 @@ public enum InputEventType {
  */
 public abstract class InputDevice {
 	protected InputDeviceType	_type;		/// Defines the type of the input device
-	protected ubyte				_devNum;	/// Defines the number of the input device
+	protected ubyte				_devNum;	/// Defines the number of the input device within the group of same types
+	protected ubyte				_battP;		/// Current percentage of the battery
 	/// Status flags of the device.
 	/// Bits 0-7 are common, 8-15 are special to each device/interface type.
 	/// Note: flags related to indicators/etc should be kept separately.
@@ -59,21 +106,68 @@ public abstract class InputDevice {
 		IsInvalidated	=	1<<1,
 		HasBattery		=	1<<2,
 		IsAnalog		=	1<<3,
+		IsVirtual		=	1<<4,
 	}
+	/** 
+	 * Returns the type of the device.
+	 */
 	public InputDeviceType type() @nogc @safe pure nothrow const @property {
 		return _type;
 	}
+	/** 
+	 * Returns the device number.
+	 */
 	public ubyte devNum() @nogc @safe pure nothrow const @property {
 		return _devNum;
 	}
+	/** 
+	 * Returns the battery percentage of the device, or ubyte.max if it doesn't have a battery.
+	 */
+	public ubyte battP() @nogc @safe pure nothrow const @property {
+		if (status & StatusFlags.HasBattery) 
+			return _battP;
+		else
+			return ubyte.max;
+	}
+	/** 
+	 * Polls the device for events.
+	 * Params:
+	 *   output = InputEvents outputted by the 
+	 * Returns: 1 if there's still events to be polled, 0 if no events left. Other values are error codes.
+	 */
+	public abstract int poll(ref InputEvent output) @nogc nothrow;
 }
 /** 
  * Defines a button (keyboard, game controller) event data.
  */
 public struct ButtonEvent {
-	ushort		dir;	///Up or down
+	ubyte		dir;	///Up (0) or down (1)
+	ubyte		repeat;	///Used for repetition if supported by source
 	ushort		aux;	///Used to identify modifier keys on keyboard, etc.
 	uint		id;		///Button ID
+	float		auxF;	///Placeholder for pressure-sensitive buttons, NaN otherwise
+}
+/** 
+ * Defines the contents of a text input data.
+ *
+ * Version label `iota_use_utf8` will make the middleware to convert text input to UTF8 on non-UTF8 systems, leaving
+ * it out will make UTF32 as the standard
+ */
+public struct TextInputEvent {
+	version (iota_use_utf8) {
+		char[]	text;
+	} else {
+		dchar[]	text;
+	}
+	bool		isClipboard;///True if the text input originates from a clipboard event.
+}
+/** 
+ * Defines text editing command events that could happen during a text input.
+ */
+public struct TextCommandEvent {
+	TextCommandType	type;	///The type of the text editing event.
+	int			amount;		///Amount of the event + direction, if applicable.
+	uint		flags;		///Extra flags for text edit events.
 }
 /**
  * Defines an axis event.
@@ -88,7 +182,8 @@ public struct AxisEvent {
  * Also supplies the screen coordinates of the click event.
  */
 public struct MouseClickEvent {
-	ushort		dir;	///Up or down
+	ubyte		dir;	///Up or down
+	ubyte		repeat;	///Non-zero if multiple clicks occured.
 	ushort		button;	///Button ID
 	int			x;		///X coordinate
 	int			y;		///Y coordinate
@@ -111,13 +206,15 @@ public struct MouseMotionEvent {
 public struct MouseScrollEvent {
 	int			xS;		///Amount of horizontal scroll
 	int			yS;		///Amount of vertical scroll
+	int			x;		///X position of the cursor
+	int			y;		///Y position of the cursor
 }
 /**
  * Defines a pen event of a graphic tablet, screen, etc.
  */
 public struct PenEvent {
-	float		x;			/// X position of the event
-	float		y;			/// Y position of the event
+	int			x;			/// X position of the event
+	int			y;			/// Y position of the event
 	float		tilt;		/// The tilt amount of the pen 
 	float		pDir;		/// The direction of the pen
 	float		tDir;		/// The tilt direction of the pen
@@ -126,10 +223,18 @@ public struct PenEvent {
  * Contains data generated by input devices.
  */
 public struct InputEvent {
-	InputDevice				source;
-	const Timestamp			timestamp;
-	const InputEventType	type;
+	InputDevice				source;		///Pointer to the source input device class.
+	WindowH					handle;		///Window handle for GUI applications if there's any, null otherwise.
+	Timestamp				timestamp;	///Timestamp for when the event have happened.
+	InputEventType			type;		///Type of the input event.
 	union {
 		ButtonEvent			button;
+		TextInputEvent		textIn;
+		TextCommandEvent	textCmd;
+		AxisEvent			axis;
+		MouseClickEvent		mouseCE;
+		MouseMotionEvent	mouseME;
+		MouseScrollEvent	mouseSE;
+		PenEvent			pen;
 	}
 }
