@@ -12,6 +12,8 @@ Input-output (audio, controls, etc) library for D. Intended as a D language nati
 |Pen Tablet                |Not yet implemented                 |Not yet implemented                 |
 |Game controllers          |Not yet implemented                 |Not yet implemented                 |
 
+MacOSX is not supported due to lack of hardware.
+
 ## Audio
 
 ### Windows

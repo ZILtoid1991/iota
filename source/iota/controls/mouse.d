@@ -9,9 +9,9 @@ version (Windows) {
 /** 
  * Defines mouse button codes.
  *
- * Others might exist, but not necessarily supported by API.
+ * Others might exist, but not necessarily supported by API. Their numbers should go incrementally.
  */
-public enum MouseButtons {
+public enum MouseButtons : ubyte {
     Left    =   1,
     Right   =   2,
     Middle  =   3,
@@ -19,7 +19,9 @@ public enum MouseButtons {
     Next    =   5
 }
 /** 
- * 
+ * Defines mouse button flags.
+ *
+ * Others might exist, but not necessarily supported by API. Their flags should go incrementally.
  */
 public enum MouseButtonFlags {
     Left    =   1<<0,

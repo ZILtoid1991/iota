@@ -18,6 +18,9 @@ import iota.etc.window;
  *
  * Under Windows, this class also handles keyboard and mouse inputs, because of Microsoft of course (Why? You did great
  * with WASAPI and relatively good with MIDI!)
+ *
+ * Note: Polling might suck up some more advanced windowing-related events. If they really needed, then just add 
+ * handling of them to it with OOP magic!
  */
 public class System : InputDevice {
 	version (Windows) {
@@ -30,7 +33,8 @@ public class System : InputDevice {
 			dchar				lastChar;
 		}
 		protected Mouse			mouse;		///Pointer to the default, non-virtual mouse.
-		protected int[2]		lastMousePos;///Last position of the mouse cursor
+		protected int[2]		lastMousePos;///Last position of the mouse cursor.
+		protected size_t		winCount;	///Window counter.
 	}
 	package this() {
 		
@@ -44,8 +48,9 @@ public class System : InputDevice {
 			int GET_Y_LPARAM(LPARAM lParam) @nogc nothrow pure {
 				return cast(int)(cast(short) HIWORD(lParam));
 			}
+			tryAgain:
 			MSG msg;
-			BOOL bret = PeekMessage(&msg, null, WM_KEYFIRST, WM_MOUSELAST, PM_REMOVE);
+			BOOL bret = PeekMessage(&msg, allAppWindows[winCount], 0, 0, PM_REMOVE);
 			if (bret) {
 				if (keyb.isTextInputEn()) {
 					TranslateMessage(&msg);
@@ -55,6 +60,7 @@ public class System : InputDevice {
 				} else {
 					output.timestamp = msg.time;
 				}
+				output.handle = allAppWindows[winCount];
 				switch (msg.message & 0xFF_FF) {
 					case WM_CHAR, WM_SYSCHAR:
 						output.type = InputEventType.TextInput;
@@ -106,7 +112,7 @@ public class System : InputDevice {
 						output.type = InputEventType.MouseMove;
 						output.source = mouse;
 						if (msg.wParam & MK_LBUTTON)
-							output.mouseME.buttons = MouseButtonFlags.Left;
+							output.mouseME.buttons |= MouseButtonFlags.Left;
 						if (msg.wParam & MK_RBUTTON)
 							output.mouseME.buttons |= MouseButtonFlags.Right;
 						if (msg.wParam & MK_MBUTTON)
@@ -122,14 +128,84 @@ public class System : InputDevice {
 						lastMousePos[0] = output.mouseME.x;
 						lastMousePos[1] = output.mouseME.y;
 						break;
-					default:
+					case WM_LBUTTONUP, WM_LBUTTONDOWN, WM_LBUTTONDBLCLK, WM_MBUTTONUP, WM_MBUTTONDOWN, WM_MBUTTONDBLCLK,
+					WM_RBUTTONUP, WM_RBUTTONDOWN, WM_RBUTTONDBLCLK, WM_XBUTTONUP, WM_XBUTTONDOWN, WM_XBUTTONDBLCLK:
+						output.type = InputEventType.MouseMove;
+						output.source = mouse;
+						output.mouseCE.x = GET_X_LPARAM(msg.lParam);
+						output.mouseCE.y = GET_Y_LPARAM(msg.lParam);
+						output.mouseCE.repeat = 0;
+						switch (msg.message & 0xFF_FF) {
+							case WM_LBUTTONUP:
+								output.mouseCE.dir = 0;
+								output.mouseCE.button = MouseButtons.Left;
+								break;
+							case WM_LBUTTONDOWN:
+								output.mouseCE.dir = 1;
+								output.mouseCE.button = MouseButtons.Left;
+								break;
+							case WM_LBUTTONDBLCLK:
+								output.mouseCE.repeat = 1;
+								goto case WM_LBUTTONDOWN;
+							case WM_RBUTTONUP:
+								output.mouseCE.dir = 0;
+								output.mouseCE.button = MouseButtons.Right;
+								break;
+							case WM_RBUTTONDOWN:
+								output.mouseCE.dir = 1;
+								output.mouseCE.button = MouseButtons.Right;
+								break;
+							case WM_RBUTTONDBLCLK:
+								output.mouseCE.repeat = 1;
+								goto case WM_RBUTTONDOWN;
+							case WM_MBUTTONUP:
+								output.mouseCE.dir = 0;
+								output.mouseCE.button = MouseButtons.Middle;
+								break;
+							case WM_MBUTTONDOWN:
+								output.mouseCE.dir = 1;
+								output.mouseCE.button = MouseButtons.Middle;
+								break;
+							case WM_MBUTTONDBLCLK:
+								output.mouseCE.repeat = 1;
+								goto case WM_MBUTTONDOWN;
+							case WM_XBUTTONUP:
+								output.mouseCE.dir = 0;
+								output.mouseCE.button = HIWORD(msg.wParam) == 1 ? MouseButtons.Next : MouseButtons.Prev;
+								break;
+							case WM_XBUTTONDOWN:
+								output.mouseCE.dir = 1;
+								output.mouseCE.button = HIWORD(msg.wParam) == 1 ? MouseButtons.Next : MouseButtons.Prev;
+								break;
+							case WM_XBUTTONDBLCLK:
+								output.mouseCE.repeat = 1;
+								goto case WM_XBUTTONDOWN;
+							default:
+
+								break;
+						}
 						break;
+					case WM_QUIT:
+						output.type = InputEventType.ApplExit;
+						output.source = this;
+						break;
+					case WM_SIZE:
+						output.type = InputEventType.WindowResize;
+						output.source = this;
+						break;
+					default:
+						goto tryAgain;
 				}
 			} else {
+				winCount++;
+				if (winCount < allAppWindows.length)
+					goto tryAgain;
+				else
+					winCount = 0;
 				return 0;
 			}
 
-			return int.init; // TODO: implement
+			return 1; // TODO: implement
 		}
 	}
 }
