@@ -1,6 +1,7 @@
 module iota.controls.types;
 
 public import iota.etc.window;
+import std.conv : to;
 /*
  * If `iota_hi_prec_timestamp` is supplied as a version identifier, then MonoTime will be used for timestamps, 
  * otherwise uint will be used.
@@ -152,6 +153,9 @@ public struct ButtonEvent {
 	ushort		aux;	///Used to identify modifier keys on keyboard, etc.
 	uint		id;		///Button ID
 	float		auxF;	///Placeholder for pressure-sensitive buttons, NaN otherwise
+	string toString() @safe pure const {
+		return "Direction: " ~ to!string(dir) ~" ; repeat: " ~ to!string(repeat) ~ " ; aux: " ~ to!string(aux) ~ " ; ID: " ~ to!string(id) ~ " ; ";
+	}
 }
 /** 
  * Defines the contents of a text input data.
@@ -166,6 +170,9 @@ public struct TextInputEvent {
 		dchar[]	text;
 	}
 	bool		isClipboard;///True if the text input originates from a clipboard event.
+	string toString() @safe pure const {
+		return "Text: \"" ~ to!string(text) ~ "\" isClipboard: " ~ to!string(isClipboard) ~ " ; "; 
+	}
 }
 /** 
  * Defines text editing command events that could happen during a text input.
@@ -182,6 +189,9 @@ public struct TextCommandEvent {
 public struct AxisEvent {
 	uint		id;		///Identifier number of the axis.
 	float		val;	///Current value of the axis (either -1.0 to 1.0 or 0.0 to 1.0)
+	string toString() @safe pure const {
+		return "ID: " ~ to!string(id)  ~ " ; val: " ~ to!string(val) ~ " ; ";
+	}
 }
 /**
  * Defines a mouse click event.
@@ -193,6 +203,9 @@ public struct MouseClickEvent {
 	ushort		button;	///Button ID
 	int			x;		///X coordinate
 	int			y;		///Y coordinate
+	string toString() @safe pure const {
+		return "Direction: " ~ to!string(dir) ~ " ; repeat: " ~ to!string(repeat) ~ " ; button: " ~ to!string(button) ~ " ; x: " ~ to!string(x) ~ " y; " ~ to!string(y) ~" ; ";
+	}
 }
 /**
  * Defines a mouse motion event with the buttons that are held down.
@@ -205,6 +218,9 @@ public struct MouseMotionEvent {
 	int			y;		///Y position of the cursor
 	int			xD;		///X amount of the motion
 	int			yD;		///Y amount of the motion
+	string toString() @safe pure const {
+		return "Buttons: " ~ to!string(buttons) ~ " ; x: " ~ to!string(x) ~ " ; y: " ~ to!string(y) ~ " ; xD: " ~ to!string(xD) ~ " ; yD " ~ to!string(yD) ~ " ; ";
+	}
 }
 /**
  * Defines a mouse scroll event.
@@ -214,6 +230,9 @@ public struct MouseScrollEvent {
 	int			yS;		///Amount of vertical scroll
 	int			x;		///X position of the cursor
 	int			y;		///Y position of the cursor
+	string toString() @safe pure const {
+		return "xS: " ~ to!string(xS) ~ " ; yS: " ~ to!string(yS) ~ " ; x: " ~ to!string(x) ~ " ; y: " to!string(y) ~ " ; ";
+	}
 }
 /**
  * Defines a pen event of a graphic tablet, screen, etc.
