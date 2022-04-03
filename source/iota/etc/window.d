@@ -57,6 +57,7 @@ public enum WindowStyleIDs {
 	MaximizeBtn,
 	PopUp,
 	Visible,
+	Default,
 }
 /** 
  * Creates a window and returns its handle, while also saving its reference for later and to safe and automatic 
@@ -74,12 +75,10 @@ public enum WindowStyleIDs {
  * library to minimize its complexity, and it's not supposed to be a GUI library. However, function `addWindow` will 
  * add any window handle to the reference counting if needed.
  */
-public WindowH createWindow(io_str_t title, int x, int y, int width, int height, WindowH parent, uint[] styleIDs) 
-		nothrow {
+public WindowH createWindow(io_str_t title, int x, int y, int width, int height, WindowH parent = null, 
+		uint[] styleIDs = [WindowStyleIDs.Default]) nothrow {
 	version (Windows) {
 		DWORD flags;
-		if (!styleIDs)
-			flags = WS_TILEDWINDOW | WS_VISIBLE;
 		foreach (uint i ; styleIDs) {
 			switch(i) {
 				case WindowStyleIDs.Border:
@@ -114,6 +113,9 @@ public WindowH createWindow(io_str_t title, int x, int y, int width, int height,
 					break;
 				case WindowStyleIDs.Visible:
 					flags |= WS_VISIBLE;
+					break;
+				case WindowStyleIDs.Default:
+					flags |= WS_TILEDWINDOW | WS_VISIBLE;
 					break;
 				default:
 					break;

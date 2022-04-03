@@ -41,8 +41,9 @@ public class Keyboard : InputDevice {
 		TextInput		=	1<<8,	///Set if text input is enabled.
 		IgnoreLLMods	=	1<<9,	///Set if lock light modifiers are to be ignored.
 	}
-	package this() {
+	package this() nothrow {
 		_type = InputDeviceType.Keyboard;
+		status |= StatusFlags.IsConnected;
 	}
 	/** 
 	 * Polls the device for events.

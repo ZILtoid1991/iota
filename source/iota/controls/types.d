@@ -127,6 +127,30 @@ public abstract class InputDevice {
 	public ubyte devNum() @nogc @safe pure nothrow const @property {
 		return _devNum;
 	}
+	/**
+	 * Returns true if the device is connected.
+	 */
+	public bool isConnected() @nogc @safe pure nothrow const @property {
+		return (status & StatusFlags.IsConnected);
+	}
+	/** 
+	 * Returns true if device got invalidated (disconnected, etc).
+	 */
+	public bool isInvalidated() @nogc @safe pure nothrow const @property {
+		return (status & StatusFlags.IsInvalidated) != 0;
+	}
+	/** 
+	 * Returns true if device has analog capabilities.
+	 */
+	public bool isAnalog() @nogc @safe pure nothrow const @property {
+		return (status & StatusFlags.IsAnalog) != 0;
+	}
+	/** 
+	 * Returns true if device is virtual, emulated, etc.
+	 */
+	public bool isVirtual() @nogc @safe pure nothrow const @property {
+		return (status & StatusFlags.IsVirtual) != 0;
+	}
 	/** 
 	 * Returns the battery percentage of the device, or ubyte.max if it doesn't have a battery.
 	 */
@@ -154,7 +178,8 @@ public struct ButtonEvent {
 	uint		id;		///Button ID
 	float		auxF;	///Placeholder for pressure-sensitive buttons, NaN otherwise
 	string toString() @safe pure const {
-		return "Direction: " ~ to!string(dir) ~" ; repeat: " ~ to!string(repeat) ~ " ; aux: " ~ to!string(aux) ~ " ; ID: " ~ to!string(id) ~ " ; ";
+		return "Direction: " ~ to!string(dir) ~" ; repeat: " ~ to!string(repeat) ~ " ; aux: " ~ to!string(aux) ~ " ; ID: " ~ 
+				to!string(id) ~ " ; ";
 	}
 }
 /** 
@@ -204,7 +229,8 @@ public struct MouseClickEvent {
 	int			x;		///X coordinate
 	int			y;		///Y coordinate
 	string toString() @safe pure const {
-		return "Direction: " ~ to!string(dir) ~ " ; repeat: " ~ to!string(repeat) ~ " ; button: " ~ to!string(button) ~ " ; x: " ~ to!string(x) ~ " y; " ~ to!string(y) ~" ; ";
+		return "Direction: " ~ to!string(dir) ~ " ; repeat: " ~ to!string(repeat) ~ " ; button: " ~ to!string(button) ~ 
+				" ; x: " ~ to!string(x) ~ " y; " ~ to!string(y) ~" ; ";
 	}
 }
 /**
@@ -219,7 +245,8 @@ public struct MouseMotionEvent {
 	int			xD;		///X amount of the motion
 	int			yD;		///Y amount of the motion
 	string toString() @safe pure const {
-		return "Buttons: " ~ to!string(buttons) ~ " ; x: " ~ to!string(x) ~ " ; y: " ~ to!string(y) ~ " ; xD: " ~ to!string(xD) ~ " ; yD " ~ to!string(yD) ~ " ; ";
+		return "Buttons: " ~ to!string(buttons) ~ " ; x: " ~ to!string(x) ~ " ; y: " ~ to!string(y) ~ " ; xD: " ~ 
+				to!string(xD) ~ " ; yD " ~ to!string(yD) ~ " ; ";
 	}
 }
 /**
@@ -231,7 +258,7 @@ public struct MouseScrollEvent {
 	int			x;		///X position of the cursor
 	int			y;		///Y position of the cursor
 	string toString() @safe pure const {
-		return "xS: " ~ to!string(xS) ~ " ; yS: " ~ to!string(yS) ~ " ; x: " ~ to!string(x) ~ " ; y: " to!string(y) ~ " ; ";
+		return "xS: " ~ to!string(xS) ~ " ; yS: " ~ to!string(yS) ~ " ; x: " ~ to!string(x) ~ " ; y: " ~ to!string(y) ~ " ; ";
 	}
 }
 /**
@@ -267,5 +294,30 @@ public struct InputEvent {
 		MouseMotionEvent	mouseME;
 		MouseScrollEvent	mouseSE;
 		PenEvent			pen;
+	}
+	string toString() {
+		string result = "Source: " ~ source.toString ~ " ; Window handle: " ~ to!string(handle) ~ " ; Timestamp: " ~ 
+				to!string(timestamp) ~ " ; Type: " ~ to!string(type) ~ " ; Rest: [";
+		switch (type) {
+			case InputEventType.Keyboard, InputEventType.GCButton:
+				result ~= button.toString();
+				break;
+			case InputEventType.TextInput:
+				result ~= textIn.toString();
+				break;
+			case InputEventType.MouseClick:
+				result ~= mouseCE.toString();
+				break;
+			case InputEventType.MouseMove:
+				result ~= mouseME.toString();
+				break;
+			case InputEventType.MouseScroll:
+				result ~= mouseSE.toString();
+				break;
+			default:
+				break;
+		}
+		result ~= "]";
+		return result;
 	}
 }

@@ -24,7 +24,7 @@ import iota.etc.window;
  */
 public class System : InputDevice {
 	version (Windows) {
-		protected Keyboard		keyb;		///Pointer to the default, non-virtual keyboard.
+		package Keyboard		keyb;		///Pointer to the default, non-virtual keyboard.
 		version (iota_use_utf8) {
 			///Character input converted to UTF-8
 			char[8]				lastChar;
@@ -32,12 +32,15 @@ public class System : InputDevice {
 			///Character input converted to UTF-32
 			dchar				lastChar;
 		}
-		protected Mouse			mouse;		///Pointer to the default, non-virtual mouse.
+		package Mouse			mouse;		///Pointer to the default, non-virtual mouse.
 		protected int[2]		lastMousePos;///Last position of the mouse cursor.
 		protected size_t		winCount;	///Window counter.
 	}
-	package this() {
-		
+	package this() nothrow {
+		version (Windows) {
+			keyb = new Keyboard();
+			mouse = new Mouse();
+		}
 	}
 	public override int poll(ref InputEvent output) @nogc nothrow {
 		version (Windows) {

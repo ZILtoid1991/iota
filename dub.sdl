@@ -6,7 +6,7 @@ license "BSL-1.0"
 targetType "library"
 dependency "bitleveld" version="*"
 libs "asound" platform="linux"
-libs "winmm" platform="windows"
+libs "winmm" "user32" platform="windows"
 subPackage {
     name "audiotest"
     sourcePaths "testsource/"
@@ -16,6 +16,12 @@ subPackage {
 subPackage {
     name "miditest"
     sourcePaths "miditest/"
+    dependency "iota" version="*"
+    targetType "executable"
+}
+subPackage {
+    name "inputtest"
+    sourcePaths "inputtest/"
     dependency "iota" version="*"
     targetType "executable"
 }
