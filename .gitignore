@@ -11,6 +11,9 @@
 *.a
 *.lib
 
+# Debug Symbols
+*.pdb
+
 # Executables
 *.exe
 iota_test

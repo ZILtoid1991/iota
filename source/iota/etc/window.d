@@ -76,8 +76,17 @@ public enum WindowStyleIDs {
  * add any window handle to the reference counting if needed.
  */
 public WindowH createWindow(io_str_t title, int x, int y, int width, int height, WindowH parent = null, 
-		uint[] styleIDs = [WindowStyleIDs.Default]) nothrow {
+		uint[] styleIDs = [WindowStyleIDs.Default]) {
 	version (Windows) {
+		LPCTSTR name = toUTF16z(title);
+		WNDCLASSEXW clsReg;
+		clsReg.cbSize = cast(UINT)WNDCLASSEXW.sizeof;
+		clsReg.lpfnWndProc = &wndprocCallback;
+		clsReg.lpszClassName = name;
+		uint clsRegResult = RegisterClassExW(&clsReg);
+		if (!clsRegResult) return null;
+
+
 		DWORD flags;
 		foreach (uint i ; styleIDs) {
 			switch(i) {
@@ -126,11 +135,9 @@ public WindowH createWindow(io_str_t title, int x, int y, int width, int height,
 		if (width == -1) width = CW_USEDEFAULT;
 		if (height == -1) height = CW_USEDEFAULT;
 		WindowH handle; 
-		try
-			handle = CreateWindowW(null, toUTF16z(title), flags, x, y, width, height, parent, null, null, null);
-		catch (Exception e) 
-			return null;
 		
+		handle = CreateWindowW(name, name, flags, x, y, width, height, parent, 
+				null, null, null);
 		if (handle)
 			allAppWindows ~= handle;
 		return handle;
@@ -154,5 +161,12 @@ public WindowH addWindowRef(WindowH ext) nothrow {
 		}
 	} catch (Exception e) {		//The count function should not throw, but still let know the user that some error have happened
 		return null;
+	}
+}
+version (Windows) {
+	///As of now, this works as a dummy function. If more functionality needed in the future, then it might become part
+	///of a class.
+	extern (Windows) LRESULT wndprocCallback(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) nothrow @system {
+		return LRESULT.init;
 	}
 }
