@@ -1,6 +1,6 @@
 module iota.controls.types;
 
-public import iota.etc.window;
+public import iota.window.base;
 import std.conv : to;
 /*
  * If `iota_hi_prec_timestamp` is supplied as a version identifier, then MonoTime will be used for timestamps, 

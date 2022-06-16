@@ -8,57 +8,9 @@ import std.utf : toUTF16z;
 import std.algorithm.searching;
 public import iota.etc.vers;
 
-public enum MessageWindowType {
-	init,
-}
-/** 
- * Implements Window handles for GUI apps.
- */
-version (Windows) {
-	alias WindowH = HWND;
-} else {
-	alias WindowH = void*;
-}
-/** 
- * Used for automatic reference counting for window handles.
- */
-public WindowH[] allAppWindows;
 
-shared static ~this() {
-	foreach (WindowH w ; allAppWindows) {
-		version (Windows)
-			DestroyWindow(w);
-	}
-}
-/** 
- * Returns the handle of the currently active Window.
- */
-public WindowH getActiveWindowH() @nogc nothrow {
-	version (Windows) {
-		return GetActiveWindow();
-	} else {
-		return null;
-	}
-}
-/** 
- * Window style identifiers.
- * These can be supplied to the createWindow function in an array, then the desired window will be created.
- */
-public enum WindowStyleIDs {
-	Border,
-	Caption,
-	Child,
-	Parent,
-	Disabled,
-	Resizable,
-	Minimized,
-	Maximized,
-	MinimizeBtn,
-	MaximizeBtn,
-	PopUp,
-	Visible,
-	Default,
-}
+
+
 /** 
  * Creates a window and returns its handle, while also saving its reference for later and to safe and automatic 
  * deallocation.
@@ -75,16 +27,16 @@ public enum WindowStyleIDs {
  * library to minimize its complexity, and it's not supposed to be a GUI library. However, function `addWindow` will 
  * add any window handle to the reference counting if needed.
  */
-public WindowH createWindow(io_str_t title, int x, int y, int width, int height, WindowH parent = null, 
+/+public WindowH createWindow(io_str_t title, int x, int y, int width, int height, WindowH parent = null, 
 		uint[] styleIDs = [WindowStyleIDs.Default]) {
 	version (Windows) {
 		LPCTSTR name = toUTF16z(title);
 		WNDCLASSEXW clsReg;
 		clsReg.cbSize = cast(UINT)WNDCLASSEXW.sizeof;
+		clsReg.style = CS_OWNDC;
 		clsReg.lpfnWndProc = &wndprocCallback;
 		clsReg.lpszClassName = name;
-		uint clsRegResult = RegisterClassExW(&clsReg);
-		if (!clsRegResult) return null;
+		RegisterClassExW(&clsReg);
 
 
 		DWORD flags;
@@ -144,14 +96,14 @@ public WindowH createWindow(io_str_t title, int x, int y, int width, int height,
 	} else {
 		return null;
 	}
-}
+}+/
 /** 
  * Adds a non-library created window handle to its references to cooperation with the library.
  * Params:
  *   ext = The window handle that needs to be added.
  * Returns: The reference, or null if either already added or an error happened.
  */
-public WindowH addWindowRef(WindowH ext) nothrow {
+/+public WindowH addWindowRef(WindowH ext) nothrow {
 	try {
 		if (!count(allAppWindows, ext)) {
 			allAppWindows ~= ext;
@@ -162,11 +114,9 @@ public WindowH addWindowRef(WindowH ext) nothrow {
 	} catch (Exception e) {		//The count function should not throw, but still let know the user that some error have happened
 		return null;
 	}
-}
+}+/
 version (Windows) {
 	///As of now, this works as a dummy function. If more functionality needed in the future, then it might become part
 	///of a class.
-	extern (Windows) LRESULT wndprocCallback(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) nothrow @system {
-		return LRESULT.init;
-	}
+	
 }

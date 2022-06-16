@@ -11,7 +11,7 @@ version (Windows) {
 import iota.controls.types;
 import iota.controls.keybscancodes : translateSC;
 import iota.etc.charcode;
-import iota.etc.window;
+import iota.window;
 
 /** 
  * Implements a class for system-wide events.
@@ -53,7 +53,7 @@ public class System : InputDevice {
 			}
 			tryAgain:
 			MSG msg;
-			BOOL bret = PeekMessage(&msg, allAppWindows[winCount], 0, 0, PM_REMOVE);
+			BOOL bret = PeekMessage(&msg, OSWindow.refCount[winCount].getHandle, 0, 0, PM_REMOVE);
 			if (bret) {
 				if (keyb.isTextInputEn()) {
 					TranslateMessage(&msg);
@@ -63,7 +63,7 @@ public class System : InputDevice {
 				} else {
 					output.timestamp = msg.time;
 				}
-				output.handle = allAppWindows[winCount];
+				output.handle = OSWindow.refCount[winCount].getHandle;
 				switch (msg.message & 0xFF_FF) {
 					case WM_CHAR, WM_SYSCHAR:
 						output.type = InputEventType.TextInput;
@@ -201,7 +201,7 @@ public class System : InputDevice {
 				}
 			} else {
 				winCount++;
-				if (winCount < allAppWindows.length)
+				if (winCount < OSWindow.refCount.length)
 					goto tryAgain;
 				else
 					winCount = 0;
