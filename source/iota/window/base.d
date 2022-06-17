@@ -44,8 +44,13 @@ public class OSWindow {
 		///Stores registered class info. Each window has its own registered class by default.
 		protected WNDCLASSEXW		registeredClass;
 		protected ATOM				regClResult;
+		///hInstance is reference counted here instead of using various workarounds to get it.
+		public static HINSTANCE	mainInst;
 		shared static this() {
-			//hInstance = GetModuleHandle(null);
+			//NOTE: This is not the proper way of doing stuff like this.
+			//However, this way we can possibly eliminate the need for use of `WinMain` and might also piss off some
+			//people at Microsoft.
+			mainInst = GetModuleHandle(null);
 		}
 	}
 	/** 
@@ -81,7 +86,6 @@ public class OSWindow {
 	public this(io_str_t title, io_str_t name, int x, int y, int w, int h, ulong flags, WindowIcon icon = null, 
 			WindowMenu menu = null, OSWindow parent = null) {
 		version (Windows) {
-			import iota.etc.osentry;
 			registeredClass.cbSize = WNDCLASSEXW.sizeof;
 			registeredClass.style = 32_769;
 			registeredClass.hInstance = mainInst;
@@ -135,6 +139,9 @@ public class OSWindow {
 				throw new WindowCreationException("Failed to create window!", errorCode);
 			}
 			refCount ~= this;
+			SetLayeredWindowAttributes(windowHandle, 0, 0xFF, LWA_ALPHA);
+			ShowWindow(windowHandle, SW_SHOW);
+			UpdateWindow(windowHandle);
 		}
 	}
 	protected this(WindowH hndl) {
@@ -142,16 +149,9 @@ public class OSWindow {
 	}
 
 	~this() {
-		import std.algorithm.searching : countUntil;
-		import std.algorithm.mutation : remove;
-		synchronized {
-			
-			ptrdiff_t pos = countUntil(refCount, this);
-			if (pos != -1) {
-				refCount = remove(refCount, pos);
-			}
-			version (Windows)
+		version (Windows) {
 			DestroyWindow(windowHandle);
+			UnregisterClassW(registeredClass.lpszClassName, mainInst);
 		}
 	}
 	public bool opEquals(OSWindow rhs) const {
@@ -163,6 +163,10 @@ public class OSWindow {
 	public WindowH getHandle() @nogc @safe pure nothrow {
 		return windowHandle;
 	}
+	/** 
+	 * Callback function for windowing. Can be overridden to process more messages than by default.
+	 * See Microsoft documentation for details on return value and parameters.
+	 */
 	version (Windows)
 	protected LRESULT wndCallback(UINT msg, WPARAM wParam, LPARAM lParam) nothrow @system {
 		switch (msg) {

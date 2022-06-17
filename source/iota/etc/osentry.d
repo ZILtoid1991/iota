@@ -8,10 +8,9 @@ module iota.etc.osentry;
  */
 
 version (Windows) {
-	alias iota_cmd_arg_t = wstring[];
+	//alias iota_cmd_arg_t = wstring[];
 	import core.sys.windows.windows;
-	///hInstance is reference counted here instead of using various workarounds to get it.
-	public static HINSTANCE	mainInst;
+	
 	///Creates a generic entry point with no command line arguments.
 	static enum string IOTA_OSENTRY = q{
 		import core.runtime;
