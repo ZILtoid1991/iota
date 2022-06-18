@@ -2,6 +2,7 @@ module iota.controls.types;
 
 public import iota.window.base;
 import std.conv : to;
+import std.bitmanip : bitfields;
 /*
  * If `iota_hi_prec_timestamp` is supplied as a version identifier, then MonoTime will be used for timestamps, 
  * otherwise uint will be used.
@@ -189,12 +190,17 @@ public struct ButtonEvent {
  * it out will make UTF32 as the standard
  */
 public struct TextInputEvent {
-	version (iota_use_utf8) {
-		char[]	text;
-	} else {
-		dchar[]	text;
-	}
-	bool		isClipboard;///True if the text input originates from a clipboard event.
+	version (iota_use_utf8)
+		static enum CHARS_PER_PACKAGE = 16;
+	else
+		static enum CHARS_PER_PACKAGE = 4;
+	///The characters 
+	io_chr_t[CHARS_PER_PACKAGE] text;
+	mixin(bitfields!(
+			bool, "isClipboard",	1,	///True if the text input originates from a clipboard event.
+			uint, "language",		31	///Input language code
+	));
+	//bool		isClipboard;///True if the text input originates from a clipboard event.
 	string toString() @safe pure const {
 		return "Text: \"" ~ to!string(text) ~ "\" isClipboard: " ~ to!string(isClipboard) ~ " ; "; 
 	}

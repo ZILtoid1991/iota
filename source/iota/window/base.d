@@ -16,6 +16,17 @@ public import iota.etc.vers;
  * Other window types supported by this library are inherited from this class.
  */
 public class OSWindow {
+	public enum Status {
+		Quit,
+		Minimize,
+		Maximize,
+		Move,
+		MoveEnded,
+		Resize,
+		ResizeEnded,
+		InputLangCh,
+		InputLangChReq,
+	}
 	/** 
 	 * Used for reference counting purposes.
 	 * External keys should be added to it with function `addRef()`.
@@ -23,6 +34,9 @@ public class OSWindow {
 	public static OSWindow[]	refCount;
 	///Handle to the window. Used for both automatic reference counting and for arguments in the I/O system.
 	protected WindowH			windowHandle;
+	///Contains various statusflags of the window.
+	protected uint				statusFlags;
+
 	version (Windows) {
 		///Various calls from the OS are redirected to here, so then it can be used for certain types of event processing.
 		///TODO: implement various window events (menu, drag-and-drop, etc)
@@ -44,8 +58,12 @@ public class OSWindow {
 		///Stores registered class info. Each window has its own registered class by default.
 		protected WNDCLASSEXW		registeredClass;
 		protected ATOM				regClResult;
-		///hInstance is reference counted here instead of using various workarounds to get it.
+		///hInstance is stored here, which is needed for window creation, etc.
+		///NOTE: This is Windows exclusive, and won't be accessable under other OSes.
 		public static HINSTANCE	mainInst;
+		///The current input language code (Windows).
+		///Stored here due to ease of access.
+		public static uint		inputLang;
 		shared static this() {
 			//NOTE: This is not the proper way of doing stuff like this.
 			//However, this way we can possibly eliminate the need for use of `WinMain` and might also piss off some
@@ -154,8 +172,12 @@ public class OSWindow {
 			UnregisterClassW(registeredClass.lpszClassName, mainInst);
 		}
 	}
-	public bool opEquals(OSWindow rhs) const {
+	public bool opEquals(OSWindow rhs) const @nogc @safe pure nothrow {
 		return windowHandle == rhs.windowHandle;
+	}
+	///Just to make the scanner happy...
+	public override size_t toHash() const @nogc @safe pure nothrow {
+		return cast(size_t)windowHandle;
 	}
 	/**  
 	 * Returns the handle of this window.
@@ -179,6 +201,27 @@ public class OSWindow {
 			case WM_DESTROY, WM_NCDESTROY:
 				return 0;
 			case WM_QUIT:
+				statusFlags = Status.Quit;
+				return 0;
+			case WM_MOVE:
+				statusFlags = Status.MoveEnded;
+				return 0;
+			case WM_MOVING:
+				statusFlags = Status.Move;
+				return 0;
+			case WM_SIZE:
+				statusFlags = Status.ResizeEnded;
+				return 0;
+			case WM_SIZING:
+				statusFlags = Status.Resize;
+				return 0;
+			case WM_INPUTLANGCHANGEREQUEST:
+				statusFlags = Status.InputLangChReq;
+				inputLang = cast(uint)lParam;
+				return 0;
+			case WM_INPUTLANGCHANGE:
+				statusFlags = Status.InputLangCh;
+				inputLang = cast(uint)lParam;
 				return 0;
 			default:
 				return LRESULT.init;

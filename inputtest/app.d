@@ -11,8 +11,19 @@ version (Windows) {
 }
 
 int main(string[] args) {
-    OSWindow inputSurface = new OSWindow("Iota input test", "inputSurface", 0, 0, 640, 480, WindowStyleIDs.Visible | 
+    OSWindow inputSurface = new OSWindow("Iota input test", "inputSurface", 640, 480, 640, 480, WindowStyleIDs.Default | 
             WindowStyleIDs.AppWindow);
-    Thread.sleep(msecs(10000));
+    Thread.sleep(msecs(10_000));
+    initInput();
+    bool isRunning = true;
+    while (isRunning) {
+        InputEvent event;
+        pollInputs(event);
+        if (event.type == InputEventType.ApplExit) {
+            isRunning = false;
+        } else {
+            writeln(event.toString());
+        }
+    }
     return 0;
 }

@@ -8,6 +8,7 @@ version (Windows) {
 }
 /** 
  * Defines keyboard modifiers.
+ * `Meta` is an OS-agnostic name for Windows, Command, etc. keys.
  */
 public enum KeyboardModifiers : ubyte {
 	init,
@@ -22,7 +23,7 @@ public enum KeyboardModifiers : ubyte {
 }
 /** 
  * Defines keyboard locklight flags.
- * Both `Compose` and `Kana` exist within USB HID specifications, however they not necessarily are implemented whithin
+ * Both `Compose` and `Kana` exist within USB HID specifications, however they not necessarily are implemented within
  * OS API. Same with the now obsolete Scroll Lock.
  */
 public enum KeyboardLocklights : ubyte {

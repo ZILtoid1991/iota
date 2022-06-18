@@ -27,7 +27,7 @@ public class System : InputDevice {
 		package Keyboard		keyb;		///Pointer to the default, non-virtual keyboard.
 		version (iota_use_utf8) {
 			///Character input converted to UTF-8
-			char[8]				lastChar;
+			char[4]				lastChar;
 		} else {
 			///Character input converted to UTF-32
 			dchar				lastChar;
@@ -70,10 +70,10 @@ public class System : InputDevice {
 						output.source = keyb;
 						version (iota_use_utf8) {
 							lastChar[0] = cast(char)(msg.wParam);
-							output.textIn.text = lastChar[0..1];
+							output.textIn.text[0] = lastChar[0];
 						} else {
 							lastChar = cast(dchar)(msg.wParam);
-							output.textIn.text = (&lastChar)[0..1];
+							output.textIn.text[0] = lastChar;
 						}
 						output.textIn.isClipboard = false;
 						break;
@@ -81,10 +81,10 @@ public class System : InputDevice {
 						output.type = InputEventType.TextInput;
 						output.source = keyb;
 						version (iota_use_utf8) {
-							
+							lastChar = encodeUTF8Char(cast(dchar)(msg.wParam));
 						} else {
 							lastChar = cast(dchar)(msg.wParam);
-							output.textIn.text = (&lastChar)[0..1];
+							output.textIn.text[0] = lastChar;
 						}
 						output.textIn.isClipboard = false;
 						break;
@@ -200,6 +200,8 @@ public class System : InputDevice {
 						goto tryAgain;
 				}
 			} else {
+				//Check for window events
+				
 				winCount++;
 				if (winCount < OSWindow.refCount.length)
 					goto tryAgain;
@@ -208,7 +210,7 @@ public class System : InputDevice {
 				return 0;
 			}
 
-			return 1; // TODO: implement
+			return 1;
 		}
 	}
 }
