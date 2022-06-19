@@ -1,6 +1,6 @@
 module iota.controls.types;
 
-public import iota.window.base;
+public import iota.window.oswindow;
 import std.conv : to;
 import std.bitmanip : bitfields;
 /*
@@ -54,6 +54,7 @@ public enum InputEventType {
 	WindowMaximize,
 	WindowRestore,
 	WindowMove,
+	InputLangChange,
 	ApplExit,
 }
 /** 
@@ -302,8 +303,9 @@ public struct InputEvent {
 		PenEvent			pen;
 	}
 	string toString() {
-		string result = "Source: " ~ source.toString ~ " ; Window handle: " ~ to!string(handle) ~ " ; Timestamp: " ~ 
-				to!string(timestamp) ~ " ; Type: " ~ to!string(type) ~ " ; Rest: [";
+		string result = "Source: " ~ (source is null ? "null" : source.toString) ~ " ; Window handle: " ~ 
+				to!string(cast(size_t)handle) ~ " ; Timestamp: " ~ to!string(timestamp) ~ " ; Type: " ~ to!string(type) ~ 
+				" ; Rest: [";
 		switch (type) {
 			case InputEventType.Keyboard, InputEventType.GCButton:
 				result ~= button.toString();

@@ -41,6 +41,11 @@ public class Keyboard : InputDevice {
 	enum KeyboardFlags : ushort {
 		TextInput		=	1<<8,	///Set if text input is enabled.
 		IgnoreLLMods	=	1<<9,	///Set if lock light modifiers are to be ignored.
+		//~~~Fixes one of the greatest mistakes of deciding what the Alt key should do~~~
+		///Set if "open menubar on alt key" is disabled.
+		MenuKeyFix		=	1<<10,	
+		DisableMetaKey	=	1<<11,	///Disables meta key passthrough to OS
+		DisableMetaKeyComb=	1<<11,	///Disables meta key shortcut passthrough to OS
 	}
 	package this() nothrow {
 		_type = InputDeviceType.Keyboard;
@@ -87,16 +92,46 @@ public class Keyboard : InputDevice {
 			status &= ~KeyboardFlags.IgnoreLLMods;
 		return isIgnoringLockLights();
 	}
+	public final bool isMenuKeyDisabled() @property @nogc @safe pure nothrow const {
+		return (status & KeyboardFlags.MenuKeyFix) != 0;
+	}
+	public bool setMenuKeyDisabled(bool val) @property @nogc @safe pure nothrow {
+		if (val)
+			status |= KeyboardFlags.MenuKeyFix;
+		else
+			status &= ~KeyboardFlags.MenuKeyFix;
+		return isMenuKeyDisabled();
+	}
+	public final bool isMetaKeyDisabled() @property @nogc @safe pure nothrow const {
+		return (status & KeyboardFlags.DisableMetaKey) != 0;
+	}
+	public bool setMetaKeyDisabled(bool val) @property @nogc @safe pure nothrow {
+		if (val)
+			status |= KeyboardFlags.DisableMetaKey;
+		else
+			status &= ~KeyboardFlags.DisableMetaKey;
+		return isMetaKeyDisabled();
+	}
+	public final bool isMetaKeyCombDisabled() @property @nogc @safe pure nothrow const {
+		return (status & KeyboardFlags.DisableMetaKeyComb) != 0;
+	}
+	public bool setMetaKeyCombDisabled(bool val) @property @nogc @safe pure nothrow {
+		if (val)
+			status |= KeyboardFlags.DisableMetaKeyComb;
+		else
+			status &= ~KeyboardFlags.DisableMetaKeyComb;
+		return isMenuKeyDisabled();
+	}
 	public ubyte getModifiers() @nogc nothrow {
 		ubyte result;
 		version (Windows) {
-			if (GetKeyState(VK_SHIFT))
+			if (GetAsyncKeyState(VK_SHIFT))
 				result |= KeyboardModifiers.Shift;
-			if (GetKeyState(VK_CONTROL))
+			if (GetAsyncKeyState(VK_CONTROL))
 				result |= KeyboardModifiers.Ctrl;
-			if (GetKeyState(VK_MENU))
+			if (GetAsyncKeyState(VK_MENU))
 				result |= KeyboardModifiers.Alt;
-			if (GetKeyState(VK_LWIN) | GetKeyState(VK_RWIN))
+			if (GetAsyncKeyState(VK_LWIN) | GetAsyncKeyState(VK_RWIN))
 				result |= KeyboardModifiers.Meta;
 			if (!isIgnoringLockLights()) {
 				if (GetKeyState(VK_NUMLOCK))

@@ -7,6 +7,7 @@ version (Windows) {
 	import iota.controls.keyboard;
 	import iota.controls.mouse;
 	import std.utf;
+	import std.stdio;
 }
 import iota.controls.types;
 import iota.controls.keybscancodes : translateSC;
@@ -18,9 +19,6 @@ import iota.window;
  *
  * Under Windows, this class also handles keyboard and mouse inputs, because of Microsoft of course (Why? You did great
  * with WASAPI and relatively good with MIDI!)
- *
- * Note: Polling might suck up some more advanced windowing-related events. If they really needed, then just add 
- * handling of them to it with OOP magic!
  */
 public class System : InputDevice {
 	version (Windows) {
@@ -53,10 +51,20 @@ public class System : InputDevice {
 			}
 			tryAgain:
 			MSG msg;
-			BOOL bret = PeekMessage(&msg, OSWindow.refCount[winCount].getHandle, 0, 0, PM_REMOVE);
+			//BOOL bret = PeekMessage(&msg, OSWindow.refCount[winCount].getHandle, 0, 0, PM_REMOVE);
+			BOOL bret = GetMessageW(&msg, OSWindow.refCount[winCount].getHandle, 0, 0);
 			if (bret) {
 				if (keyb.isTextInputEn()) {
 					TranslateMessage(&msg);
+				}
+				auto message = msg.message & 0xFF_FF;
+				//Dispatch all enabled messages to window first, so things will be easier later on.
+				if (!(keyb.isMenuKeyDisabled() && (message == WM_SYSKEYDOWN || message == WM_SYSKEYUP)) || 
+						(keyb.isMetaKeyDisabled() && (message == WM_KEYDOWN || message == WM_KEYUP) && (msg.wParam == VK_LWIN 
+						|| msg.wParam == VK_RWIN)) ||
+						(keyb.isMetaKeyCombDisabled() && (message == WM_KEYDOWN || message == WM_KEYUP) && 
+						(keyb.getModifiers | KeyboardModifiers.Meta))) {
+					DispatchMessageW(&msg);
 				}
 				version (iota_hi_prec_timestamp) {
 					output.timestamp = MonoTime.currTime();
@@ -91,7 +99,7 @@ public class System : InputDevice {
 					case WM_KEYDOWN, WM_KEYUP, WM_SYSKEYDOWN, WM_SYSKEYUP:
 						output.type = InputEventType.Keyboard;
 						output.source = keyb;
-						if ((msg.message & 0xFF_FF) == WM_KEYDOWN || (msg.message & 0xFF_FF) == WM_SYSKEYDOWN)
+						if (message == WM_KEYDOWN || message == WM_SYSKEYDOWN)
 							output.button.dir = 1;
 						else
 							output.button.dir = 0;
@@ -102,7 +110,7 @@ public class System : InputDevice {
 					case 0x020E , WM_MOUSEWHEEL:
 						output.type = InputEventType.MouseScroll;
 						output.source = mouse;
-						if ((msg.message & 0xFF_FF) == 0x020E)
+						if (message == 0x020E)
 							output.mouseSE.xS = GET_WHEEL_DELTA_WPARAM(msg.wParam);
 						else
 							output.mouseSE.yS = GET_WHEEL_DELTA_WPARAM(msg.wParam);
@@ -133,7 +141,7 @@ public class System : InputDevice {
 						break;
 					case WM_LBUTTONUP, WM_LBUTTONDOWN, WM_LBUTTONDBLCLK, WM_MBUTTONUP, WM_MBUTTONDOWN, WM_MBUTTONDBLCLK,
 					WM_RBUTTONUP, WM_RBUTTONDOWN, WM_RBUTTONDBLCLK, WM_XBUTTONUP, WM_XBUTTONDOWN, WM_XBUTTONDBLCLK:
-						output.type = InputEventType.MouseMove;
+						output.type = InputEventType.MouseClick;
 						output.source = mouse;
 						output.mouseCE.x = GET_X_LPARAM(msg.lParam);
 						output.mouseCE.y = GET_Y_LPARAM(msg.lParam);
@@ -188,20 +196,43 @@ public class System : InputDevice {
 								break;
 						}
 						break;
-					case WM_QUIT:
-						output.type = InputEventType.ApplExit;
+					
+					case WM_MOVING, WM_MOVE:
+						output.type = InputEventType.WindowMove;
 						output.source = this;
 						break;
-					case WM_SIZE:
+					case WM_SIZING, WM_SIZE:
 						output.type = InputEventType.WindowResize;
 						output.source = this;
 						break;
 					default:
-						goto tryAgain;
+						//check for window status
+						output.source = this;
+						final switch (OSWindow.refCount[winCount].getWindowStatus) with (OSWindow.Status) {
+							case init: break;
+							case Quit: 
+								output.type = InputEventType.WindowClose;
+								break;
+							case Minimize: 
+								output.type = InputEventType.WindowMinimize;
+								break;
+							case Maximize: 
+								output.type = InputEventType.WindowMaximize;
+								break;
+							case Move, MoveEnded: 
+								output.type = InputEventType.WindowMove;
+								break;
+							case Resize, ResizeEnded: 
+								output.type = InputEventType.WindowResize;
+								break;
+							case InputLangCh: 
+								output.type = InputEventType.InputLangChange;
+								break;
+							case InputLangChReq: break;
+						}
+						break;
 				}
 			} else {
-				//Check for window events
-				
 				winCount++;
 				if (winCount < OSWindow.refCount.length)
 					goto tryAgain;

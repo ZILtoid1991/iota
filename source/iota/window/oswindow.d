@@ -1,4 +1,4 @@
-module iota.window.base;
+module iota.window.oswindow;
 
 version (Windows) {
 	import core.sys.windows.windows;
@@ -9,6 +9,7 @@ version (Windows) {
 public import iota.window.types;
 public import iota.window.exception;
 public import iota.etc.vers;
+import std.algorithm.mutation : remove;
 //import collections.treemap;
 
 /** 
@@ -17,6 +18,7 @@ public import iota.etc.vers;
  */
 public class OSWindow {
 	public enum Status {
+		init,
 		Quit,
 		Minimize,
 		Maximize,
@@ -35,17 +37,18 @@ public class OSWindow {
 	///Handle to the window. Used for both automatic reference counting and for arguments in the I/O system.
 	protected WindowH			windowHandle;
 	///Contains various statusflags of the window.
-	protected uint				statusFlags;
+	protected Status			statusFlags;
 
 	version (Windows) {
 		///Various calls from the OS are redirected to here, so then it can be used for certain types of event processing.
 		///TODO: implement various window events (menu, drag-and-drop, etc)
 		static extern (Windows) LRESULT wndprocCallback(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) nothrow @system {
+			//return DefWindowProcW(hWnd, msg, wParam, lParam);
 			switch (msg) {
-				case WM_CREATE:
-					return 0;
-				case WM_NCCREATE:
-					return TRUE;
+				case WM_CREATE, WM_NCCREATE:
+					return DefWindowProcW(hWnd, msg, wParam, lParam);
+				/+case WM_NCCREATE:
+					DefWindowProcW(windowHandle, msg, wParam, lParam);+/
 				default:
 					foreach (OSWindow key; refCount) {
 						if (key.getHandle() == hWnd)
@@ -58,6 +61,7 @@ public class OSWindow {
 		///Stores registered class info. Each window has its own registered class by default.
 		protected WNDCLASSEXW		registeredClass;
 		protected ATOM				regClResult;
+		protected LPCWSTR			classname, windowname;
 		///hInstance is stored here, which is needed for window creation, etc.
 		///NOTE: This is Windows exclusive, and won't be accessable under other OSes.
 		public static HINSTANCE	mainInst;
@@ -80,9 +84,9 @@ public class OSWindow {
 	 */
 	public static int addRef(WindowH hndl) {
 		import std.algorithm.searching : count;
-		OSWindow newRef = new OSWindow(hndl);
-		if (!count(refCount, newRef)) {
-			refCount ~= newRef;
+		//OSWindow newRef = new OSWindow(hndl);
+		if (!count(refCount, hndl)) {
+			refCount ~= new OSWindow(hndl);
 			return 0;
 		} else {
 			return 1;
@@ -105,10 +109,10 @@ public class OSWindow {
 			WindowMenu menu = null, OSWindow parent = null) {
 		version (Windows) {
 			registeredClass.cbSize = WNDCLASSEXW.sizeof;
-			registeredClass.style = 32_769;
+			registeredClass.style = CS_HREDRAW | CS_VREDRAW;
 			registeredClass.hInstance = mainInst;
 			registeredClass.lpfnWndProc = &wndprocCallback;
-			LPCWSTR classname = toUTF16z(name);
+			classname = toUTF16z(name);
 			registeredClass.lpszClassName = classname;
 			regClResult = RegisterClassExW(&registeredClass);
 			if (!regClResult) {
@@ -146,7 +150,12 @@ public class OSWindow {
 				dwExStyle |= WS_EX_ACCEPTFILES;
 			if (flags & WindowStyleIDs.ContextHelp)
 				dwExStyle |= WS_EX_CONTEXTHELP;
-			const LPWSTR windowname = toUTF16z(title);
+			
+			if (x <= 0) x = CW_USEDEFAULT;
+			if (y <= 0) y = CW_USEDEFAULT;
+			if (w <= 0) w = CW_USEDEFAULT;
+			if (h <= 0) h = CW_USEDEFAULT;
+			windowname = toUTF16z(title);
 			HWND parentHndl = null;
 			if (parent !is null)
 				parentHndl = parent.getHandle();
@@ -158,7 +167,7 @@ public class OSWindow {
 			}
 			refCount ~= this;
 			SetLayeredWindowAttributes(windowHandle, 0, 0xFF, LWA_ALPHA);
-			ShowWindow(windowHandle, SW_SHOW);
+			ShowWindow(windowHandle, SW_RESTORE);
 			UpdateWindow(windowHandle);
 		}
 	}
@@ -175,6 +184,9 @@ public class OSWindow {
 	public bool opEquals(OSWindow rhs) const @nogc @safe pure nothrow {
 		return windowHandle == rhs.windowHandle;
 	}
+	public bool opEquals(WindowH rhs) const @nogc @safe pure nothrow {
+		return windowHandle == rhs;
+	}
 	///Just to make the scanner happy...
 	public override size_t toHash() const @nogc @safe pure nothrow {
 		return cast(size_t)windowHandle;
@@ -185,6 +197,17 @@ public class OSWindow {
 	public WindowH getHandle() @nogc @safe pure nothrow {
 		return windowHandle;
 	}
+	public Status getWindowStatus() @nogc @safe pure nothrow {
+		Status result = statusFlags;
+		statusFlags = Status.init;
+		return result;
+	}
+	public void maximizeWindow() {
+		ShowWindow(windowHandle, SW_MAXIMIZE);
+	}
+	public void minimizeWindow() {
+		ShowWindow(windowHandle, SW_MINIMIZE);
+	}
 	/** 
 	 * Callback function for windowing. Can be overridden to process more messages than by default.
 	 * See Microsoft documentation for details on return value and parameters.
@@ -192,39 +215,52 @@ public class OSWindow {
 	version (Windows)
 	protected LRESULT wndCallback(UINT msg, WPARAM wParam, LPARAM lParam) nothrow @system {
 		switch (msg) {
-			case WM_CREATE:
-				return 0;
-			case WM_NCCREATE:
-				return TRUE;
 			case WM_NCACTIVATE:
-				return FALSE;
+				goto default;//return FALSE;
 			case WM_DESTROY, WM_NCDESTROY:
+				return 0;
+			case WM_CLOSE:
+				statusFlags = Status.Quit;
 				return 0;
 			case WM_QUIT:
 				statusFlags = Status.Quit;
-				return 0;
+				goto default;
 			case WM_MOVE:
 				statusFlags = Status.MoveEnded;
-				return 0;
+				goto default;
 			case WM_MOVING:
 				statusFlags = Status.Move;
-				return 0;
+				goto default;
 			case WM_SIZE:
 				statusFlags = Status.ResizeEnded;
-				return 0;
+				goto default;
 			case WM_SIZING:
 				statusFlags = Status.Resize;
-				return 0;
+				goto default;
 			case WM_INPUTLANGCHANGEREQUEST:
 				statusFlags = Status.InputLangChReq;
 				inputLang = cast(uint)lParam;
-				return 0;
+				goto default;
 			case WM_INPUTLANGCHANGE:
 				statusFlags = Status.InputLangCh;
 				inputLang = cast(uint)lParam;
-				return 0;
+				goto default;
+			case WM_PAINT:
+				PAINTSTRUCT ps;
+				RECT rc;
+				HDC hdc = BeginPaint(windowHandle, &ps);
+				GetClientRect(windowHandle, &rc);
+				FillRect(hdc, &rc, cast(HBRUSH)(COLOR_WINDOW));
+				DrawFrameControl(hdc, &rc, DFC_CAPTION, 0);
+				EndPaint(windowHandle, &ps);
+				goto default;
+			/* case WM_NCCALCSIZE:			
+				if (wParam)
+					return 0x30;
+				else
+					return 0; */
 			default:
-				return LRESULT.init;
+				return DefWindowProcW(windowHandle, msg, wParam, lParam);
 		}
 	}
 }
