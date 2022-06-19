@@ -7,11 +7,11 @@ Input-output (audio, controls, etc) library for D. Intended as a D language nati
 |--------------------------|------------------------------------|------------------------------------|
 |Audio                     |Preliminary, output stream works    |Output works + some issues          |
 |MIDI                      |Input+Output, with some caveat      |Not yet implemented                 |
-|Keyboard                  |Not yet implemented                 |Not yet implemented                 |
-|Mouse                     |Not yet implemented                 |Not yet implemented                 |
+|Keyboard                  |Works                               |Not yet implemented                 |
+|Mouse                     |Works                               |Not yet implemented                 |
 |Pen Tablet                |Not yet implemented                 |Not yet implemented                 |
 |Game controllers          |Not yet implemented                 |Not yet implemented                 |
-|Windowing                 |For testing purposes only           |Not yet implemented                 |
+|Windowing                 |A bit buggy                         |Not yet implemented                 |
 
 MacOSX is not supported due to lack of hardware.
 
