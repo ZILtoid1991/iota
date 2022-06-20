@@ -13,7 +13,7 @@ Input-output (audio, controls, etc) library for D. Intended as a D language nati
 |Game controllers          |Not yet implemented                 |Not yet implemented                 |
 |Windowing                 |A bit buggy                         |Not yet implemented                 |
 
-MacOSX is not supported due to lack of hardware.
+MacOSX is not yet supported due to lack of hardware. Please consider contributing to this project!
 
 ## Audio
 

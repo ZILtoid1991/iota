@@ -17,6 +17,7 @@ import std.algorithm.mutation : remove;
  * Other window types supported by this library are inherited from this class.
  */
 public class OSWindow {
+	///Defines Window status values, also used on Windows for event handling.
 	public enum Status {
 		init,
 		Quit,
@@ -29,6 +30,14 @@ public class OSWindow {
 		InputLangCh,
 		InputLangChReq,
 	}
+	public struct DrawParams {
+		version (Windows) {
+			HWND hWnd;
+			UINT msg;
+			WPARAM wParam;
+			LPARAM lParam;
+		}
+	}
 	/** 
 	 * Used for reference counting purposes.
 	 * External keys should be added to it with function `addRef()`.
@@ -38,7 +47,10 @@ public class OSWindow {
 	protected WindowH			windowHandle;
 	///Contains various statusflags of the window.
 	protected Status			statusFlags;
-
+	///Delegate called when a draw request is sent to the class.
+	///It can intercept it for various reasons, but this is not OS independent, and so far no drawing API is planned 
+	///that uses OS provided functions. 
+	public nothrow @system void delegate(DrawParams params) drawDeleg;
 	version (Windows) {
 		///Various calls from the OS are redirected to here, so then it can be used for certain types of event processing.
 		///TODO: implement various window events (menu, drag-and-drop, etc)
