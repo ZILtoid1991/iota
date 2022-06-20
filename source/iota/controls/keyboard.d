@@ -82,9 +82,15 @@ public class Keyboard : InputDevice {
 			status &= ~KeyboardFlags.TextInput;
 		return isTextInputEn();
 	}
+	/**
+	 * Returns true if locklight modifiers are ignored.
+	 */
 	public final bool isIgnoringLockLights() @property @nogc @safe pure nothrow const {
 		return (status & KeyboardFlags.IgnoreLLMods) != 0;
 	}
+	/**
+	 * Sets locklight ignoring behavior.
+	 */
 	public bool setIgnoreLockLights(bool val) @property @nogc @safe pure nothrow {
 		if (val)
 			status |= KeyboardFlags.IgnoreLLMods;
@@ -92,9 +98,17 @@ public class Keyboard : InputDevice {
 			status &= ~KeyboardFlags.IgnoreLLMods;
 		return isIgnoringLockLights();
 	}
+	/**
+	 * Returns true if menu key (Alt and F10 on Windows) behavior is disabled.
+	 * If disabled, these keys won't open the menu bar of a Window.
+	 */
 	public final bool isMenuKeyDisabled() @property @nogc @safe pure nothrow const {
 		return (status & KeyboardFlags.MenuKeyFix) != 0;
 	}
+	/**
+	 * Disables menu key (Alt and F10 on Windows) behavior.
+	 * If disabled, these keys won't open the menu bar of a Window.
+	 */
 	public bool setMenuKeyDisabled(bool val) @property @nogc @safe pure nothrow {
 		if (val)
 			status |= KeyboardFlags.MenuKeyFix;
@@ -102,9 +116,16 @@ public class Keyboard : InputDevice {
 			status &= ~KeyboardFlags.MenuKeyFix;
 		return isMenuKeyDisabled();
 	}
+	/**
+	 * Returns true if single meta key presses are not passed to the OS.
+	 */
 	public final bool isMetaKeyDisabled() @property @nogc @safe pure nothrow const {
 		return (status & KeyboardFlags.DisableMetaKey) != 0;
 	}
+	/**
+	 * If set true, single meta key presses won't be passed to the OS.
+	 * NOTE: May disable combinations too.
+	 */
 	public bool setMetaKeyDisabled(bool val) @property @nogc @safe pure nothrow {
 		if (val)
 			status |= KeyboardFlags.DisableMetaKey;
@@ -122,6 +143,9 @@ public class Keyboard : InputDevice {
 			status &= ~KeyboardFlags.DisableMetaKeyComb;
 		return isMenuKeyDisabled();
 	}
+	/**
+	 * Returns the currently active modifier keys.
+	 */
 	public ubyte getModifiers() @nogc nothrow {
 		ubyte result;
 		version (Windows) {
