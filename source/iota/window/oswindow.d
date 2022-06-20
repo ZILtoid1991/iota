@@ -181,9 +181,15 @@ public class OSWindow {
 			UnregisterClassW(registeredClass.lpszClassName, mainInst);
 		}
 	}
+	/**
+	 * Compares two classes to each other.
+	 */
 	public bool opEquals(OSWindow rhs) const @nogc @safe pure nothrow {
 		return windowHandle == rhs.windowHandle;
 	}
+	/**
+	 * Compares a class to a Window handle.
+	 */
 	public bool opEquals(WindowH rhs) const @nogc @safe pure nothrow {
 		return windowHandle == rhs;
 	}
@@ -202,9 +208,15 @@ public class OSWindow {
 		statusFlags = Status.init;
 		return result;
 	}
+	/**
+	 * Manually maximizes the window from code.
+	 */
 	public void maximizeWindow() {
 		ShowWindow(windowHandle, SW_MAXIMIZE);
 	}
+	/**
+	 * Manually minimizes the window from code.
+	 */
 	public void minimizeWindow() {
 		ShowWindow(windowHandle, SW_MINIMIZE);
 	}
