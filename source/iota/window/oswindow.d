@@ -51,6 +51,7 @@ public class OSWindow {
 	///It can intercept it for various reasons, but this is not OS independent, and so far no drawing API is planned 
 	///that uses OS provided functions. 
 	public nothrow @system void delegate(DrawParams params) drawDeleg;
+	public nothrow @system void delegate(DrawParams params) frameDrawDeleg;
 	version (Windows) {
 		///Various calls from the OS are redirected to here, so then it can be used for certain types of event processing.
 		///TODO: implement various window events (menu, drag-and-drop, etc)
@@ -68,6 +69,15 @@ public class OSWindow {
 					}
 					return LRESULT.init;
 			}
+		}
+		debug public void testDraw(DrawParams params) @system nothrow {
+			PAINTSTRUCT ps;
+			RECT rc;
+			HDC hdc = BeginPaint(windowHandle, &ps);
+			GetClientRect(windowHandle, &rc);
+			FillRect(hdc, &rc, cast(HBRUSH)(COLOR_WINDOW));
+			DrawFrameControl(hdc, &rc, DFC_CAPTION, 0);
+			EndPaint(windowHandle, &ps);
 		}
 		//protected static HINSTANCE	hInstance;
 		///Stores registered class info. Each window has its own registered class by default.
@@ -270,13 +280,8 @@ public class OSWindow {
 				inputLang = cast(uint)lParam;
 				goto default;
 			case WM_PAINT:
-				PAINTSTRUCT ps;
-				RECT rc;
-				HDC hdc = BeginPaint(windowHandle, &ps);
-				GetClientRect(windowHandle, &rc);
-				FillRect(hdc, &rc, cast(HBRUSH)(COLOR_WINDOW));
-				DrawFrameControl(hdc, &rc, DFC_CAPTION, 0);
-				EndPaint(windowHandle, &ps);
+				if (drawDeleg !is null)
+					drawDeleg(DrawParams(windowHandle, msg, wParam, lParam));
 				goto default;
 			/* case WM_NCCALCSIZE:			
 				if (wParam)
