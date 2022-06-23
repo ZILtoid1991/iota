@@ -36,7 +36,7 @@ public enum WindowStyleIDs : uint {
 	
 }
 
-public enum OutputSurfaceCFG : ulong {
+/+public enum OutputSurfaceCFG : ulong {
 	init,
 	//OpenGL
 	OpenGL20		=	0x201_0000_0000,
@@ -52,7 +52,7 @@ public enum OutputSurfaceCFG : ulong {
 	DX10			=	0xa0f_0000_0000,
 	DX11			=	0xb0f_0000_0000,
 	DX12			=	0xc0f_0000_0000,
-}
+}+/
 
 public class WindowBitmap {
 	public enum ChannelType : ubyte {

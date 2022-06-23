@@ -9,6 +9,7 @@ version (Windows) {
 public import iota.window.types;
 public import iota.window.exception;
 public import iota.etc.vers;
+public import iota.window.fbdev;
 import std.algorithm.mutation : remove;
 //import collections.treemap;
 
@@ -47,6 +48,8 @@ public class OSWindow {
 	protected WindowH			windowHandle;
 	///Contains various statusflags of the window.
 	protected Status			statusFlags;
+	///Window renderer should be kept here to ensure safe destruction.
+	public FrameBufferRenderer	renderer;
 	///Delegate called when a draw request is sent to the class.
 	///It can intercept it for various reasons, but this is not OS independent, and so far no drawing API is planned 
 	///that uses OS provided functions. 
@@ -86,10 +89,10 @@ public class OSWindow {
 		protected LPCWSTR			classname, windowname;
 		///hInstance is stored here, which is needed for window creation, etc.
 		///NOTE: This is Windows exclusive, and won't be accessable under other OSes.
-		public static HINSTANCE	mainInst;
+		public static HINSTANCE		mainInst;
 		///The current input language code (Windows).
 		///Stored here due to ease of access.
-		public static uint		inputLang;
+		public static uint			inputLang;
 		shared static this() {
 			//NOTE: This is not the proper way of doing stuff like this.
 			//However, this way we can possibly eliminate the need for use of `WinMain` and might also piss off some
@@ -125,10 +128,12 @@ public class OSWindow {
 	 *   w = Width of the window.
 	 *   h = Height of the window.
 	 *   flags = Configuration flags. Bit 0-31: Window style flags, bit 32-47: Output surface configuration
+	 *   icon = The icon of the window, if any.
+	 *   menu = The menubar of the window, if any.
 	 *   parent = Parent if exists, null otherwise.
 	 */
-	public this(io_str_t title, io_str_t name, int x, int y, int w, int h, ulong flags, WindowIcon icon = null, 
-			WindowMenu menu = null, OSWindow parent = null) {
+	public this(io_str_t title, io_str_t name, int x, int y, int w, int h, ulong flags,
+			WindowBitmap icon = null, WindowMenu menu = null, OSWindow parent = null) {
 		version (Windows) {
 			registeredClass.cbSize = WNDCLASSEXW.sizeof;
 			registeredClass.style = CS_HREDRAW | CS_VREDRAW;

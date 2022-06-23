@@ -1,6 +1,8 @@
 {
 	"fileVersion": 1,
 	"versions": {
+		"bindbc-loader": "1.0.1",
+		"bindbc-opengl": "1.0.0",
 		"bitleveld": "0.1.0",
 		"collections-d": "0.4.5",
 		"wasapi": "0.1.3"
