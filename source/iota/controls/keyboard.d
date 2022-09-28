@@ -41,11 +41,21 @@ public class Keyboard : InputDevice {
 	enum KeyboardFlags : ushort {
 		TextInput		=	1<<8,	///Set if text input is enabled.
 		IgnoreLLMods	=	1<<9,	///Set if lock light modifiers are to be ignored.
-		//~~~Fixes one of the greatest mistakes of deciding what the Alt key should do~~~
+		///~~Fixes one of the greatest mistakes of deciding what the Alt key should do~~
 		///Set if "open menubar on alt key" is disabled.
 		MenuKeyFix		=	1<<10,	
 		DisableMetaKey	=	1<<11,	///Disables meta key passthrough to OS
-		DisableMetaKeyComb=	1<<11,	///Disables meta key shortcut passthrough to OS
+		DisableMetaKeyComb=	1<<12,	///Disables meta key shortcut passthrough to OS
+	}
+	version (Windows) {
+		package HANDLE		devHandle;
+		package this(io_str_t _name, ubyte _devNum, HANDLE devHandle) nothrow {
+			this._name = _name;
+			this._devNum = _devNum;
+			this.devHandle = devHandle;
+			_type = InputDeviceType.Keyboard;
+			status |= StatusFlags.IsConnected;
+		}
 	}
 	package this() nothrow {
 		_type = InputDeviceType.Keyboard;
@@ -59,7 +69,7 @@ public class Keyboard : InputDevice {
 	 */
 	public override int poll(ref InputEvent output) @nogc nothrow {
 		version (Windows) {
-			//Since Windows is a bit weird when it comes to inputs, so inputs are polled from system.
+			//Since Windows is a bit weird when it comes to inputs, inputs are polled from system.
 			//This class mainly exists here to provide context and other interfaces
 			return 0;
 		} else {

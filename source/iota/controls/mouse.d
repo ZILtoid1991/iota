@@ -31,11 +31,21 @@ public enum MouseButtonFlags {
 	Next	=	1<<4
 }
 public class Mouse : InputDevice {
-
+	version (Windows) {
+		package HANDLE		devHandle;
+		package this(io_str_t _name, ubyte _devNum, HANDLE devHandle) nothrow {
+			this._name = _name;
+			this._devNum = _devNum;
+			this.devHandle = devHandle;
+			_type = InputDeviceType.Mouse;
+			status |= StatusFlags.IsConnected;
+		}
+	}
 	package this() nothrow {
 		_type = InputDeviceType.Mouse;
 		status |= StatusFlags.IsConnected;
 	}
+	
 	override public int poll(ref InputEvent output) @nogc nothrow {
 		return 0;
 	}

@@ -62,8 +62,8 @@ public enum InputEventType {
  */
 public enum TextCommandType {
 	init,
-	Cursor,
-	CursorV,
+	Cursor,		///Horizontal cursor
+	CursorV,	///Vertical cursor
 
 	Home,
 	End,
@@ -74,9 +74,36 @@ public enum TextCommandType {
 
 	Insert,
 
-	NewLine,
-	NewPara,
+	NewLine,	///Shift + Enter
+	NewPara,	///Enter
 	
+}
+/** 
+ * Defines configuration flags for the input subsystem.
+ */
+public enum ConfigFlags : uint {
+	///Enables touchscreen handling. (Always on under mobile platforms)
+	enableTouchscreen			=	1 << 0,
+	///Toggles game controller trigger handling mode.
+	///If set, they will be treated as analog buttons, otherwise as axes that go between 0.0 and 1.0.
+	gc_TriggerMode				=	1 << 1,
+}
+/** 
+ * Operating system specific flags
+ */
+public enum OSConfigFlags : uint {
+	///Enables legacy (non-raw input) under Windows for better compatibility.
+	win_LegacyIO				=	1 << 0,
+	///Uses the older Wintab over other options.
+	win_Wintab					=	1 << 1,
+}
+/** 
+ * Defines return codes for the `iota.controls.initInput` function.
+ */
+public enum InputInitializationStatus {
+	AllOk					=	0,
+	WindowsRawInputError	=	-1,
+	WindowsDevicesAdded		=	-2,
 }
 /** 
  * Defines return codes for event polling.
@@ -103,6 +130,7 @@ public abstract class InputDevice {
 	protected InputDeviceType	_type;		/// Defines the type of the input device
 	protected ubyte				_devNum;	/// Defines the number of the input device within the group of same types
 	protected ubyte				_battP;		/// Current percentage of the battery
+	protected io_str_t			_name;		/// The name of the device if there's any
 	/// Status flags of the device.
 	/// Bits 0-7 are common, 8-15 are special to each device/interface type.
 	/// Note: flags related to indicators/etc should be kept separately.
@@ -111,11 +139,11 @@ public abstract class InputDevice {
 	 * Defines common status codes
 	 */
 	public enum StatusFlags : ushort {
-		IsConnected		=	1<<0,
-		IsInvalidated	=	1<<1,
-		HasBattery		=	1<<2,
-		IsAnalog		=	1<<3,
-		IsVirtual		=	1<<4,
+		IsConnected		=	1<<0,			///Set if device is connected
+		IsInvalidated	=	1<<1,			///Set if device is invalidated (disconnected, etc.)
+		HasBattery		=	1<<2,			///Set if device has a battery
+		IsAnalog		=	1<<3,			///Set if device has analog capabilities
+		IsVirtual		=	1<<4,			///Set if device is emulated/virtual (e.g. on-screen keyboard)
 	}
 	/** 
 	 * Returns the type of the device.
@@ -162,13 +190,16 @@ public abstract class InputDevice {
 		else
 			return ubyte.max;
 	}
+	public io_str_t name() @nogc @safe pure nothrow const @property {
+		return _name;
+	}
 	/** 
 	 * Polls the device for events.
 	 * Params:
 	 *   output = InputEvents outputted by the 
 	 * Returns: 1 if there's still events to be polled, 0 if no events left. Other values are error codes.
 	 */
-	public abstract int poll(ref InputEvent output) @nogc nothrow;
+	public abstract int poll(ref InputEvent output) nothrow;
 }
 /** 
  * Defines a button (keyboard, game controller) event data.

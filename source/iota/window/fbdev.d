@@ -123,7 +123,7 @@ public class OpenGLRenderer : FrameBufferRenderer {
 					return 0;
 				return -3;
 		}
-		return int.init; // TODO: implement
+		return 0;
 	}
 
 	override public int render(WindowBitmap bitmap) @system nothrow {

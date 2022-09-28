@@ -22,6 +22,7 @@ import iota.window;
  */
 public class System : InputDevice {
 	version (Windows) {
+		package Keyboard[]		keybList;	///List of all keyboards (raw input only)
 		package Keyboard		keyb;		///Pointer to the default, non-virtual keyboard.
 		version (iota_use_utf8) {
 			///Character input converted to UTF-8
@@ -30,17 +31,26 @@ public class System : InputDevice {
 			///Character input converted to UTF-32
 			dchar				lastChar;
 		}
+		package Mouse[]			mouseList;	///List of all mice (raw input only)
 		package Mouse			mouse;		///Pointer to the default, non-virtual mouse.
 		protected int[2]		lastMousePos;///Last position of the mouse cursor.
 		protected size_t		winCount;	///Window counter.
 	}
-	package this() nothrow {
+	enum SystemFlags : ushort {
+		Win_RawInput		=	1 << 8,
+	}
+	package this(uint config = 0, uint osConfig = 0) nothrow {
 		version (Windows) {
-			keyb = new Keyboard();
-			mouse = new Mouse();
+			if (osConfig & OSConfigFlags.win_LegacyIO) {
+				keyb = new Keyboard();
+				mouse = new Mouse();
+			} else {
+				status |= SystemFlags.Win_RawInput | StatusFlags.IsConnected;
+			}
+			_type = InputDeviceType.System;
 		}
 	}
-	public override int poll(ref InputEvent output) @nogc nothrow {
+	public override int poll(ref InputEvent output) nothrow {
 		version (Windows) {
 			int GET_X_LPARAM(LPARAM lParam) @nogc nothrow pure {
 				return cast(int)(cast(short) LOWORD(lParam));
@@ -204,6 +214,45 @@ public class System : InputDevice {
 					case WM_SIZING, WM_SIZE:
 						output.type = InputEventType.WindowResize;
 						output.source = this;
+						break;
+					case WM_INPUT:		//Raw input
+						switch (msg.wParam & 0xFF) {
+							case RIM_INPUT:
+								output.handle = null;
+								DefWindowProcW(msg.hwnd, msg.message, msg.wParam, msg.lParam);
+								break;
+							case RIM_INPUTSINK:
+								break;
+							default:
+								break;
+						}
+						break;
+					case 0x00FE:		//Raw input device added/removed
+						if (msg.wParam == 2) {	//Device removed
+							foreach (size_t i, Keyboard dev ; keybList) {
+								if (dev.devHandle == cast(HANDLE)msg.lParam) {
+									dev.status |= InputDevice.StatusFlags.IsInvalidated;
+									dev.status &= ~InputDevice.StatusFlags.IsConnected;
+									output.source = dev;
+									keybList = keybList[0..i] ~ keybList[i+1..$];
+									goto breakTwoLoopsAtOnce;
+								}
+							}
+							foreach (size_t i, Mouse dev ; mouseList) {
+								if (dev.devHandle == cast(HANDLE)msg.lParam) {
+									dev.status |= InputDevice.StatusFlags.IsInvalidated;
+									dev.status &= ~InputDevice.StatusFlags.IsConnected;
+									output.source = dev;
+									mouseList = mouseList[0..i] ~ mouseList[i+1..$];
+									goto breakTwoLoopsAtOnce;
+								}
+							}
+							breakTwoLoopsAtOnce:
+							output.type = InputEventType.DeviceRemoved;
+						} else if (msg.wParam == 1) {	//Device added
+							output.type = InputEventType.DeviceAdded;
+							HANDLE devHandle = cast(HANDLE)msg.lParam;
+						}
 						break;
 					default:
 						//check for window status

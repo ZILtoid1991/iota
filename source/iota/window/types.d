@@ -36,24 +36,6 @@ public enum WindowStyleIDs : uint {
 	
 }
 
-/+public enum OutputSurfaceCFG : ulong {
-	init,
-	//OpenGL
-	OpenGL20		=	0x201_0000_0000,
-	OpenGL30		=	0x301_0000_0000,
-	OpenGL31		=	0x311_0000_0000,
-	OpenGL32		=	0x321_0000_0000,
-	OpenGL40		=	0x401_0000_0000,
-	OpenGL41		=	0x411_0000_0000,
-	OpenGL42		=	0x421_0000_0000,
-	//Windows
-	GDI				=	0x00f_0000_0000,
-	DX9				=	0x90f_0000_0000,
-	DX10			=	0xa0f_0000_0000,
-	DX11			=	0xb0f_0000_0000,
-	DX12			=	0xc0f_0000_0000,
-}+/
-
 public class WindowBitmap {
 	public enum ChannelType : ubyte {
 		None		=	0x00,
