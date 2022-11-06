@@ -2,9 +2,13 @@
 	"fileVersion": 1,
 	"versions": {
 		"bindbc-loader": "1.0.1",
-		"bindbc-opengl": "1.0.0",
+		"bindbc-opengl": "1.0.3",
 		"bitleveld": "0.1.0",
-		"collections-d": "0.4.5",
+		"collections-d": "0.4.7",
+		"darg": "0.1.0",
+		"darg-plus": "2.4.0",
+		"stdx-allocator": "2.77.5",
+		"vibe-d": "0.9.5",
 		"wasapi": "0.1.3"
 	}
 }

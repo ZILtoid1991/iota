@@ -24,6 +24,7 @@ package enum IOTA_INPUTCONFIG_DEFAULT = 0;
  * Initializes the input subsystem
  * Params:
  *   config = Configuration flags ORed together.
+ *   osConfig = OS-specific configuration flags ORed together.
  * Returns: 0 if everything is successful, or a specific errorcode.
  */
 public int initInput(uint config = 0, uint osConfig = 0) nothrow {
@@ -33,8 +34,10 @@ public int initInput(uint config = 0, uint osConfig = 0) nothrow {
 	version (Windows) {
 		if (!(osConfig & OSConfigFlags.win_LegacyIO)) {
 			RAWINPUTDEVICE[] rid;
-			rid ~= RAWINPUTDEVICE(0x0001, 0x0006, 0x2000, null);
-			rid ~= RAWINPUTDEVICE(0x0001, 0x0002, 0x2000, null);
+			if (osConfig & OSConfigFlags.win_RawKeyboard)
+				rid ~= RAWINPUTDEVICE(0x0001, 0x0006, 0x2000, null);
+			if (osConfig & OSConfigFlags.win_RawMouse)
+				rid ~= RAWINPUTDEVICE(0x0001, 0x0002, 0x2000, null);
 			if (config & ConfigFlags.enableTouchscreen) {
 				rid ~= RAWINPUTDEVICE(0x000D, 0x0004, 0x2000, null);
 			}

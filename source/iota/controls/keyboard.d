@@ -178,4 +178,8 @@ public class Keyboard : InputDevice {
 		}
 		return result;
 	}
+	public override string toString() @safe const {
+		import std.conv : to;
+		return "name: " ~ _name.to!string ~ "; devID: " ~ _devNum.to!string ~ "; devHandle: " ~ devHandle.to!string;
+	}
 }

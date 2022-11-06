@@ -33,8 +33,10 @@ public class System : InputDevice {
 		}
 		package Mouse[]			mouseList;	///List of all mice (raw input only)
 		package Mouse			mouse;		///Pointer to the default, non-virtual mouse.
-		protected int[2]		lastMousePos;///Last position of the mouse cursor.
+		///Sizes of the screen. 0 : Virtual desktop width, 1 : Virtual desktop height, 2 : Screen width, 3: Screen height
+		protected int[4]		screenSize; 
 		protected size_t		winCount;	///Window counter.
+		protected InputEvent[]	eventBuff;	///Input event buffer. FIFO.
 	}
 	enum SystemFlags : ushort {
 		Win_RawInput		=	1 << 8,
@@ -48,6 +50,8 @@ public class System : InputDevice {
 				status |= SystemFlags.Win_RawInput | StatusFlags.IsConnected;
 			}
 			_type = InputDeviceType.System;
+			screenSize = [GetSystemMetrics(SM_CXVIRTUALSCREEN), GetSystemMetrics(SM_CXVIRTUALSCREEN), 
+					GetSystemMetrics(SM_CXSCREEN), GetSystemMetrics(SM_CYSCREEN)];
 		}
 	}
 	public override int poll(ref InputEvent output) nothrow {
@@ -58,6 +62,43 @@ public class System : InputDevice {
 
 			int GET_Y_LPARAM(LPARAM lParam) @nogc nothrow pure {
 				return cast(int)(cast(short) HIWORD(lParam));
+			}
+
+			T getDeviceByHandle(T)(T[] haysack, HANDLE needle) @nogc @safe pure nothrow {
+				foreach (key ; haysack) {
+					if (key.devHandle == needle) {
+						return key;
+					}
+				}
+				return null;
+			}
+
+			uint toIOTAMouseButtonFlags(uint src, ushort winFlags) @nogc @safe pure nothrow {
+				if (winFlags & RI_MOUSE_BUTTON_1_DOWN)
+					src |= MouseButtonFlags.Left;
+				if (winFlags & RI_MOUSE_BUTTON_1_UP)
+					src &= ~MouseButtonFlags.Left;
+				if (winFlags & RI_MOUSE_BUTTON_2_DOWN)
+					src |= MouseButtonFlags.Right;
+				if (winFlags & RI_MOUSE_BUTTON_2_UP)
+					src &= ~MouseButtonFlags.Right;
+				if (winFlags & RI_MOUSE_BUTTON_3_DOWN)
+					src |= MouseButtonFlags.Middle;
+				if (winFlags & RI_MOUSE_BUTTON_3_UP)
+					src &= ~MouseButtonFlags.Middle;
+				if (winFlags & RI_MOUSE_BUTTON_4_DOWN)
+					src |= MouseButtonFlags.Prev;
+				if (winFlags & RI_MOUSE_BUTTON_4_UP)
+					src &= ~MouseButtonFlags.Prev;
+				if (winFlags & RI_MOUSE_BUTTON_5_DOWN)
+					src |= MouseButtonFlags.Next;
+				if (winFlags & RI_MOUSE_BUTTON_5_UP)
+					src &= ~MouseButtonFlags.Next;
+				return src;
+			}
+			if (eventBuff.length) {
+				output = eventBuff[0];
+				eventBuff = eventBuff[1..$];
 			}
 			tryAgain:
 			MSG msg;
@@ -126,8 +167,10 @@ public class System : InputDevice {
 							output.mouseSE.yS = GET_WHEEL_DELTA_WPARAM(msg.wParam);
 						output.mouseSE.x = GET_X_LPARAM(msg.lParam);
 						output.mouseSE.y = GET_Y_LPARAM(msg.lParam);
-						lastMousePos[0] = output.mouseSE.x;
-						lastMousePos[1] = output.mouseSE.y;
+						mouse.lastPosition[0] = output.mouseSE.x;
+						mouse.lastPosition[1] = output.mouseSE.y;
+						//lastMousePos[0] = output.mouseSE.x;
+						//lastMousePos[1] = output.mouseSE.y;
 						break;
 					case WM_MOUSEMOVE:
 						output.type = InputEventType.MouseMove;
@@ -144,10 +187,10 @@ public class System : InputDevice {
 							output.mouseME.buttons |= MouseButtonFlags.Next;
 						output.mouseME.x = GET_X_LPARAM(msg.lParam);
 						output.mouseME.y = GET_Y_LPARAM(msg.lParam);
-						output.mouseME.xD = output.mouseME.x - lastMousePos[0];
-						output.mouseME.yD = output.mouseME.y - lastMousePos[1];
-						lastMousePos[0] = output.mouseME.x;
-						lastMousePos[1] = output.mouseME.y;
+						output.mouseME.xD = output.mouseME.x - mouse.lastPosition[0];
+						output.mouseME.yD = output.mouseME.y - mouse.lastPosition[1];
+						mouse.lastPosition[0] = output.mouseME.x;
+						mouse.lastPosition[1] = output.mouseME.y;
 						break;
 					case WM_LBUTTONUP, WM_LBUTTONDOWN, WM_LBUTTONDBLCLK, WM_MBUTTONUP, WM_MBUTTONDOWN, WM_MBUTTONDBLCLK,
 					WM_RBUTTONUP, WM_RBUTTONDOWN, WM_RBUTTONDBLCLK, WM_XBUTTONUP, WM_XBUTTONDOWN, WM_XBUTTONDBLCLK:
@@ -155,6 +198,8 @@ public class System : InputDevice {
 						output.source = mouse;
 						output.mouseCE.x = GET_X_LPARAM(msg.lParam);
 						output.mouseCE.y = GET_Y_LPARAM(msg.lParam);
+						mouse.lastPosition[0] = output.mouseCE.x;
+						mouse.lastPosition[1] = output.mouseCE.y;
 						output.mouseCE.repeat = 0;
 						switch (msg.message & 0xFF_FF) {
 							case WM_LBUTTONUP:
@@ -216,12 +261,98 @@ public class System : InputDevice {
 						output.source = this;
 						break;
 					case WM_INPUT:		//Raw input
+						RAWINPUT rawInput = *cast(RAWINPUT*)msg.lParam;
+						switch (rawInput.header.dwType) {
+							case RIM_TYPEMOUSE:
+								Mouse device = getDeviceByHandle(mouseList, rawInput.header.hDevice);
+								if (device !is null) {
+									mouse = device;
+									RAWMOUSE inputData = rawInput.data.mouse;
+									int[2] absolute;
+									int[2] relative;
+									if (inputData.usFlags & MOUSE_MOVE_ABSOLUTE) {
+										const bool isVirtualDesktop = (inputData.usFlags & MOUSE_VIRTUAL_DESKTOP) != 0;
+										absolute[0] = cast(int)((inputData.lLastX / 65_535.0) * (isVirtualDesktop ? screenSize[0] : screenSize[2]));
+										absolute[1] = cast(int)((inputData.lLastY / 65_535.0) * (isVirtualDesktop ? screenSize[1] : screenSize[3]));
+										relative[0] = device.lastPosition[0] - absolute[0];
+										relative[1] = device.lastPosition[1] - absolute[1];
+									} else {
+										relative[0] = inputData.lLastX;
+										relative[1] = inputData.lLastY;
+										absolute[0] = device.lastPosition[0] + relative[0];
+										absolute[1] = device.lastPosition[1] + relative[1];
+									}
+									device.lastPosition[0] = absolute[0];
+									device.lastPosition[1] = absolute[1];
+									output.source = device;
+									if (relative[0] || relative[1]) {	//Mouse move event
+										InputEvent ie;
+										ie = output;
+										ie.type = InputEventType.MouseMove;
+										ie.mouseME.x = absolute[0];
+										ie.mouseME.y = absolute[1];
+										ie.mouseME.xD = relative[0];
+										ie.mouseME.yD = relative[1];
+										ie.mouseME.buttons = device.lastButtonState;
+										eventBuff ~= ie;
+									}
+									if (inputData.usButtonFlags & 0x03FF) {	//Mouse click event
+										uint buttons = toIOTAMouseButtonFlags(device.lastButtonState, inputData.usButtonFlags);
+										uint prevButtons = device.lastButtonState;
+										device.lastButtonState = buttons;
+										ushort buttonCntr = 1;
+										while (buttons) {
+											if ((buttons & 1) ^ (prevButtons & 1)) {
+												InputEvent ie;
+												ie = output;
+												ie.type = InputEventType.MouseClick;
+												ie.mouseCE.button = buttonCntr;
+												ie.mouseCE.dir = (buttons & 1) ? 0 : 1;
+												ie.mouseCE.x = absolute[0];
+												ie.mouseCE.y = absolute[1];
+												eventBuff ~= ie;
+											} 
+											buttonCntr = 1;
+											buttons >>= 1;
+											prevButtons >>= 1;
+										}
+									} 
+									if (inputData.usButtonFlags & 0x0B00) { //Mouse wheel event
+										InputEvent ie;
+										ie = output;
+										ie.type = InputEventType.MouseScroll;
+										ie.mouseSE.x = device.lastPosition[0];
+										ie.mouseSE.y = device.lastPosition[1];
+										if (inputData.usButtonFlags & RI_MOUSE_WHEEL) {
+											ie.mouseSE.yS = cast(short)inputData.usButtonData;
+										} else {
+											ie.mouseSE.xS = cast(short)inputData.usButtonData;
+										}
+										eventBuff ~= ie;
+									} 
+								}
+								if (eventBuff.length) {
+									output = eventBuff[0];
+									eventBuff = eventBuff[1..$];
+								}
+								break;
+							case RIM_TYPEKEYBOARD:
+								RAWKEYBOARD inputData = rawInput.data.keyboard;
+								Keyboard device = getDeviceByHandle(keybList, rawInput.header.hDevice);
+								output.type = InputEventType.Keyboard;
+								output.source = device;
+								output.button.dir = cast(ubyte)(inputData.Flags & 1);
+								output.button.id = translateSC(inputData.VKey);
+								output.button.aux = device.getModifiers();
+								break;
+							default:
+								break;
+						}
+						
 						switch (msg.wParam & 0xFF) {
 							case RIM_INPUT:
 								output.handle = null;
 								DefWindowProcW(msg.hwnd, msg.message, msg.wParam, msg.lParam);
-								break;
-							case RIM_INPUTSINK:
 								break;
 							default:
 								break;

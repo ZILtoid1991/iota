@@ -31,7 +31,10 @@ public enum MouseButtonFlags {
 	Next	=	1<<4
 }
 public class Mouse : InputDevice {
+	package int[2]		lastPosition;
+	package uint		lastButtonState;
 	version (Windows) {
+		//package uint	winButtonState;
 		package HANDLE		devHandle;
 		package this(io_str_t _name, ubyte _devNum, HANDLE devHandle) nothrow {
 			this._name = _name;
@@ -44,6 +47,14 @@ public class Mouse : InputDevice {
 	package this() nothrow {
 		_type = InputDeviceType.Mouse;
 		status |= StatusFlags.IsConnected;
+	}
+
+	public int[2] getLastPosition() @nogc @safe pure nothrow const {
+		return lastPosition;
+	}
+
+	public uint getButtonState() @nogc @safe pure nothrow const {
+		return lastButtonState;
 	}
 	
 	override public int poll(ref InputEvent output) @nogc nothrow {

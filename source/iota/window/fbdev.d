@@ -8,7 +8,9 @@ version (Windows) {
 	import std.conv : to;
 }
 
-import iota.window.oswindow;
+import std.math : nextPow2;
+
+import iota.window.types;
 
 import bindbc.opengl;
 
@@ -16,7 +18,7 @@ import bindbc.opengl;
  * Defines common traits and functions of a framebuffer Renderer object.
  */
 public abstract class FrameBufferRenderer {
-	protected OSWindow		renderingSurface;
+	//protected OSWindow		renderingSurface;
 	public enum ConfigParams {
 		init,
 		///Toggles VSync. 0 disables, any non-zero value enables it.
@@ -48,7 +50,7 @@ public abstract class FrameBufferRenderer {
 	/** 
 	 * Renders the framebuffer from the supplied bitmap. If VSync is enabled, it'll also wait for the next framebuffer change.
 	 * Params:
-	 *   bitmap = 
+	 *   bitmap = The bitmap to be rendered to the screen.
 	 * Returns: 0 on succes, a positive value on inconsistencies (e.g. framebuffer size changes), a negative value on errors.
 	 */
 	public abstract int render(WindowBitmap bitmap) @system nothrow;
@@ -67,6 +69,7 @@ public class OpenGLRenderer : FrameBufferRenderer {
 	protected GLuint		vbo;
 	protected GLenum		scaleQ;
 	protected bool			vSync;
+	protected int[2]		prevSizes;
 	protected GLfloat[] verticles = [
 	//	Position	TexCoords
 		-1.0, -1.0, 0.0, 0.0,	//Top-left
@@ -84,11 +87,11 @@ public class OpenGLRenderer : FrameBufferRenderer {
 	shared static ~this() {
 		unloadOpenGL();
 	}
-	public this(OSWindow window) {
+	public this(WindowH window) {
 		version (Windows) {
 			//glEnable(0);
-			renderingSurface = window;
-			HDC hdc = GetDC(window.getHandle);
+			//renderingSurface = window;
+			HDC hdc = GetDC(window);
 			renderingContext = wglCreateContext(hdc);
 		}
 		glGenTextures(1, &textureID);
@@ -97,33 +100,36 @@ public class OpenGLRenderer : FrameBufferRenderer {
 		glBufferData(GL_ARRAY_BUFFER, verticles.length, verticles.ptr, GL_STATIC_DRAW);
 	}
 	~this() {
-		wglDeleteContext(renderingContext);
+		version (Windows) {
+			wglDeleteContext(renderingContext);
+		}
 		
 	}
 	override public int config(FrameBufferRenderer.ConfigParams param, int val) @system nothrow {
 		switch (param) {
+			case ConfigParams.VSync:
+				vSync = (val != 0);
+				return 0;
+			case ConfigParams.Scaling:
+				switch (val) {
+					case 1:
+						scaleQ = GL_NEAREST;
+						break;
+					case 2:
+						scaleQ = GL_LINEAR;
+						break;
+					default:
+						return -2;
+				}
+				glBindTexture(GL_TEXTURE_2D, textureID);
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, scaleQ);
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, scaleQ);
+				return 0;
+			
 			default:
-				case ConfigParams.VSync:
-					vSync = (val != 0);
-					return 0;
-				case ConfigParams.Scaling:
-					switch (val) {
-						case 1:
-							scaleQ = GL_NEAREST;
-							break;
-						case 2:
-							scaleQ = GL_LINEAR;
-							break;
-						default:
-							return -2;
-					}
-					glBindTexture(GL_TEXTURE_2D, textureID);
-					glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, scaleQ);
-					glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, scaleQ);
-					return 0;
 				return -3;
 		}
-		return 0;
+		//return 0;
 	}
 
 	override public int render(WindowBitmap bitmap) @system nothrow {

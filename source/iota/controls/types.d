@@ -96,6 +96,12 @@ public enum OSConfigFlags : uint {
 	win_LegacyIO				=	1 << 0,
 	///Uses the older Wintab over other options.
 	win_Wintab					=	1 << 1,
+	///Enables raw handling of mouse input data in Windows.
+	///This enables differentiating between multiple mice and overriding OS sensitivity settings.
+	win_RawMouse				=	1 << 2,
+	///Enables raw handling of keyboard input data in Windows.
+	///This enables diffetentiating between multiple keyboard devices.
+	win_RawKeyboard				=	1 << 3,
 }
 /** 
  * Defines return codes for the `iota.controls.initInput` function.
@@ -193,6 +199,10 @@ public abstract class InputDevice {
 	public io_str_t name() @nogc @safe pure nothrow const @property {
 		return _name;
 	}
+	public override string toString() @safe const {
+		import std.conv : to;
+		return _name.to!string;
+	}
 	/** 
 	 * Polls the device for events.
 	 * Params:
@@ -261,7 +271,7 @@ public struct AxisEvent {
  * Also supplies the screen coordinates of the click event.
  */
 public struct MouseClickEvent {
-	ubyte		dir;	///Up or down
+	ubyte		dir;	///Up (1), or down (0)
 	ubyte		repeat;	///Non-zero if multiple clicks occured.
 	ushort		button;	///Button ID
 	int			x;		///X coordinate
@@ -334,9 +344,9 @@ public struct InputEvent {
 		PenEvent			pen;
 	}
 	string toString() {
-		string result = "Source: " ~ (source is null ? "null" : source.toString) ~ " ; Window handle: " ~ 
+		string result = "Source: " ~ (source is null ? "null" : "{" ~ source.toString ~ "}") ~ " ; Window handle: " ~ 
 				to!string(cast(size_t)handle) ~ " ; Timestamp: " ~ to!string(timestamp) ~ " ; Type: " ~ to!string(type) ~ 
-				" ; Rest: [";
+				" ; Rest: {";
 		switch (type) {
 			case InputEventType.Keyboard, InputEventType.GCButton:
 				result ~= button.toString();
@@ -356,7 +366,7 @@ public struct InputEvent {
 			default:
 				break;
 		}
-		result ~= "]";
+		result ~= "}";
 		return result;
 	}
 }
