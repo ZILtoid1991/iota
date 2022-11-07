@@ -81,8 +81,12 @@ public int initInput(uint config = 0, uint osConfig = 0) nothrow {
 			}
 			if (s.keybList.length)
 				s.keyb = s.keybList[0];
+			else
+				s.keyb = new Keyboard();
 			if (s.mouseList.length)
 				s.mouse = s.mouseList[0];
+			else
+				s.mouse = new Mouse();
 		}
 	}
 	return InputInitializationStatus.AllOk;

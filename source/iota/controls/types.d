@@ -120,6 +120,7 @@ public enum EventPollStatus {
 	DeviceInvalidated,
 	DeviceError,
 	NoDevsFound,
+	win_RawInputError,
 }
 /** 
  * Defines text edit event flags.

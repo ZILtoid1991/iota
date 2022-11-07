@@ -261,7 +261,16 @@ public class System : InputDevice {
 						output.source = this;
 						break;
 					case WM_INPUT:		//Raw input
-						RAWINPUT rawInput = *cast(RAWINPUT*)msg.lParam;
+						UINT dwSize;
+						GetRawInputData(cast(HRAWINPUT)msg.lParam, RID_INPUT, null, &dwSize, RAWINPUTHEADER.sizeof);
+						if (!dwSize) return 1;
+						void[] lpb;
+						lpb.length = dwSize;
+
+						if (GetRawInputData(cast(HRAWINPUT)msg.lParam, RID_INPUT, lpb.ptr, &dwSize, RAWINPUTHEADER.sizeof))
+							return EventPollStatus.win_RawInputError;
+						RAWINPUT* rawInput = cast(RAWINPUT*)lpb.ptr;
+						
 						switch (rawInput.header.dwType) {
 							case RIM_TYPEMOUSE:
 								Mouse device = getDeviceByHandle(mouseList, rawInput.header.hDevice);

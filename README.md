@@ -7,11 +7,12 @@ Input-output (audio, controls, etc) library for D. Intended as a D language nati
 |--------------------------|------------------------------------|------------------------------------|
 |Audio                     |Preliminary, output stream works    |Output works + some issues          |
 |MIDI                      |Input+Output, with some caveat      |Not yet implemented                 |
-|Keyboard                  |Works                               |Not yet implemented                 |
-|Mouse                     |Works                               |Not yet implemented                 |
+|Keyboard                  |Legacy: Works; Raw: Buggy           |Not yet implemented                 |
+|Mouse                     |Legacy: Works; Raw: Buggy           |Not yet implemented                 |
 |Pen Tablet                |Not yet implemented                 |Not yet implemented                 |
 |Game controllers          |Not yet implemented                 |Not yet implemented                 |
 |Windowing                 |A bit buggy                         |Not yet implemented                 |
+|OpenGL output             |In progress, not working yet        |Not yet implemented                 |
 
 MacOSX is not yet supported due to lack of hardware. Please consider contributing to this project!
 
@@ -35,10 +36,12 @@ Audio is tested and confirmed working on 64 bit Raspberry Pi devices, which prob
 
 Both input and output works, but might suffer from some caveat that stems from the Windows MIDI API. There's a chance that calling a MIDI system function within the MIDI input callback will cause a lockup.
 
-## Others
+## Controls
 
-Preliminary work on keyboard, mouse, etc. controls have been started.
+### Windows
+
+Keyboard and mouse works without much issues while using the legacy API. RawInput is buggy as of now, and cannot differentiate between different devices.
 
 # Examples
 
-See `testsource/app.d` for audio!
+See `testsource/app.d` for audio, `inputtest/app.d` for input and basic windowing, and `miditest.app` for MIDI.

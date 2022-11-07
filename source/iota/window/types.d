@@ -36,7 +36,7 @@ public enum WindowStyleIDs : uint {
 	
 }
 
-public struct WindowBitmap {
+public class WindowBitmap {
 	public enum ChannelType : ubyte {
 		None		=	0x00,
 		Red			=	0x10,
@@ -61,6 +61,12 @@ public struct WindowBitmap {
 	///upper nibble = channel type identifier
 	ubyte[8]	channels;
 	ubyte[]		pixels;
+	public this(uint width, uint height, ubyte[8] channels, ubyte[] pixels) @nogc @safe pure nothrow {
+		this.width = width;
+		this.height = height;
+		this.channels = channels;
+		this.pixels = pixels;
+	}
 	public int getChannelBits(int chNum) {
 		return 1<<(channels[chNum]);
 	}
