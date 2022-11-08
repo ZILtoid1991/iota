@@ -35,7 +35,9 @@ public enum WindowStyleIDs : uint {
 	AppWindow	= 1<<15,
 	
 }
-
+/**
+ * Implements a bitmap to be used with this library, mainly its windowing elements.
+ */
 public class WindowBitmap {
 	public enum ChannelType : ubyte {
 		None		=	0x00,
@@ -67,8 +69,21 @@ public class WindowBitmap {
 		this.channels = channels;
 		this.pixels = pixels;
 	}
+	/**
+	 * Returns the number of bits associated with the given channel number.
+	 */
 	public int getChannelBits(int chNum) {
-		return 1<<(channels[chNum]);
+		return 1<<(channels[chNum] & 0x07);
+	}
+	/**
+	 *
+	 */
+	public int getTotalBits(int chNum) {
+		int result;
+		for (int i ; i < channels.length ; i++) {
+			result += getChannelBits(i);
+		}
+		return result;
 	}
 }
 
