@@ -71,6 +71,8 @@ public class WindowBitmap {
 		this.height = height;
 		this.channels = channels;
 		this.pixels = pixels;
+		pitch = (width * getTotalBits) / 8;
+		pitch += (width * getTotalBits) % 8 ? 1 : 0;
 	}
 	/**
 	 * Returns the number of bits associated with the given channel number.
