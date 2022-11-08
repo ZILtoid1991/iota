@@ -40,7 +40,11 @@ Both input and output works, but might suffer from some caveat that stems from t
 
 ### Windows
 
-Keyboard and mouse works without much issues while using the legacy API. RawInput is buggy as of now, and cannot differentiate between different devices.
+Keyboard and mouse works without much issues while using the legacy API. A known bug is that it sometimes generates an additional empty event if the Alt key is pressed (because some people thought it's a good idea to dedicate a whole modifier key for the menubar), this will be fixed in a later release.
+
+#### Raw input
+
+This library is (mostly) equipped to handle raw input data, but currently it has some bugs. For some reason, it cannot differentiate between input devices at the moment.
 
 # Examples
 

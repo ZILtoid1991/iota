@@ -267,170 +267,186 @@ public enum ScanCode : uint {
 /**
  * Translates OS native scancodes to standard ones.
  */
-package uint translateSC(uint input) @nogc @safe pure nothrow {
-	version (Windows) {
-		switch (input) {
-			case 0x08:
-				return ScanCode.BACKSPACE;
-			case 0x09:
-				return ScanCode.TAB;
-			case 0x0c:
-				return ScanCode.CLEARAGAIN;
-			case 0x0d:
-				return ScanCode.ENTER;
-			case 0x13:
-				return ScanCode.PAUSE;
-			case 0x14:
-				return ScanCode.CAPSLOCK;
-			case 0x15:
-				return ScanCode.LANGUAGE1;
-			case 0x1b:
-				return ScanCode.ESCAPE;
-			case 0x19:
-				return ScanCode.LANGUAGE2;
-			case 0x20:
-				return ScanCode.SPACE;
-			case 0x21:
-				return ScanCode.PAGEUP;
-			case 0x22:
-				return ScanCode.PAGEDOWN;
-			case 0x23:
-				return ScanCode.END;
-			case 0x24:
-				return ScanCode.HOME;
-			case 0x25:
-				return ScanCode.LEFT;
-			case 0x26:
-				return ScanCode.UP;
-			case 0x27:
-				return ScanCode.RIGHT;
-			case 0x28:
-				return ScanCode.DOWN;
-			case 0x29:
-				return ScanCode.SELECT;
-			case 0x2c:
-				return ScanCode.PRINTSCREEN;
-			case 0x2d:
-				return ScanCode.INSERT;
-			case 0x2e:
-				return ScanCode.DELETE;
-			case 0x2f:
-				return ScanCode.HELP;
-			case 0x30:						//Numeric-block
-				return ScanCode.n0;
-			case 0x31: .. case 0x39:		//Numeric-block
-				return input - 0x30 + 30;
-			case 0x41: .. case 0x5A:		//Alpha-block
-				return input - 0x41 + 4;
-			case 0x5b:
-				return ScanCode.LGUI;
-			case 0x5c:
-				return ScanCode.RGUI;
-			case 0x5d:
-				return ScanCode.APPLICATION;
-			case 0x5f:
-				return ScanCode.MEDIASLEEP;
-			case 0x60:						//Numpad
-				return ScanCode.np0;
-			case 0x61: .. case 0x69:		//Numpad
-				return input - 0x61 + ScanCode.np1;
-			case 0x6a:
-				return ScanCode.NP_MULTIPLY;
-			case 0x6b:
-				return ScanCode.NP_PLUS;
-			case 0x6c:
-				return ScanCode.NP_COMMA;
-			case 0x6d:
-				return ScanCode.NP_MINUS;
-			case 0x6e:
-				return ScanCode.NP_DECIMAL;
-			case 0x6f:
-				return ScanCode.NP_DIVIDE;
-			case 0x70: .. case 0x7B:		//Function row
-				return input - 0x70 + 58;
-			case 0x7C: .. case 0x87:		//Extended function row
-				return input - 0x7C + 104;
-			case 0x90:
-				return ScanCode.NUMLOCK;
-			case 0x91:
-				return ScanCode.SCROLLLOCK;
-			case 0xA0:
-				return ScanCode.LSHIFT;
-			case 0xa1:
+version(Windows) package uint translateSC(uint input, uint aux, bool rshift) @nogc @safe pure nothrow {
+	switch (input) {
+		case 0x08:
+			return ScanCode.BACKSPACE;
+		case 0x09:
+			return ScanCode.TAB;
+		case 0x0c:
+			return ScanCode.CLEARAGAIN;
+		case 0x0d:
+			return ScanCode.ENTER;
+		case 0x10:
+			if (rshift) {
 				return ScanCode.RSHIFT;
-			case 0xa2:
-				return ScanCode.LCTRL;
-			case 0xa3:
+			} else {
+				return ScanCode.LSHIFT;
+			}
+		case 0x11:
+			if (aux & (1 << 24)) {
 				return ScanCode.RCTRL;
-			case 0xa4:
-				return ScanCode.LALT;
-			case 0xa5:
+			} else {
+				return ScanCode.LCTRL;
+			}
+		case 0x12:
+			if (aux & (1 << 24)) {
 				return ScanCode.RALT;
-			case 0xa6:
-				return ScanCode.MEDIABACK;
-			case 0xa7:
-				return ScanCode.MEDIAFORWARD;
-			case 0xa8:
-				return ScanCode.MEDIAREFRESH;
-			case 0xa9:
-				return ScanCode.STOP;
-			case 0xaa:
-				return ScanCode.MEDIAFIND;
-			case 0xab:
-				return ScanCode.MEDIACOFFEE;
-			case 0xac:
-				return ScanCode.MEDIAWWW;
-			case 0xad:
-				return ScanCode.MUTE;
-			case 0xae:
-				return ScanCode.VOLUME_DOWN;
-			case 0xaf:
-				return ScanCode.VOLUME_UP;
-			case 0xb0:
-				return ScanCode.MEDIANEXT;
-			case 0xb1:
-				return ScanCode.MEDIAPREV;
-			case 0xb2:
-				return ScanCode.MEDIASTOP;
-			case 0xb3:
-				return ScanCode.MEDIAPLAY;
-			case 0xb4:
-				return ScanCode.MEDIAMAIL;
-			case 0xb5:
-				return ScanCode.MEDIASELECT;
-			case 0xb6:
-				return ScanCode.LAUNCHAPP1;
-			case 0xb7:
-				return ScanCode.LAUNCHAPP2;
+			} else {
+				return ScanCode.LALT;
+			}
+		case 0x13:
+			return ScanCode.PAUSE;
+		case 0x14:
+			return ScanCode.CAPSLOCK;
+		case 0x15:
+			return ScanCode.LANGUAGE1;
+		case 0x1b:
+			return ScanCode.ESCAPE;
+		case 0x19:
+			return ScanCode.LANGUAGE2;
+		case 0x20:
+			return ScanCode.SPACE;
+		case 0x21:
+			return ScanCode.PAGEUP;
+		case 0x22:
+			return ScanCode.PAGEDOWN;
+		case 0x23:
+			return ScanCode.END;
+		case 0x24:
+			return ScanCode.HOME;
+		case 0x25:
+			return ScanCode.LEFT;
+		case 0x26:
+			return ScanCode.UP;
+		case 0x27:
+			return ScanCode.RIGHT;
+		case 0x28:
+			return ScanCode.DOWN;
+		case 0x29:
+			return ScanCode.SELECT;
+		case 0x2c:
+			return ScanCode.PRINTSCREEN;
+		case 0x2d:
+			return ScanCode.INSERT;
+		case 0x2e:
+			return ScanCode.DELETE;
+		case 0x2f:
+			return ScanCode.HELP;
+		case 0x30:						//Numeric-block
+			return ScanCode.n0;
+		case 0x31: .. case 0x39:		//Numeric-block
+			return input - 0x30 + 30;
+		case 0x41: .. case 0x5A:		//Alpha-block
+			return input - 0x41 + 4;
+		case 0x5b:
+			return ScanCode.LGUI;
+		case 0x5c:
+			return ScanCode.RGUI;
+		case 0x5d:
+			return ScanCode.APPLICATION;
+		case 0x5f:
+			return ScanCode.MEDIASLEEP;
+		case 0x60:						//Numpad
+			return ScanCode.np0;
+		case 0x61: .. case 0x69:		//Numpad
+			return input - 0x61 + ScanCode.np1;
+		case 0x6a:
+			return ScanCode.NP_MULTIPLY;
+		case 0x6b:
+			return ScanCode.NP_PLUS;
+		case 0x6c:
+			return ScanCode.NP_COMMA;
+		case 0x6d:
+			return ScanCode.NP_MINUS;
+		case 0x6e:
+			return ScanCode.NP_DECIMAL;
+		case 0x6f:
+			return ScanCode.NP_DIVIDE;
+		case 0x70: .. case 0x7B:		//Function row
+			return input - 0x70 + 58;
+		case 0x7C: .. case 0x87:		//Extended function row
+			return input - 0x7C + 104;
+		case 0x90:
+			return ScanCode.NUMLOCK;
+		case 0x91:
+			return ScanCode.SCROLLLOCK;
+		case 0xA0:
+			return ScanCode.LSHIFT;
+		case 0xa1:
+			return ScanCode.RSHIFT;
+		case 0xa2:
+			return ScanCode.LCTRL;
+		case 0xa3:
+			return ScanCode.RCTRL;
+		case 0xa4:
+			return ScanCode.LALT;
+		case 0xa5:
+			return ScanCode.RALT;
+		case 0xa6:
+			return ScanCode.MEDIABACK;
+		case 0xa7:
+			return ScanCode.MEDIAFORWARD;
+		case 0xa8:
+			return ScanCode.MEDIAREFRESH;
+		case 0xa9:
+			return ScanCode.STOP;
+		case 0xaa:
+			return ScanCode.MEDIAFIND;
+		case 0xab:
+			return ScanCode.MEDIACOFFEE;
+		case 0xac:
+			return ScanCode.MEDIAWWW;
+		case 0xad:
+			return ScanCode.MUTE;
+		case 0xae:
+			return ScanCode.VOLUME_DOWN;
+		case 0xaf:
+			return ScanCode.VOLUME_UP;
+		case 0xb0:
+			return ScanCode.MEDIANEXT;
+		case 0xb1:
+			return ScanCode.MEDIAPREV;
+		case 0xb2:
+			return ScanCode.MEDIASTOP;
+		case 0xb3:
+			return ScanCode.MEDIAPLAY;
+		case 0xb4:
+			return ScanCode.MEDIAMAIL;
+		case 0xb5:
+			return ScanCode.MEDIASELECT;
+		case 0xb6:
+			return ScanCode.LAUNCHAPP1;
+		case 0xb7:
+			return ScanCode.LAUNCHAPP2;
 
-			case 0xba:
-				return ScanCode.SEMICOLON;
-			case 0xbb:
-				return ScanCode.EQUALS;
-			case 0xbc:
-				return ScanCode.COMMA;
-			case 0xbd:
-				return ScanCode.MINUS;
-			case 0xbe:
-				return ScanCode.PERIOD;
-			case 0xbf:
-				return ScanCode.SLASH;
-			case 0xc0:
-				return ScanCode.GRAVE;
-			case 0xdb:
-				return ScanCode.LEFTBRACKET;
-			case 0xdc:
-				return ScanCode.BACKSLASH;
-			case 0xdd:
-				return ScanCode.RIGHTBRACKET;
-			case 0xde:
-				return ScanCode.APOSTROPHE;
-			case 0xdf:
-				return ScanCode.NONUSHASH;
-			case 0xe2:
-				return ScanCode.NONUSBACKSLASH;
-			default:
-				return ScanCode.init;
-		}
+		case 0xba:
+			return ScanCode.SEMICOLON;
+		case 0xbb:
+			return ScanCode.EQUALS;
+		case 0xbc:
+			return ScanCode.COMMA;
+		case 0xbd:
+			return ScanCode.MINUS;
+		case 0xbe:
+			return ScanCode.PERIOD;
+		case 0xbf:
+			return ScanCode.SLASH;
+		case 0xc0:
+			return ScanCode.GRAVE;
+		case 0xdb:
+			return ScanCode.LEFTBRACKET;
+		case 0xdc:
+			return ScanCode.BACKSLASH;
+		case 0xdd:
+			return ScanCode.RIGHTBRACKET;
+		case 0xde:
+			return ScanCode.APOSTROPHE;
+		case 0xdf:
+			return ScanCode.NONUSHASH;
+		case 0xe2:
+			return ScanCode.NONUSBACKSLASH;
+		default:
+			return 0xFF_FF;
 	}
 }

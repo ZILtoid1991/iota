@@ -92,8 +92,8 @@ public enum ConfigFlags : uint {
  * Operating system specific flags
  */
 public enum OSConfigFlags : uint {
-	///Enables legacy (non-raw input) under Windows for better compatibility.
-	win_LegacyIO				=	1 << 0,
+	///Enables raw input under Windows for more capabilities.
+	win_RawInput				=	1 << 0,
 	///Uses the older Wintab over other options.
 	win_Wintab					=	1 << 1,
 	///Enables raw handling of mouse input data in Windows.
@@ -108,8 +108,8 @@ public enum OSConfigFlags : uint {
  */
 public enum InputInitializationStatus {
 	AllOk					=	0,
-	WindowsRawInputError	=	-1,
-	WindowsDevicesAdded		=	-2,
+	win_RawInputError		=	-1,
+	win_DevicesAdded		=	-2,
 }
 /** 
  * Defines return codes for event polling.

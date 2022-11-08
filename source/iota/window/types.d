@@ -83,9 +83,9 @@ public class WindowBitmap {
 	/**
 	 * Returns the total number of bits used by this bitmap.
 	 */
-	public int getTotalBits() {
+	public int getTotalBits() @nogc @safe pure nothrow const {
 		int result;
-		for (int i ; i < channels.length ; i++) @nogc @safe pure nothrow const {
+		for (int i ; i < channels.length ; i++) {
 			result += getChannelBits(i);
 		}
 		return result;

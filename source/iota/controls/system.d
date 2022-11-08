@@ -43,7 +43,7 @@ public class System : InputDevice {
 	}
 	package this(uint config = 0, uint osConfig = 0) nothrow {
 		version (Windows) {
-			if (osConfig & OSConfigFlags.win_LegacyIO) {
+			if (!(osConfig & OSConfigFlags.win_RawInput)) {
 				keyb = new Keyboard();
 				mouse = new Mouse();
 			} else {
@@ -99,6 +99,7 @@ public class System : InputDevice {
 			if (eventBuff.length) {
 				output = eventBuff[0];
 				eventBuff = eventBuff[1..$];
+				return EventPollStatus.HasMore;
 			}
 			tryAgain:
 			MSG msg;
@@ -150,13 +151,16 @@ public class System : InputDevice {
 					case WM_KEYDOWN, WM_KEYUP, WM_SYSKEYDOWN, WM_SYSKEYUP:
 						output.type = InputEventType.Keyboard;
 						output.source = keyb;
-						if (message == WM_KEYDOWN || message == WM_SYSKEYDOWN)
+						if (message == WM_KEYDOWN || message == WM_SYSKEYDOWN) {
 							output.button.dir = 1;
-						else
+							keyb.win_rshift = GetAsyncKeyState(VK_RSHIFT) != 0;
+						} else
 							output.button.dir = 0;
-						output.button.id = translateSC(cast(uint)msg.wParam);
+						output.button.id = translateSC(cast(uint)msg.wParam, cast(uint)msg.lParam, keyb.win_rshift);
 						output.button.repeat = (msg.lParam & 0xFF_FF) < 255 ? cast(ubyte)(msg.lParam & 0xFF) : 0xFF;
 						output.button.aux = keyb.getModifiers();
+						if (message == WM_KEYUP || message == WM_SYSKEYUP)
+							keyb.win_rshift = GetAsyncKeyState(VK_RSHIFT) != 0;
 						break;
 					case 0x020E , WM_MOUSEWHEEL:
 						output.type = InputEventType.MouseScroll;
@@ -351,7 +355,7 @@ public class System : InputDevice {
 								output.type = InputEventType.Keyboard;
 								output.source = device;
 								output.button.dir = cast(ubyte)(inputData.Flags & 1);
-								output.button.id = translateSC(inputData.VKey);
+								output.button.id = translateSC(inputData.VKey, 0, false);
 								output.button.aux = device.getModifiers();
 								break;
 							default:

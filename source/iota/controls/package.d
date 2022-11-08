@@ -32,7 +32,7 @@ public int initInput(uint config = 0, uint osConfig = 0) nothrow {
 	System s = new System(config, osConfig);
 	deviceList ~= s;
 	version (Windows) {
-		if (!(osConfig & OSConfigFlags.win_LegacyIO)) {
+		if (osConfig & OSConfigFlags.win_RawInput) {
 			RAWINPUTDEVICE[] rid;
 			if (osConfig & OSConfigFlags.win_RawKeyboard)
 				rid ~= RAWINPUTDEVICE(0x0001, 0x0006, 0x2000, null);
@@ -42,37 +42,38 @@ public int initInput(uint config = 0, uint osConfig = 0) nothrow {
 				rid ~= RAWINPUTDEVICE(0x000D, 0x0004, 0x2000, null);
 			}
 			if (RegisterRawInputDevices(rid.ptr, cast(UINT)rid.length, cast(UINT)(RAWINPUTDEVICE.sizeof)) == FALSE) {
-				return InputInitializationStatus.WindowsRawInputError;
+				return InputInitializationStatus.win_RawInputError;
 			}
 			RAWINPUTDEVICELIST[] devices;
 			UINT nDevices;
 			if (GetRawInputDeviceList(null, &nDevices, cast(UINT)(RAWINPUTDEVICELIST.sizeof)))
-				return InputInitializationStatus.WindowsRawInputError;
+				return InputInitializationStatus.win_RawInputError;
 			devices.length = nDevices;
 			nDevices = GetRawInputDeviceList(devices.ptr, &nDevices, cast(UINT)(RAWINPUTDEVICELIST.sizeof));
 			if (nDevices == cast(uint)-1)
-				return InputInitializationStatus.WindowsDevicesAdded;
+				return InputInitializationStatus.win_DevicesAdded;
 			ubyte kbNum, mNum;
 			foreach (RAWINPUTDEVICELIST dev ; devices) {
 				wchar[] data;
 				data.length = 256;
 				UINT nameLen = 256;
 				UINT nameRes = GetRawInputDeviceInfoW(dev.hDevice, RIDI_DEVICENAME, cast(void*)data.ptr, &nameLen);
+				HANDLE hdevice = dev.hDevice;
 				if (nameRes == cast(UINT)-1)
-					return InputInitializationStatus.WindowsRawInputError;
+					return InputInitializationStatus.win_RawInputError;
 				switch (dev.dwType) {
 					case RIM_TYPEMOUSE:
 						version (iota_use_utf8) {
-							s.mouseList ~= new Mouse(toUTF8(data), mNum++, dev.hDevice);
+							s.mouseList ~= new Mouse(toUTF8(data[0..nameLen]), mNum++, dev.hDevice);
 						} else {
-							s.mouseList ~= new Mouse(toUTF32(data), mNum++, dev.hDevice);
+							s.mouseList ~= new Mouse(toUTF32(data[0..nameLen]), mNum++, dev.hDevice);
 						}
 						break;
 					case RIM_TYPEKEYBOARD:
 						version (iota_use_utf8) {
-							s.keybList ~= new Keyboard(toUTF8(data), kbNum++, dev.hDevice);
+							s.keybList ~= new Keyboard(toUTF8(data[0..nameLen]), kbNum++, dev.hDevice);
 						} else {
-							s.keybList ~= new Keyboard(toUTF32(data), kbNum++, dev.hDevice);
+							s.keybList ~= new Keyboard(toUTF32(data[0..nameLen]), kbNum++, dev.hDevice);
 						}
 						break;
 					default:
@@ -93,6 +94,7 @@ public int initInput(uint config = 0, uint osConfig = 0) nothrow {
 }
 /** 
  * Polls all input devices one by one.
+ * Also manages current list of all input devices upon invalidation.
  * Params:
  *   output = The input event is returned here.
  * Returns: 1 if there's more, 0 if all input events have been processed, or a specific error code.
@@ -107,12 +109,4 @@ public int pollInputs(ref InputEvent output) nothrow {
 	}
 	if (statusCode != 1) return statusCode;	//There's an error code from the current input device
 	return pollPos == deviceList.length ? EventPollStatus.Done : EventPollStatus.HasMore;
-}
-/**
- * Removes all invalidated devices.
- * Returns: 0 on success, or a specific errorcode.
- */
-public int removeInvalidDevs() nothrow {
-	
-	return 0;
 }
