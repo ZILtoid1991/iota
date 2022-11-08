@@ -108,6 +108,10 @@ public int pollInputs(ref InputEvent output) nothrow {
 	if (statusCode != 1) return statusCode;	//There's an error code from the current input device
 	return pollPos == deviceList.length ? EventPollStatus.Done : EventPollStatus.HasMore;
 }
+/**
+ * Removes all invalidated devices.
+ * Returns: 0 on success, or a specific errorcode.
+ */
 public int removeInvalidDevs() nothrow {
 	
 	return 0;
