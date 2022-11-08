@@ -57,7 +57,7 @@ public class WindowBitmap {
 	}
 	uint		width;		///Width of the bitmap.
 	uint		height;		///Height of the bitmap.
-	size_t		
+	size_t		pitch;
 	///Defines bitmap channels.
 	///lower nibble 0-2 = 2^n bits for that channel
 	///lower nibble 3 = floating-pont number
