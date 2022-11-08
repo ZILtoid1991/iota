@@ -55,13 +55,16 @@ public class WindowBitmap {
 		Y			=	0xC0,
 		Z			=	0xD0,
 	}
-	uint		width;
-	uint		height;
+	uint		width;		///Width of the bitmap.
+	uint		height;		///Height of the bitmap.
+	size_t		
 	///Defines bitmap channels.
 	///lower nibble 0-2 = 2^n bits for that channel
 	///lower nibble 3 = floating-pont number
 	///upper nibble = channel type identifier
 	ubyte[8]	channels;
+	///Stores the pixeldata of the bitmap.
+	///Byte order should match system defaults to avoid conversions.
 	ubyte[]		pixels;
 	public this(uint width, uint height, ubyte[8] channels, ubyte[] pixels) @nogc @safe pure nothrow {
 		this.width = width;
@@ -72,15 +75,15 @@ public class WindowBitmap {
 	/**
 	 * Returns the number of bits associated with the given channel number.
 	 */
-	public int getChannelBits(int chNum) {
+	public int getChannelBits(int chNum) @nogc @safe pure nothrow const {
 		return 1<<(channels[chNum] & 0x07);
 	}
 	/**
-	 *
+	 * Returns the total number of bits used by this bitmap.
 	 */
-	public int getTotalBits(int chNum) {
+	public int getTotalBits() {
 		int result;
-		for (int i ; i < channels.length ; i++) {
+		for (int i ; i < channels.length ; i++) @nogc @safe pure nothrow const {
 			result += getChannelBits(i);
 		}
 		return result;
