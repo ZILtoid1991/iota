@@ -46,7 +46,6 @@ public class Keyboard : InputDevice {
 		MenuKeyFix		=	1<<10,	
 		DisableMetaKey	=	1<<11,	///Disables meta key passthrough to OS
 		DisableMetaKeyComb=	1<<12,	///Disables meta key shortcut passthrough to OS
-		win_RightShift	=	1<<15,	///Because Microsoft was "clever"
 	}
 	version (Windows) {
 		package HANDLE		devHandle;
@@ -56,16 +55,6 @@ public class Keyboard : InputDevice {
 			this.devHandle = devHandle;
 			_type = InputDeviceType.Keyboard;
 			status |= StatusFlags.IsConnected;
-		}
-		package final bool win_rshift() @nogc @safe pure nothrow const {
-			return (status & KeyboardFlags.win_RightShift) != 0;
-		}
-		package final bool win_rshift(bool val) @nogc @safe pure nothrow {
-			if (val)
-				status |= KeyboardFlags.win_RightShift;
-			else
-				status &= ~KeyboardFlags.win_RightShift;
-			return (status & KeyboardFlags.win_RightShift) != 0;
 		}
 	}
 	package this() nothrow {

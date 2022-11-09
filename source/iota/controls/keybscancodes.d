@@ -267,7 +267,7 @@ public enum ScanCode : uint {
 /**
  * Translates OS native scancodes to standard ones.
  */
-version(Windows) package uint translateSC(uint input, uint aux, bool rshift) @nogc @safe pure nothrow {
+version(Windows) package uint translateSC(uint input, uint aux) @nogc @safe pure nothrow {
 	switch (input) {
 		case 0x08:
 			return ScanCode.BACKSPACE;
@@ -278,7 +278,11 @@ version(Windows) package uint translateSC(uint input, uint aux, bool rshift) @no
 		case 0x0d:
 			return ScanCode.ENTER;
 		case 0x10:
-			if (rshift) {
+			/*
+			It seems Microsoft made the 19th bit of lParam to accidentally function as a way to differentiate between the left and right shift.
+			Let's use it!
+			*/
+			if (aux & (1 << 18)) {	
 				return ScanCode.RSHIFT;
 			} else {
 				return ScanCode.LSHIFT;

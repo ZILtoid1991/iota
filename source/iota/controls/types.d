@@ -87,6 +87,8 @@ public enum ConfigFlags : uint {
 	///Toggles game controller trigger handling mode.
 	///If set, they will be treated as analog buttons, otherwise as axes that go between 0.0 and 1.0.
 	gc_TriggerMode				=	1 << 1,
+	///Enables game controller handling. (Always on under game consoles)
+	gc_Enable					=	1 << 2,
 }
 /** 
  * Operating system specific flags
@@ -151,6 +153,7 @@ public abstract class InputDevice {
 		HasBattery		=	1<<2,			///Set if device has a battery
 		IsAnalog		=	1<<3,			///Set if device has analog capabilities
 		IsVirtual		=	1<<4,			///Set if device is emulated/virtual (e.g. on-screen keyboard)
+		IsHapticCapable	=	1<<5,			///Set if device is haptic capable
 	}
 	/** 
 	 * Returns the type of the device.
@@ -211,6 +214,12 @@ public abstract class InputDevice {
 	 * Returns: 1 if there's still events to be polled, 0 if no events left. Other values are error codes.
 	 */
 	public abstract int poll(ref InputEvent output) nothrow;
+}
+public interface HapticDevice {
+	public uint[] getCapabilities();
+	public uint[] getZones(uint capability);
+	public int applyEffect(uint capability, uint zone, float strength);
+	public int reset();
 }
 /** 
  * Defines a button (keyboard, game controller) event data.

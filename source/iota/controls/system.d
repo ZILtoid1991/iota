@@ -153,14 +153,17 @@ public class System : InputDevice {
 						output.source = keyb;
 						if (message == WM_KEYDOWN || message == WM_SYSKEYDOWN) {
 							output.button.dir = 1;
-							keyb.win_rshift = GetAsyncKeyState(VK_RSHIFT) != 0;
-						} else
+						} else {
 							output.button.dir = 0;
-						output.button.id = translateSC(cast(uint)msg.wParam, cast(uint)msg.lParam, keyb.win_rshift);
+						}
+						//SHORT rshift = GetAsyncKeyState(VK_RSHIFT);
+						//SHORT lshift = GetAsyncKeyState(VK_LSHIFT);
+						output.button.id = translateSC(cast(uint)msg.wParam, cast(uint)msg.lParam);
 						output.button.repeat = (msg.lParam & 0xFF_FF) < 255 ? cast(ubyte)(msg.lParam & 0xFF) : 0xFF;
 						output.button.aux = keyb.getModifiers();
-						if (message == WM_KEYUP || message == WM_SYSKEYUP)
-							keyb.win_rshift = GetAsyncKeyState(VK_RSHIFT) != 0;
+						//keyb.win_rshift = rshift =! 0;
+						//keyb.win_lshift = lshift =! 0;
+						
 						break;
 					case 0x020E , WM_MOUSEWHEEL:
 						output.type = InputEventType.MouseScroll;
@@ -355,7 +358,8 @@ public class System : InputDevice {
 								output.type = InputEventType.Keyboard;
 								output.source = device;
 								output.button.dir = cast(ubyte)(inputData.Flags & 1);
-								output.button.id = translateSC(inputData.VKey, 0, false);
+								output.button.id = translateSC(inputData.VKey, 
+										(inputData.Flags & 2 ? 1<24 : 0) | ((inputData.MakeCode & 127) == 0x36 ? 1 << 18 : 0));
 								output.button.aux = device.getModifiers();
 								break;
 							default:
