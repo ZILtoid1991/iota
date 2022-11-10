@@ -6,6 +6,7 @@ public import iota.controls.types;
 public import iota.controls.keyboard;
 public import iota.controls.mouse;
 public import iota.controls.system;
+public import iota.controls.gamectrl;
 
 version (Windows) {
 	import core.sys.windows.windows;
@@ -32,6 +33,16 @@ public int initInput(uint config = 0, uint osConfig = 0) nothrow {
 	System s = new System(config, osConfig);
 	deviceList ~= s;
 	version (Windows) {
+		if (config & ConfigFlags.gc_Enable) {
+			import iota.controls.backend.windows;
+			XInputEnable(TRUE);
+			for (int i ; i < 4 ; i++) {
+				XInputDevice x = new XInputDevice(i, (config & ConfigFlags.gc_TriggerMode) != 0);
+				if (!x.isInvalidated) {
+					deviceList ~= x;
+				}
+			}
+		}
 		if (osConfig & OSConfigFlags.win_RawInput) {
 			RAWINPUTDEVICE[] rid;
 			if (osConfig & OSConfigFlags.win_RawKeyboard)

@@ -219,6 +219,11 @@ public abstract class InputDevice {
  * Defines basic functions for haptic devices.
  */
 public interface HapticDevice {
+	public enum Capabilities {
+		init,
+		LeftMotor,
+		RightMotor,
+	}
 	/**
 	 * Returns all capabilities of the haptic device.
 	 */
