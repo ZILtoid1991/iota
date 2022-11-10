@@ -93,8 +93,8 @@ version (Windows) public class XInputDevice : GameController {
 				return EventPollStatus.DeviceInvalidated;
 			}
 		}
-		if (cntr < 0) {
-			while (cntr < 0) {
+		if (cntr < 20) {
+			while (cntr < 20) {
 				switch (cntr) {
 					case 0:
 						if (state.Gamepad.bLeftTrigger != prevState.Gamepad.bLeftTrigger) {
@@ -118,115 +118,116 @@ version (Windows) public class XInputDevice : GameController {
 							}
 						}
 						break;
-					case 3:
+					case 2:
 						if (state.Gamepad.sThumbLX != prevState.Gamepad.sThumbLX) {
 							output.source = this;
 							
 						}
 						break;
-					case 4:
+					case 3:
 						if (state.Gamepad.sThumbLY != prevState.Gamepad.sThumbLY) {
 							output.source = this;
 							
 						}
 						break;
-					case 5:
+					case 4:
 						if (state.Gamepad.sThumbRX != prevState.Gamepad.sThumbRX) {
 							output.source = this;
 							
 						}
 						break;
-					case 6:
+					case 5:
 						if (state.Gamepad.sThumbRY != prevState.Gamepad.sThumbRY) {
 							output.source = this;
 							
 						}
 						break;
-					case 7:
+					case 6:
 						if ((state.Gamepad.wButtons & XINPUT_BUTTONS.XINPUT_GAMEPAD_DPAD_UP) ^
 								(prevState.Gamepad.wButtons & XINPUT_BUTTONS.XINPUT_GAMEPAD_DPAD_UP)) {
 							output.source = this;
 						}
 						break;
-					case 8:
+					case 7:
 						if ((state.Gamepad.wButtons & XINPUT_BUTTONS.XINPUT_GAMEPAD_DPAD_DOWN) ^
 								(prevState.Gamepad.wButtons & XINPUT_BUTTONS.XINPUT_GAMEPAD_DPAD_DOWN)) {
 							output.source = this;
 						}
 						break;
-					case 9:
+					case 8:
 						if ((state.Gamepad.wButtons & XINPUT_BUTTONS.XINPUT_GAMEPAD_DPAD_LEFT) ^
 								(prevState.Gamepad.wButtons & XINPUT_BUTTONS.XINPUT_GAMEPAD_DPAD_LEFT)) {
 							output.source = this;
 						}
 						break;
-					case 10:
+					case 9:
 						if ((state.Gamepad.wButtons & XINPUT_BUTTONS.XINPUT_GAMEPAD_DPAD_RIGHT) ^
 								(prevState.Gamepad.wButtons & XINPUT_BUTTONS.XINPUT_GAMEPAD_DPAD_RIGHT)) {
 							output.source = this;
 						}
 						break;
-					case 11:
+					case 10:
 						if ((state.Gamepad.wButtons & XINPUT_BUTTONS.XINPUT_GAMEPAD_START) ^
 								(prevState.Gamepad.wButtons & XINPUT_BUTTONS.XINPUT_GAMEPAD_START)) {
 							output.source = this;
 						}
 						break;
-					case 12:
+					case 11:
 						if ((state.Gamepad.wButtons & XINPUT_BUTTONS.XINPUT_GAMEPAD_BACK) ^
 								(prevState.Gamepad.wButtons & XINPUT_BUTTONS.XINPUT_GAMEPAD_BACK)) {
 							output.source = this;
 						}
-					case 13:
+					case 12:
 						if ((state.Gamepad.wButtons & XINPUT_BUTTONS.XINPUT_GAMEPAD_LEFT_THUMB) ^
 								(prevState.Gamepad.wButtons & XINPUT_BUTTONS.XINPUT_GAMEPAD_LEFT_THUMB)) {
 							output.source = this;
 						}
 						break;
-					case 14:
+					case 13:
 						if ((state.Gamepad.wButtons & XINPUT_BUTTONS.XINPUT_GAMEPAD_RIGHT_THUMB) ^
 								(prevState.Gamepad.wButtons & XINPUT_BUTTONS.XINPUT_GAMEPAD_RIGHT_THUMB)) {
 							output.source = this;
 						}
 						break;
-					case 15:
+					case 14:
 						if ((state.Gamepad.wButtons & XINPUT_BUTTONS.XINPUT_GAMEPAD_LEFT_SHOULDER) ^
 								(prevState.Gamepad.wButtons & XINPUT_BUTTONS.XINPUT_GAMEPAD_LEFT_SHOULDER)) {
 							output.source = this;
 						}
 						break;
-					case 16:
+					case 15:
 						if ((state.Gamepad.wButtons & XINPUT_BUTTONS.XINPUT_GAMEPAD_RIGHT_SHOULDER) ^
 								(prevState.Gamepad.wButtons & XINPUT_BUTTONS.XINPUT_GAMEPAD_RIGHT_SHOULDER)) {
 							output.source = this;
 						}
 						break;
-					case 17:
+					case 16:
 						if ((state.Gamepad.wButtons & XINPUT_BUTTONS.XINPUT_GAMEPAD_A) ^
 								(prevState.Gamepad.wButtons & XINPUT_BUTTONS.XINPUT_GAMEPAD_A)) {
 							output.source = this;
 						}
 						break;
-					case 18:
+					case 17:
 						if ((state.Gamepad.wButtons & XINPUT_BUTTONS.XINPUT_GAMEPAD_B) ^
 								(prevState.Gamepad.wButtons & XINPUT_BUTTONS.XINPUT_GAMEPAD_B)) {
 							output.source = this;
 						}
 						break;
-					case 19:
+					case 18:
 						if ((state.Gamepad.wButtons & XINPUT_BUTTONS.XINPUT_GAMEPAD_X) ^
 								(prevState.Gamepad.wButtons & XINPUT_BUTTONS.XINPUT_GAMEPAD_X)) {
 							output.source = this;
 						}
 						break;
-					case 20:
+					case 19:
 						if ((state.Gamepad.wButtons & XINPUT_BUTTONS.XINPUT_GAMEPAD_Y) ^
 								(prevState.Gamepad.wButtons & XINPUT_BUTTONS.XINPUT_GAMEPAD_Y)) {
 							output.source = this;
 						}
 						break;
 					default:
-						break;
+						cntr = 0;
+						return EventPollStatus.Done;
 				}
 				cntr++;
 			}
