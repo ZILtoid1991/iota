@@ -11,7 +11,7 @@ version (Windows) {
  * Defines standard codes for game controller buttons shared across device types.
  * Note: HID devices might not follow this standard.
  */
-public enum GameControllerButtons {
+public enum GameControllerButtons : ubyte {
 	///Initial value, or no button has been pressed.
 	init,
 	DPadUp,
@@ -45,11 +45,20 @@ public enum GameControllerButtons {
 	Home,
 	Share,
 }
+public enum GameControllerAxes : ubyte {
+	init,
+	LeftThumbstickX,
+	LeftThumbstickY,
+	RightThumbstickX,
+	RightThumbstickY,
+	LeftTrigger,
+	RightTrigger,
+}
 /**
  * Implements basic functionality common for all game controllers.
  */
 abstract class GameController : InputDevice {
-	
+	protected enum TriggerAsButton = 1<<8;
 }
 /**
  * Implements functionalities related to XInput devices. (Windows)
@@ -62,7 +71,6 @@ version (Windows) public class XInputDevice : GameController {
 	protected XINPUT_STATE		state, prevState;
 	///Counter for properties within the controller.
 	protected int				cntr;
-	protected enum TriggerAsButton = 1<<8;
 	package this (DWORD userIndex, bool axisType) {
 		XINPUT_CAPABILITIES xic;
 		const DWORD result = XInputGetCapabilities(userIndex, 0, &xic);
@@ -97,6 +105,65 @@ version (Windows) public class XInputDevice : GameController {
 							} else {
 
 							}
+						}
+						break;
+					case 1:
+						if (state.Gamepad.bRightTrigger != prevState.Gamepad.bRightTrigger) {
+							output.source = this;
+							if (status & TriggerAsButton) {
+								output.type = InputEventType.GCButton;
+								//output.button.id = 
+							} else {
+
+							}
+						}
+						break;
+					case 3:
+						if (state.Gamepad.sThumbLX != prevState.Gamepad.sThumbLX) {
+							output.source = this;
+							
+						}
+						break;
+					case 4:
+						if (state.Gamepad.sThumbLY != prevState.Gamepad.sThumbLY) {
+							output.source = this;
+							
+						}
+						break;
+					case 5:
+						if (state.Gamepad.sThumbRX != prevState.Gamepad.sThumbRX) {
+							output.source = this;
+							
+						}
+						break;
+					case 6:
+						if (state.Gamepad.sThumbRY != prevState.Gamepad.sThumbRY) {
+							output.source = this;
+							
+						}
+						break;
+					case 7:
+						if ((state.Gamepad.wButtons & XINPUT_BUTTONS.XINPUT_GAMEPAD_DPAD_UP) ^
+								(prevState.Gamepad.wButtons & XINPUT_BUTTONS.XINPUT_GAMEPAD_DPAD_UP)) {
+							output.source = this;
+						}
+						break;
+					case 8:
+						if ((state.Gamepad.wButtons & XINPUT_BUTTONS.XINPUT_GAMEPAD_DPAD_DOWN) ^
+								(prevState.Gamepad.wButtons & XINPUT_BUTTONS.XINPUT_GAMEPAD_DPAD_DOWN)) {
+							output.source = this;
+						}
+						break;
+					case 9:
+						if ((state.Gamepad.wButtons & XINPUT_BUTTONS.XINPUT_GAMEPAD_DPAD_LEFT) ^
+								(prevState.Gamepad.wButtons & XINPUT_BUTTONS.XINPUT_GAMEPAD_DPAD_LEFT)) {
+							output.source = this;
+						}
+						break;
+					case 10:
+						if ((state.Gamepad.wButtons & XINPUT_BUTTONS.XINPUT_GAMEPAD_DPAD_RIGHT) ^
+								(prevState.Gamepad.wButtons & XINPUT_BUTTONS.XINPUT_GAMEPAD_DPAD_RIGHT)) {
+							output.source = this;
 						}
 						break;
 					default:
