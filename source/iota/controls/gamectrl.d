@@ -7,17 +7,63 @@ version (Windows) {
 	import core.sys.windows.wtypes;
 	import iota.controls.backend.windows;
 }
-
+/**
+ * Defines standard codes for game controller buttons shared across device types.
+ * Note: HID devices might not follow this standard.
+ */
+public enum GameControllerButtons {
+	///Initial value, or no button has been pressed.
+	init,
+	DPadUp,
+	DPadDown,
+	DPadLeft,
+	DPadRight,
+	///The button to the north on the right hand side of the gamepad.
+	///XB: Y, PS: Triangle, N: X
+	North,
+	///The button to the south on the right hand side of the gamepad.
+	///XB: A, PS: X, N: B
+	South,
+	///The button to the south on the right hand side of the gamepad.
+	///XB: B, PS: Circle, N: A
+	East,
+	///The button to the south on the right hand side of the gamepad.
+	///XB: X, PS: Square, N: Y
+	West,
+	LeftShoulder,
+	RightShoulder,
+	LeftTrigger,
+	RightTrigger,
+	LeftThumbstick,
+	RightThumbstick,
+	///The navigation button on the left hand side of the controller.
+	///XB: Back, PS: Select (formerly), N: Select
+	LeftNav,
+	///The navigation button on the right hand side of the controller.
+	///XB: Start, PS: Start (formerly)/ Option, N: Start
+	RightNav,
+	Home,
+	Share,
+}
+/**
+ * Implements basic functionality common for all game controllers.
+ */
 abstract class GameController : InputDevice {
 	
 }
-
+/**
+ * Implements functionalities related to XInput devices. (Windows)
+ * 
+ */
 version (Windows) public class XInputDevice : GameController {
+	///Passed to XInputSetState.
 	protected XINPUT_VIBRATION	vibr;
+	///Stores info related to current and the previous state. Any events are calculated by the difference of the two.
 	protected XINPUT_STATE		state, prevState;
+	///Counter for properties within the controller.
 	protected int				cntr;
 	protected enum TriggerAsButton = 1<<8;
-	public this (DWORD userIndex, bool axisType) {
+	package this (DWORD userIndex, bool axisType) {
 		XINPUT_CAPABILITIES xic;
 		const DWORD result = XInputGetCapabilities(userIndex, 0, &xic);
 		if (result == ERROR_SUCCESS) {
