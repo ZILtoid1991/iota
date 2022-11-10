@@ -215,11 +215,33 @@ public abstract class InputDevice {
 	 */
 	public abstract int poll(ref InputEvent output) nothrow;
 }
+/**
+ * Defines basic functions for haptic devices.
+ */
 public interface HapticDevice {
-	public uint[] getCapabilities();
-	public uint[] getZones(uint capability);
-	public int applyEffect(uint capability, uint zone, float strength);
-	public int reset();
+	/**
+	 * Returns all capabilities of the haptic device.
+	 */
+	public uint[] getCapabilities() nothrow;
+	/**
+	 * Returns all zones associated with the capability of the device.
+	 * Returns null if zones are not applicable for the device's given capability.
+	 */
+	public uint[] getZones(uint capability) nothrow;
+	/**
+	 * Applies a given effect.
+	 * Params:
+	 *   capability: The capability to be used.
+	 *   zone: The zone where the effect should be used.
+	 *   val: Either the strength of the capability (between 0.0 and 1.0), or the frequency.
+	 * Returns: 0 on success, or a specific error code.
+	 */
+	public int applyEffect(uint capability, uint zone, float val) nothrow;
+	/**
+	 * Stops all haptic effects of the device.
+	 * Returns: 0 on success, or a specific error code.
+	 */
+	public int reset() nothrow;
 }
 /** 
  * Defines a button (keyboard, game controller) event data.
