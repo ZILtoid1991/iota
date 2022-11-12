@@ -35,7 +35,7 @@ public int initInput(uint config = 0, uint osConfig = 0) nothrow {
 	version (Windows) {
 		if (config & ConfigFlags.gc_Enable) {
 			import iota.controls.backend.windows;
-			XInputEnable(TRUE);
+			XInputEnable(256);
 			for (int i ; i < 4 ; i++) {
 				XInputDevice x = new XInputDevice(i, (config & ConfigFlags.gc_TriggerMode) != 0);
 				if (!x.isInvalidated) {
@@ -108,16 +108,17 @@ public int initInput(uint config = 0, uint osConfig = 0) nothrow {
  * Also manages current list of all input devices upon invalidation.
  * Params:
  *   output = The input event is returned here.
- * Returns: 1 if there's more, 0 if all input events have been processed, or a specific error code.
+ * Returns: 1 if there's more, 0 if all input events have been processed, or a specific error code (See EventPollStatus
+ * for specifics).
  */
 public int pollInputs(ref InputEvent output) nothrow {
 	if (!deviceList.length) return EventPollStatus.NoDevsFound;
 	if (pollPos == deviceList.length) pollPos = 0;
 	int statusCode;
-	while (pollPos < deviceList.length && !statusCode) {
+	while (pollPos < deviceList.length && (statusCode == 0)) {
 		statusCode = deviceList[pollPos].poll(output);
-		if (!statusCode) pollPos++;				//Step to next device, this one has no more events
+		if (statusCode) return statusCode;	//If statuscode isn't zero, return now
+		pollPos++;			//Step to next device, this one has no more events
 	}
-	if (statusCode != 1) return statusCode;	//There's an error code from the current input device
-	return pollPos == deviceList.length ? EventPollStatus.Done : EventPollStatus.HasMore;
+	return statusCode;
 }

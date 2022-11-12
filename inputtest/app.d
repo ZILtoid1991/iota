@@ -20,6 +20,10 @@ struct Options {
 	@Option("osconfig", "o")
 	@Help("Sets initInput's OS configflags to the given value.")
 	uint osconfigFlags;
+
+	@Option("rumbletest", "r")
+	@Help("Enables rumble test for XInput devices.")
+	int rumbletest;
 }
 
 immutable usage = usageString!Options("IOTA input tester");
@@ -55,9 +59,20 @@ int main(string[] args) {
 		pollInputs(event);
 		if (event.type == InputEventType.ApplExit || event.type == InputEventType.WindowClose) {
 			isRunning = false;
-		} else {
+		} else if (event.type != InputEventType.init) {
+			if (event.type == InputEventType.GCButton && event.source.isHapticCapable && options.rumbletest) {
+				if (event.button.id == GameControllerButtons.LeftTrigger) {
+					HapticDevice hd = cast(HapticDevice)event.source;
+					hd.applyEffect(HapticDevice.Capabilities.LeftMotor, 0, event.button.auxF);
+				}
+				if (event.button.id == GameControllerButtons.RightTrigger) {
+					HapticDevice hd = cast(HapticDevice)event.source;
+					hd.applyEffect(HapticDevice.Capabilities.RightMotor, 0, event.button.auxF);
+				}
+			}
 			writeln(event.toString());
 		}
+		Thread.sleep(dur!"msecs"(10));
 	}
 	return 0;
 }

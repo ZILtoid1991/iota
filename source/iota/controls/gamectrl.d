@@ -57,8 +57,31 @@ public enum GameControllerAxes : ubyte {
 /**
  * Implements basic functionality common for all game controllers.
  */
-abstract class GameController : InputDevice {
+abstract class GameController : InputDevice, HapticDevice {
 	protected enum TriggerAsButton = 1<<8;
+	/**
+	 * Returns all capabilities of the haptic device.
+	 */
+	public abstract uint[] getCapabilities() nothrow;
+	/**
+	 * Returns all zones associated with the capability of the device.
+	 * Returns null if zones are not applicable for the device's given capability.
+	 */
+	public abstract uint[] getZones(uint capability) nothrow;
+	/**
+	 * Applies a given effect.
+	 * Params:
+	 *   capability: The capability to be used.
+	 *   zone: The zone where the effect should be used.
+	 *   val: Either the strength of the capability (between 0.0 and 1.0), or the frequency.
+	 * Returns: 0 on success, or a specific error code.
+	 */
+	public abstract int applyEffect(uint capability, uint zone, float val) nothrow;
+	/**
+	 * Stops all haptic effects of the device.
+	 * Returns: 0 on success, or a specific error code.
+	 */
+	public abstract int reset() nothrow;
 }
 /**
  * Implements functionalities related to XInput devices. (Windows)
@@ -77,12 +100,18 @@ version (Windows) public class XInputDevice : GameController {
 		if (result == ERROR_SUCCESS) {
 			if (axisType)
 				status |= TriggerAsButton;
-			if (xic.Flags & XINPUT_CAPS.XINPUT_CAPS_FFB_SUPPORTED) {
-
-			}
+			//if (xic.Flags & XINPUT_CAPS.XINPUT_CAPS_FFB_SUPPORTED) 
+			status |= StatusFlags.IsHapticCapable;
+			
+			XInputGetState(_devNum, &state);
+			prevState = state;
 		} else {
 			status |= StatusFlags.IsInvalidated;
 		}
+	}
+	public override string toString() const @safe pure nothrow {
+		import std.conv : to;
+		return "XInputDevice; DevID: " ~ devNum().to!string;
 	}
 	public override int poll(ref InputEvent output) @nogc nothrow {
 		Timestamp getTimestamp() @nogc nothrow {
@@ -101,8 +130,8 @@ version (Windows) public class XInputDevice : GameController {
 				return EventPollStatus.DeviceInvalidated;
 			}
 		}
-		while (cntr <= 20) {
-			switch (cntr) {
+		while (cntr < 20) {
+			switch (cntr++) {
 				case 0:
 					if (state.Gamepad.bLeftTrigger != prevState.Gamepad.bLeftTrigger) {
 						output.source = this;
@@ -381,10 +410,61 @@ version (Windows) public class XInputDevice : GameController {
 					cntr = 0;
 					return EventPollStatus.Done;
 			}
-			cntr++;
 		}			
 		cntr = 0;
 		return EventPollStatus.Done;
 		
+	}
+	/**
+	 * Returns all capabilities of the haptic device.
+	 */
+	public override uint[] getCapabilities() nothrow {
+		return [HapticDevice.Capabilities.LeftMotor, HapticDevice.Capabilities.RightMotor];
+	}
+	/**
+	 * Returns all zones associated with the capability of the device.
+	 * Returns null if zones are not applicable for the device's given capability.
+	 */
+	public override uint[] getZones(uint capability) nothrow {
+		return null;
+	}
+	/**
+	 * Applies a given effect.
+	 * Params:
+	 *   capability: The capability to be used.
+	 *   zone: The zone where the effect should be used.
+	 *   val: Either the strength of the capability (between 0.0 and 1.0), or the frequency.
+	 * Returns: 0 on success, or a specific error code.
+	 */
+	public override int applyEffect(uint capability, uint zone, float val) nothrow {
+		switch (capability) {
+			case HapticDevice.Capabilities.LeftMotor:
+				if (val < 0.0 || val > 1.0)
+					return HapticDeviceStatus.OutOfRange;
+				vibr.wLeftMotorSpeed = cast(ushort)(val * ushort.max);
+				if (XInputSetState(_devNum, &vibr) == ERROR_SUCCESS)
+					return HapticDeviceStatus.AllOk;
+				return HapticDeviceStatus.DeviceInvalidated;
+			case HapticDevice.Capabilities.RightMotor:
+				if (val < 0.0 || val > 1.0)
+					return HapticDeviceStatus.OutOfRange;
+				vibr.wRightMotorSpeed = cast(ushort)(val * ushort.max);
+				if (XInputSetState(_devNum, &vibr) == ERROR_SUCCESS)
+					return HapticDeviceStatus.AllOk;
+				return HapticDeviceStatus.DeviceInvalidated;
+			default:
+				return HapticDeviceStatus.UnsupportedCapability;
+		}
+	}
+	/**
+	 * Stops all haptic effects of the device.
+	 * Returns: 0 on success, or a specific error code.
+	 */
+	public override int reset() nothrow {
+		vibr.wLeftMotorSpeed = 0;
+		vibr.wRightMotorSpeed = 0;
+		if (XInputSetState(_devNum, &vibr) == ERROR_SUCCESS)
+			return HapticDeviceStatus.AllOk;
+		return HapticDeviceStatus.DeviceInvalidated;
 	}
 }

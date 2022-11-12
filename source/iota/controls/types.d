@@ -124,6 +124,12 @@ public enum EventPollStatus {
 	NoDevsFound,
 	win_RawInputError,
 }
+public enum HapticDeviceStatus {
+	AllOk,
+	DeviceInvalidated,
+	UnsupportedCapability,
+	OutOfRange,
+}
 /** 
  * Defines text edit event flags.
  */
@@ -178,6 +184,9 @@ public abstract class InputDevice {
 	 */
 	public bool isInvalidated() @nogc @safe pure nothrow const @property {
 		return (status & StatusFlags.IsInvalidated) != 0;
+	}
+	public bool isHapticCapable() @nogc @safe pure nothrow const @property {
+		return (status & StatusFlags.IsHapticCapable) != 0;
 	}
 	/** 
 	 * Returns true if device has analog capabilities.
@@ -259,7 +268,7 @@ public struct ButtonEvent {
 	float		auxF;	///Placeholder for pressure-sensitive buttons, NaN otherwise
 	string toString() @safe pure const {
 		return "Direction: " ~ to!string(dir) ~" ; repeat: " ~ to!string(repeat) ~ " ; aux: " ~ to!string(aux) ~ " ; ID: " ~ 
-				to!string(id) ~ " ; ";
+				to!string(id) ~ " ; auxF: " ~ to!string(auxF) ~ " ;";
 	}
 }
 /** 
@@ -399,6 +408,9 @@ public struct InputEvent {
 				break;
 			case InputEventType.MouseScroll:
 				result ~= mouseSE.toString();
+				break;
+			case InputEventType.GCAxis:
+				result ~= axis.toString();
 				break;
 			default:
 				break;

@@ -104,7 +104,7 @@ public class System : InputDevice {
 			tryAgain:
 			MSG msg;
 			//BOOL bret = PeekMessage(&msg, OSWindow.refCount[winCount].getHandle, 0, 0, PM_REMOVE);
-			BOOL bret = GetMessageW(&msg, OSWindow.refCount[winCount].getHandle, 0, 0);
+			BOOL bret = PeekMessageW(&msg, OSWindow.refCount[winCount].getHandle, 0, 0, PM_REMOVE);
 			if (bret) {
 				if (keyb.isTextInputEn()) {
 					TranslateMessage(&msg);
