@@ -10,7 +10,7 @@ Input-output (audio, controls, etc) library for D. Intended as a D language nati
 |Keyboard                  |Legacy: Works; Raw: Buggy           |Not yet implemented                 |
 |Mouse                     |Legacy: Works; Raw: Buggy           |Not yet implemented                 |
 |Pen Tablet                |Not yet implemented                 |Not yet implemented                 |
-|Game controllers          |Not yet implemented                 |Not yet implemented                 |
+|Game controllers          |XInput : works.                     |Not yet implemented                 |
 |Windowing                 |A bit buggy                         |Not yet implemented                 |
 |OpenGL output             |In progress, not working yet        |Not yet implemented                 |
 
@@ -41,6 +41,8 @@ Both input and output works, but might suffer from some caveat that stems from t
 ### Windows
 
 Keyboard and mouse works without much issues while using the legacy API. A known bug is that it sometimes generates an additional empty event if the Alt key is pressed (because some people thought it's a good idea to dedicate a whole modifier key for the menubar), this will be fixed in a later release, likely by optionally disabling it.
+
+XInput is implemented and works. There should be a way to detect whether a device is rumble capable or not, but it doesn't work, so it's assumed that all controllers have this capability.
 
 #### Raw input
 
