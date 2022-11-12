@@ -1,6 +1,8 @@
 # Current
 
-* Control I/O on Windows works without many bugs using legacy API, and mostly wor
+* Control I/O on Windows works without many bugs using legacy API, RawInput works with a bug that doesn't allow it to differentiate between devices.
+* XInput support for Windows added.
+* Windowing added, but some features are not yet implemented.
 
 # 0.2.0
 
