@@ -1,5 +1,9 @@
 # Current
 
+* High-precision timestamps have been made standard.
+
+# 0.3.0-alpha
+
 * Control I/O on Windows works without many bugs using legacy API, RawInput works with a bug that doesn't allow it to differentiate between devices.
 * XInput support for Windows added.
 * Windowing added, but some features are not yet implemented.

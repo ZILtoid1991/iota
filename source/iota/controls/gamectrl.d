@@ -114,14 +114,7 @@ version (Windows) public class XInputDevice : GameController {
 		return "XInputDevice; DevID: " ~ devNum().to!string;
 	}
 	public override int poll(ref InputEvent output) @nogc nothrow {
-		Timestamp getTimestamp() @nogc nothrow {
-			version (iota_hi_prec_timestamp) {
-				return Timestamp.currTime;
-			} else {
-				import core.time;
-				return cast(Timestamp)(MonoTime.currTime().ticks / (MonoTime.ticksPerSecond / 1000));
-			}
-		}
+		
 		if (cntr == 0) {
 			prevState = state;
 			const DWORD result = XInputGetState(_devNum, &state);

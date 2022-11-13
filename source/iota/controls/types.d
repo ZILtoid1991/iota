@@ -3,17 +3,15 @@ module iota.controls.types;
 public import iota.window.oswindow;
 import std.conv : to;
 import std.bitmanip : bitfields;
-/*
- * If `iota_hi_prec_timestamp` is supplied as a version identifier, then MonoTime will be used for timestamps, 
- * otherwise uint will be used.
- *
- * However it's not ensured that higher precision will be actually provided, or that it'll be useful.
+public import core.time : MonoTime;
+
+alias Timestamp = MonoTime;
+
+/** 
+ * Generates a relatively high precision timesstamp.
  */
-version (iota_hi_prec_timestamp) {
-	public import core.time;
-	alias Timestamp = MonoTime;
-} else {
-	alias Timestamp = uint;
+package Timestamp getTimestamp() @nogc nothrow {
+	return Timestamp.currTime;
 }
 /** 
  * Defines the types of the input devices.

@@ -118,11 +118,7 @@ public class System : InputDevice {
 						(keyb.getModifiers | KeyboardModifiers.Meta))) {
 					DispatchMessageW(&msg);
 				}
-				version (iota_hi_prec_timestamp) {
-					output.timestamp = MonoTime.currTime();
-				} else {
-					output.timestamp = msg.time;
-				}
+				output.timestamp = getTimestamp();
 				output.handle = OSWindow.refCount[winCount].getHandle;
 				switch (msg.message & 0xFF_FF) {
 					case WM_CHAR, WM_SYSCHAR:
