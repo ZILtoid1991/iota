@@ -340,7 +340,7 @@ version(Windows) package uint translateSC(uint input, uint aux) @nogc @safe pure
 		case 0x30:						//Numeric-block
 			return ScanCode.n0;
 		case 0x31: .. case 0x39:		//Numeric-block
-			return input - 0x30 + 30;
+			return input - 0x31 + 30;
 		case 0x41: .. case 0x5A:		//Alpha-block
 			return input - 0x41 + 4;
 		case 0x5b:

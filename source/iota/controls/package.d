@@ -69,7 +69,7 @@ public int initInput(uint config = 0, uint osConfig = 0) nothrow {
 				data.length = 256;
 				UINT nameLen = 256;
 				UINT nameRes = GetRawInputDeviceInfoW(dev.hDevice, RIDI_DEVICENAME, cast(void*)data.ptr, &nameLen);
-				HANDLE hdevice = dev.hDevice;
+				//HANDLE hdevice = dev.hDevice;
 				if (nameRes == cast(UINT)-1)
 					return InputInitializationStatus.win_RawInputError;
 				switch (dev.dwType) {

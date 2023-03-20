@@ -216,6 +216,7 @@ public abstract class AudioDevice {
 	public @property AudioSpecs specs() @nogc @safe pure nothrow const {
 		return _specs;
 	}
+	//public abstract AudioSpecs getRecommendedSpecs();
 	public @property AudioShareMode shareMode() @nogc @safe pure nothrow const {
 		return _shareMode;
 	}

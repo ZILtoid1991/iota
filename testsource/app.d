@@ -39,7 +39,7 @@ int main(string[] args) {
 			return 0;
 		}
 		AudioSpecs givenSpecs = device.requestSpecs(
-			AudioSpecs(predefinedFormats[PredefinedFormats.FP32], 48_000, 0x00, 0x02, 512, Duration.init)
+			AudioSpecs(predefinedFormats[PredefinedFormats.FP32], 44_100, 0x00, 0x02, 512, Duration.init)
 		);
 		writeln("Received specs: ", givenSpecs.toString);
 		WASAPIDevice wdevice = cast(WASAPIDevice)device;

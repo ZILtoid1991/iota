@@ -70,6 +70,7 @@ public class System : InputDevice {
 						return key;
 					}
 				}
+				//assert (0);
 				return null;
 			}
 

@@ -120,12 +120,12 @@ public class WASAPIDevice : AudioDevice {
 			werrCode = audioClient.IsFormatSupported(
 				_shareMode == AudioShareMode.Shared ? AUDCLNT_SHAREMODE.AUDCLNT_SHAREMODE_SHARED : 
 				AUDCLNT_SHAREMODE.AUDCLNT_SHAREMODE_EXCLUSIVE, &waudioSpecs, &closestMatch);
+			waudioSpecs = *closestMatch;
 			switch (werrCode) {
 				case S_OK: break;
 				case S_FALSE, AUDCLNT_E_UNSUPPORTED_FORMAT:
-					waudioSpecs = *closestMatch;
-					reqSpecs.sampleRate = closestMatch.nSamplesPerSec;
-					reqSpecs.format.bits = cast(ubyte)closestMatch.wBitsPerSample;
+					reqSpecs.sampleRate = waudioSpecs.nSamplesPerSec;
+					reqSpecs.format.bits = cast(ubyte)waudioSpecs.wBitsPerSample;
 					reqSpecs.mirrorBufferSizes();
 					break;
 				case E_POINTER, E_INVALIDARG: 
@@ -141,6 +141,7 @@ public class WASAPIDevice : AudioDevice {
 					errCode = AudioInitializationStatus.Unknown; 
 					break;
 			}
+			
 			CoTaskMemFree(closestMatch);
 		}
 		return _specs = reqSpecs;
@@ -159,7 +160,7 @@ public class WASAPIDevice : AudioDevice {
 			if (werrCode != S_OK) {
 				switch (werrCode) {
 					case E_OUTOFMEMORY: errCode = StreamInitializationStatus.OutOfMemory; break;
-
+					case E_INVALIDARG: errCode = StreamInitializationStatus.ModeNotSupported; break;
 					default: errCode = StreamInitializationStatus.Unknown; break;
 				}
 				return null;
