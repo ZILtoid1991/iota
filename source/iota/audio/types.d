@@ -231,7 +231,8 @@ public enum MIDIInitializationStatus {
 	AllOk	=	0,		///No errors were encountered, operation was successful.
 	DevicesNotFound,	///No devices are found.
 	InitError,			///Initialization error otherwise not specified.
-	OSNotSupported		///OS not (yet) supported.
+	OSNotSupported,		///OS not (yet) supported.
+	UnknownError
 }
 /** 
  * Defines MIDI device initialization status codes.
@@ -242,7 +243,8 @@ public enum MIDIDeviceInitStatus {
 	DeviceDisconnected,	///Device disconnected, or invalidated.
 	InitError,			///Initialization error otherwise not specified.
 	OutOfMemory,		///Out of memory error.
-	OSNotSupported		///OS not (yet) supported.
+	OSNotSupported,		///OS not (yet) supported.
+	UnknownError
 }
 /** 
  * Defines MIDI device status codes.

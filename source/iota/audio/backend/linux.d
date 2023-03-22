@@ -4,6 +4,8 @@ version (linux):
 
 import core.stdc.stdint;
 import core.stdc.config;
+import core.stdc.time;
+
 
 // Begining of ALSA bindings (most done by Adam D. Ruppe)
 // Minimal, only needed functions have bindings.
@@ -19,6 +21,7 @@ private import core.sys.posix.poll;
 
 const(char)* snd_strerror(int);
 
+alias ssize_t = sizediff_t;
 // ctl
 
 enum snd_ctl_elem_iface_t {
@@ -177,7 +180,7 @@ struct snd_pcm_hw_params_t {}
 
 struct snd_pcm_sw_params_t {}
 
-int snd_pcm_open(snd_pcm_t**, const char*, snd_pcm_stream_t, int);
+int snd_pcm_open(snd_pcm_t**, const(char)*, snd_pcm_stream_t, int);
 int snd_pcm_close(snd_pcm_t*);
 int snd_pcm_pause(snd_pcm_t*, int);
 int	snd_pcm_start(snd_pcm_t *pcm);
@@ -236,7 +239,7 @@ else
 
 
 struct snd_rawmidi_t {}
-int snd_rawmidi_open(snd_rawmidi_t**, snd_rawmidi_t**, const char*, int);
+int snd_rawmidi_open(snd_rawmidi_t**, snd_rawmidi_t**, const(char)*, int);
 int snd_rawmidi_close(snd_rawmidi_t*);
 int snd_rawmidi_drain(snd_rawmidi_t*);
 ssize_t snd_rawmidi_write(snd_rawmidi_t*, const void*, size_t);
@@ -252,7 +255,7 @@ alias snd_mixer_elem_callback_t = int function(snd_mixer_elem_t*, uint);
 
 int snd_mixer_open(snd_mixer_t**, int mode);
 int snd_mixer_close(snd_mixer_t*);
-int snd_mixer_attach(snd_mixer_t*, const char*);
+int snd_mixer_attach(snd_mixer_t*, const(char)*);
 int snd_mixer_load(snd_mixer_t*);
 
 // FIXME: those aren't actually void*
@@ -260,7 +263,7 @@ int snd_mixer_selem_register(snd_mixer_t*, void*, void*);
 int snd_mixer_selem_id_malloc(snd_mixer_selem_id_t**);
 void snd_mixer_selem_id_free(snd_mixer_selem_id_t*);
 void snd_mixer_selem_id_set_index(snd_mixer_selem_id_t*, uint);
-void snd_mixer_selem_id_set_name(snd_mixer_selem_id_t*, const char*);
+void snd_mixer_selem_id_set_name(snd_mixer_selem_id_t*, const(char)*);
 snd_mixer_elem_t* snd_mixer_find_selem(snd_mixer_t*, in snd_mixer_selem_id_t*);
 // FIXME: the int should be an enum for channel identifier
 int snd_mixer_selem_get_playback_volume(snd_mixer_elem_t*, int, c_long*);
@@ -276,4 +279,86 @@ int snd_mixer_handle_events(snd_mixer_t*);
 // FIXME: the first int should be an enum for channel identifier
 int snd_mixer_selem_get_playback_switch(snd_mixer_elem_t*, int, int* value);
 int snd_mixer_selem_set_playback_switch_all(snd_mixer_elem_t*, int);
+int snd_device_name_hint (int card, const(char)* iface, void*** hints);
+int snd_device_name_free_hint (void** hints);
+char* snd_device_name_get_hint (const void* hint, const(char)* id);
+// rawmidi API
+enum snd_rawmidi_stream_t { 
+	SND_RAWMIDI_STREAM_OUTPUT = 0 , SND_RAWMIDI_STREAM_INPUT , SND_RAWMIDI_STREAM_LAST = SND_RAWMIDI_STREAM_INPUT 
+}
+ 
+enum snd_rawmidi_type_t { 
+	SND_RAWMIDI_TYPE_HW , SND_RAWMIDI_TYPE_SHM , SND_RAWMIDI_TYPE_INET , SND_RAWMIDI_TYPE_VIRTUAL 
+}
+ 
+enum snd_rawmidi_clock_t { 
+	SND_RAWMIDI_CLOCK_NONE = 0 , SND_RAWMIDI_CLOCK_REALTIME = 1 , SND_RAWMIDI_CLOCK_MONOTONIC = 2 , 
+	SND_RAWMIDI_CLOCK_MONOTONIC_RAW = 3 
+}
+ 
+enum snd_rawmidi_read_mode_t { SND_RAWMIDI_READ_STANDARD = 0 , SND_RAWMIDI_READ_TSTAMP = 1 }
+
+struct snd_rawmidi_info_t {}
+struct snd_rawmidi_params_t {}
+struct snd_rawmidi_status_t {}
+struct snd_rawmidi_t {}
+
+int snd_rawmidi_open (snd_rawmidi_t** in_rmidi, snd_rawmidi_t** out_rmidi, const(char)* name, int mode);
+int snd_rawmidi_open_lconf (snd_rawmidi_t** in_rmidi, snd_rawmidi_t** out_rmidi, const(char)* name, int mode, 
+		snd_config_t* lconf);
+int snd_rawmidi_close (snd_rawmidi_t* rmidi);
+int snd_rawmidi_poll_descriptors_count (snd_rawmidi_t* rmidi); 
+int snd_rawmidi_poll_descriptors (snd_rawmidi_t* rmidi, pollfd* pfds, uint space);
+int snd_rawmidi_poll_descriptors_revents (snd_rawmidi_t* rawmidi, pollfd* pfds, uint nfds, ushort* revent);
+int snd_rawmidi_nonblock (snd_rawmidi_t* rmidi, int nonblock);
+size_t snd_rawmidi_info_sizeof ();
+int snd_rawmidi_info_malloc (snd_rawmidi_info_t** ptr);
+void snd_rawmidi_info_free (snd_rawmidi_info_t* obj);
+void snd_rawmidi_info_copy (snd_rawmidi_info_t* dst, const(snd_rawmidi_info_t)* src);
+uint snd_rawmidi_info_get_device (const(snd_rawmidi_info_t)* obj);
+uint snd_rawmidi_info_get_subdevice (const(snd_rawmidi_info_t)* obj);
+snd_rawmidi_stream_t snd_rawmidi_info_get_stream (const(snd_rawmidi_info_t)* obj);
+int snd_rawmidi_info_get_card (const(snd_rawmidi_info_t)* obj);
+uint snd_rawmidi_info_get_flags (const(snd_rawmidi_info_t)* obj);
+const(char)* snd_rawmidi_info_get_id (const(snd_rawmidi_info_t)* obj);
+const(char)* snd_rawmidi_info_get_name (const(snd_rawmidi_info_t)* obj);
+const(char)* snd_rawmidi_info_get_subdevice_name (const(snd_rawmidi_info_t)* obj);
+uint snd_rawmidi_info_get_subdevices_count (const(snd_rawmidi_info_t)* obj);
+uint snd_rawmidi_info_get_subdevices_avail (const(snd_rawmidi_info_t)* obj);
+void snd_rawmidi_info_set_device (snd_rawmidi_info_t* obj, uint val);
+void snd_rawmidi_info_set_subdevice (snd_rawmidi_info_t* obj, uint val);
+void snd_rawmidi_info_set_stream (snd_rawmidi_info_t* obj, snd_rawmidi_stream_t val);
+int snd_rawmidi_info (snd_rawmidi_t* rmidi, snd_rawmidi_info_t* info);
+size_t snd_rawmidi_params_sizeof (void);
+int snd_rawmidi_params_malloc (snd_rawmidi_params_t** ptr);
+void snd_rawmidi_params_free (snd_rawmidi_params_t* obj);
+void snd_rawmidi_params_copy (snd_rawmidi_params_t* dst, const snd_rawmidi_params_t* src);
+int snd_rawmidi_params_set_buffer_size (snd_rawmidi_t* rmidi, snd_rawmidi_params_t* params, size_t val);
+size_t snd_rawmidi_params_get_buffer_size (const(snd_rawmidi_params_t)* params);
+int snd_rawmidi_params_set_avail_min (snd_rawmidi_t* rmidi, snd_rawmidi_params_t* params, size_t val);
+size_t snd_rawmidi_params_get_avail_min (const(snd_rawmidi_params_t)* params);
+int snd_rawmidi_params_set_no_active_sensing (snd_rawmidi_t* rmidi, snd_rawmidi_params_t* params, int val);
+int snd_rawmidi_params_get_no_active_sensing (const(snd_rawmidi_params_t)* params);
+int snd_rawmidi_params_set_read_mode (const snd_rawmidi_t* rawmidi, snd_rawmidi_params_t* params, snd_rawmidi_read_mode_t val);
+snd_rawmidi_read_mode_t snd_rawmidi_params_get_read_mode (const(snd_rawmidi_params_t)* params);
+int snd_rawmidi_params_set_clock_type (const snd_rawmidi_t* rawmidi, snd_rawmidi_params_t* params, snd_rawmidi_clock_t val);
+snd_rawmidi_clock_t snd_rawmidi_params_get_clock_type (const(snd_rawmidi_params_t)* params);
+int snd_rawmidi_params (snd_rawmidi_t* rmidi, snd_rawmidi_params_t* params);
+int snd_rawmidi_params_current (snd_rawmidi_t* rmidi, snd_rawmidi_params_t* params);
+size_t snd_rawmidi_status_sizeof (void);
+int snd_rawmidi_status_malloc (snd_rawmidi_status_t** ptr);
+void snd_rawmidi_status_free (snd_rawmidi_status_t* obj);
+void snd_rawmidi_status_copy (snd_rawmidi_status_t* dst, const(snd_rawmidi_status_t)* src);
+void snd_rawmidi_status_get_tstamp (const(snd_rawmidi_status_t)* obj, snd_htimestamp_t *ptr);
+size_t snd_rawmidi_status_get_avail (const(snd_rawmidi_status_t)* obj);
+size_t snd_rawmidi_status_get_xruns (const(snd_rawmidi_status_t)* obj);
+int snd_rawmidi_status (snd_rawmidi_t* rmidi, snd_rawmidi_status_t* status);
+int snd_rawmidi_drain (snd_rawmidi_t* rmidi);
+int snd_rawmidi_drop (snd_rawmidi_t* rmidi);
+ssize_t snd_rawmidi_write (snd_rawmidi_t* rmidi, const void *buffer, size_t size);
+ssize_t snd_rawmidi_read (snd_rawmidi_t* rmidi, void *buffer, size_t size);
+//ssize_t snd_rawmidi_tread (snd_rawmidi_t* rmidi, timespec *tstamp, void *buffer, size_t size);
+const(char)* snd_rawmidi_name (snd_rawmidi_t* rmidi);
+snd_rawmidi_type_t snd_rawmidi_type (snd_rawmidi_t* rmidi);
+snd_rawmidi_stream_t snd_rawmidi_stream (snd_rawmidi_t* rawmidi);
 // End of ALSA bindings

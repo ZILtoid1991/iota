@@ -12,6 +12,9 @@ version (Windows) {
 	 * Te last error code that occured on the OS side.
 	 */
 	MMRESULT lastErrorCode;
+} version (linux) {
+	import iota.audio.alsamidi;
+	import iota.audio.backend.linux2;
 }
 
 /** 
@@ -53,6 +56,21 @@ public int initMIDI() {
 				return lastStatusCode = MIDIInitializationStatus.InitError;
 		}
 		return 0;
+	} version (linux) {
+		ubyte[] midiDevDirs;
+		string[] midiDevNames = listdev("rawmidi", midiDevDirs);
+		assert(midiDevDirs.length == midiDevNames.length);
+		if (!midiDevDirs.length)
+			return MIDIInitializationStatus.DevicesNotFound;
+		for (int i ; i < midiDevNames.length ; i++) {
+			if (midiDevDirs[i]) {
+				inDevs ~= midiDevNames[i];
+			} else {
+				outDevs ~= midiDevNames[i];
+			}
+		}
+		assert(inDevs.length + outDevs.length == midiDevDirs.length);
+		return MIDIInitializationStatus.AllOk;
 	} else return lastStatusCode = MIDIInitializationStatus.OSNotSupported;
 }
 ///Returns the name of all MIDI input devices.

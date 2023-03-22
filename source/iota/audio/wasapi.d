@@ -72,6 +72,16 @@ public class WASAPIDevice : AudioDevice {
 		}
 		this._nOfOutputs = -1;
 		this._nOfInputs = -1;
+		werrCode = backend.Activate(IID_IAudioClient, CLSCTX_ALL, null, cast(void**)&audioClient);
+		if (werrCode != S_OK) {
+			switch (werrCode) {
+				case E_NOINTERFACE: errCode = AudioInitializationStatus.DriverNotAvailable; break;
+				case AUDCLNT_E_DEVICE_INVALIDATED: errCode = AudioInitializationStatus.DeviceNotFound; break;
+				case E_OUTOFMEMORY: errCode = AudioInitializationStatus.OutOfMemory; break;
+				case E_INVALIDARG, E_POINTER: errCode = AudioInitializationStatus.InternalError; break;
+				default: errCode = AudioInitializationStatus.Unknown; break;
+			}
+		}
 	}
 	~this() {
 		if (backend !is null)
@@ -87,6 +97,17 @@ public class WASAPIDevice : AudioDevice {
 	public @property AudioShareMode shareMode(AudioShareMode val) @nogc @safe pure nothrow {
 		return _shareMode = val;
 	}
+	/** 
+	 * Returns the recommended sample rate, or -1 if sample-rate isn't boind to internal clock.
+	 */
+	public override int getRecommendedSampleRate() nothrow {
+		WAVEFORMATEX* format;
+		werrCode = audioClient.GetMixFormat(&format);
+
+		const int result = format.nSamplesPerSec;
+		CoTaskMemFree(format);
+		return result;
+	}
 	/**
 	 * Sets the device's audio specifications to the closest possible specifications.
 	 * Params:
@@ -98,17 +119,7 @@ public class WASAPIDevice : AudioDevice {
 	public override AudioSpecs requestSpecs(AudioSpecs reqSpecs, int flags = 0) {
 		reqSpecs.mirrorBufferSizes();
 		if (reqSpecs.outputChannels) {
-			werrCode = backend.Activate(IID_IAudioClient, CLSCTX_ALL, null, cast(void**)&audioClient);
-			if (werrCode != S_OK) {
-				switch (werrCode) {
-					case E_NOINTERFACE: errCode = AudioInitializationStatus.DriverNotAvailable; break;
-					case AUDCLNT_E_DEVICE_INVALIDATED: errCode = AudioInitializationStatus.DeviceNotFound; break;
-					case E_OUTOFMEMORY: errCode = AudioInitializationStatus.OutOfMemory; break;
-					case E_INVALIDARG, E_POINTER: errCode = AudioInitializationStatus.InternalError; break;
-					default: errCode = AudioInitializationStatus.Unknown; break;
-				}
-				return AudioSpecs.init;
-			}
+			
 			waudioSpecs.wFormatTag = (reqSpecs.format.flags & SampleFormat.Flag.Type_Test) != SampleFormat.Flag.Type_Float ? 
 					WAVE_FORMAT_PCM : WAVE_FORMAT_IEEE_FLOAT;
 			waudioSpecs.nSamplesPerSec = reqSpecs.sampleRate;
@@ -120,7 +131,8 @@ public class WASAPIDevice : AudioDevice {
 			werrCode = audioClient.IsFormatSupported(
 				_shareMode == AudioShareMode.Shared ? AUDCLNT_SHAREMODE.AUDCLNT_SHAREMODE_SHARED : 
 				AUDCLNT_SHAREMODE.AUDCLNT_SHAREMODE_EXCLUSIVE, &waudioSpecs, &closestMatch);
-			waudioSpecs = *closestMatch;
+			if (closestMatch)
+				waudioSpecs = *closestMatch;
 			switch (werrCode) {
 				case S_OK: break;
 				case S_FALSE, AUDCLNT_E_UNSUPPORTED_FORMAT:
