@@ -38,11 +38,18 @@ int main(string[] args) {
 			writeln("Device failed to initialize! Error code: ", errCode, " ; Windows error code: ", lastErrorCode);
 			return 0;
 		}
+		WASAPIDevice wdevice = cast(WASAPIDevice)device;
+		int samplerate = device.getRecommendedSampleRate();
+		if (samplerate <= 0) {
+			writeln("Failed to request default sampling rate! Windows error code: ", wdevice.werrCode);
+			return 0;
+		}
+		writeln("Recommended sampling rate: ", samplerate);
 		AudioSpecs givenSpecs = device.requestSpecs(
-			AudioSpecs(predefinedFormats[PredefinedFormats.FP32], 44_100, 0x00, 0x02, 512, Duration.init)
+			AudioSpecs(predefinedFormats[PredefinedFormats.FP32], samplerate, 0x00, 0x02, 512, Duration.init)
 		);
 		writeln("Received specs: ", givenSpecs.toString);
-		WASAPIDevice wdevice = cast(WASAPIDevice)device;
+		
 		if (device.errCode != AudioInitializationStatus.AllOk) {
 			writeln("Failed to request audio specifications! Error code: ", errCode, " ; Windows error code: ", wdevice.werrCode);
 			return 0;

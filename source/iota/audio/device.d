@@ -14,6 +14,9 @@ version (Windows) {
 	import core.sys.windows.wtypes;
 } else version (linux) {
 	public import iota.audio.alsa;
+	import iota.audio.backend.linux2;
+
+	
 }
 /** 
  * The type of the initialized driver, or none if no driver was initialized yet.
@@ -48,8 +51,13 @@ public int initDriver(DriverType type = OS_PREFERRED_DRIVER) {
 			break;
 		case ALSA:
 			version (linux) {
+				pcmDevNames = listdev("pcm", pcmDevDirs);
 				initializedDriver = DriverType.ALSA;
-				return AudioInitializationStatus.AllOk;
+				if (pcmDevNames.length) {
+					return AudioInitializationStatus.AllOk;
+				} else {
+					return AudioInitializationStatus.NoAudioDeviceFound;
+				}
 			} else {
 				return AudioInitializationStatus.OSNotSupported;
 			}
@@ -91,19 +99,9 @@ public string[] getOutputDeviceNames() {
 	} else version (linux) {
 		if (initializedDriver == DriverType.ALSA) {
 			string[] result;
-			if (!devicenames.length) {
-				int cardIndex = -1;
-				do {
-					lastErrorCode = snd_card_next(&cardIndex);
-					if (cardIndex != -1) {
-						char* str;
-						lastErrorCode = snd_card_get_name(cardIndex, &str);
-						devicenames ~= str;
-					}
-				} while (cardIndex != -1);
-			}
-			foreach (char* key; devicenames) {
-				result ~= fromStringz(key).idup;
+			for (int i ; i < pcmDevNames.length ; i++) {
+				if(!pcmDevDirs[i])
+					result ~= pcmDevNames[i];
 			}
 			return result;
 		} else return null;
@@ -229,6 +227,10 @@ public abstract class AudioDevice {
 	 * In case of a failure, `errCode` is also set with the corresponding flags.
 	 */
 	public abstract AudioSpecs requestSpecs(AudioSpecs reqSpecs, int flags = 0);
+	/** 
+	 * Returns the recommended sample rate, or -1 if sample-rate isn't boind to internal clock.
+	 */
+	public abstract int getRecommendedSampleRate() nothrow;
 	/** 
 	 * Creates an OutputStream specific to the given driver/device, with the requested parameters, then returns it. Or
 	 * null in case of an error, then it also sets `errCode` to a given error code. Might also set a separate error

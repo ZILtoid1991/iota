@@ -3,6 +3,7 @@ module iota.audio.alsa;
 version (linux):
 
 package import iota.audio.backend.linux;
+package import iota.audio.backend.linux2;
 
 import iota.audio.device;
 import iota.audio.output;
@@ -13,22 +14,11 @@ import core.stdc.stdlib;
 
 import core.thread;
 
-/// Name of all devices
-package static char*[] devicenames;
+/// Name of all PCM devices
+package static string[] pcmDevNames;
+package static ubyte[] pcmDevDirs;
 /// The last ALSA specific error code
 public static int lastErrorCode;
-
-/// Automatic cleanup.
-shared static ~this() {
-	flushNames();
-}
-/** 
- * Flushes all device names automatically.
- */
-package void flushNames() {
-	foreach (key ; devicenames)
-		free(key);
-}
 /** 
  * Returns the error string from an error code.
  * Params:
@@ -154,6 +144,13 @@ public class ALSADevice : AudioDevice {
 		if (alsaerrCode) {errCode = StreamInitializationStatus.UnsupportedFormat; return AudioSpecs.init;}
 		//snd_pcm_nonblock(pcmHandle, 0);
 		return _specs = reqSpecs;
+	}
+
+	/** 
+	 * Returns the recommended sample rate, or -1 if sample-rate isn't boind to internal clock.
+	 */
+	public abstract int getRecommendedSampleRate() @nogc nothrow {
+		return -1;
 	}
 
 	override public OutputStream createOutputStream() {

@@ -762,7 +762,7 @@ interface IAudioClient : IUnknown {
 
     HRESULT GetMixFormat( 
 	    /* [annotation][out] */ 
-	    out WAVEFORMATEX *ppDeviceFormat);
+	    WAVEFORMATEX **ppDeviceFormat);
 
     HRESULT GetDevicePeriod( 
 	    /* [annotation][out] */ 
