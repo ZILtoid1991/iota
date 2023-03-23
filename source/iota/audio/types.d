@@ -252,4 +252,5 @@ public enum MIDIDeviceInitStatus {
 public enum MIDIDeviceStatus {
 	AllOk	=	0,		///No errors were encountered, operation was successful.
 	DeviceDisconnected,	///Device disconnected, or invalidated.
+	UnknownError,
 }
