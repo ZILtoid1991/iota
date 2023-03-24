@@ -12,13 +12,13 @@ import core.thread;
 import core.time;
 
 public class ALSAMIDIInput : MIDIInput {
-	protected Thread		autoReader;
-	protected ubyte[]		buffer;
-	protected snd_rawmidi_t* rmidi;
+	protected Thread		autoReader;		///Automatic reader thread for delegate method
+	protected ubyte[]		buffer;			
+	protected snd_rawmidi_t* rmidi;			///Handle to the raw MIDI device
 	//protected snd_rawmidi_params_t* params;
-	protected bool			isRunning;
-	protected string		nameID;
-	public ssize_t			errCode;
+	protected bool			isRunning;		///Set to true if the reader is in operation
+	protected string		nameID;			///Device name identifier with added null terminator
+	public ssize_t			errCode;		///Last returned error code
 	package this(string nameID) {
 		this.nameID = nameID ~ "/00";
 	}
@@ -26,6 +26,13 @@ public class ALSAMIDIInput : MIDIInput {
 	 * Returns the content of the buffer and clears it.
 	 */
 	public override ubyte[] read() nothrow {
+		errCode = snd_rawmidi_read(rmidi, null, 0);
+		if (errCode >= 0) {
+			errCode = snd_rawmidi_read(rmidi, buffer.ptr, buffer.length);
+			if (errCode >= 0) {
+				return buffer[0..errCode];
+			}
+		}
 		return null;
 	}
 	/** 
