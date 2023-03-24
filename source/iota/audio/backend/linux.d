@@ -238,12 +238,12 @@ else
 	alias ssize_t = long;
 
 
-struct snd_rawmidi_t {}
-int snd_rawmidi_open(snd_rawmidi_t**, snd_rawmidi_t**, const(char)*, int);
-int snd_rawmidi_close(snd_rawmidi_t*);
-int snd_rawmidi_drain(snd_rawmidi_t*);
-ssize_t snd_rawmidi_write(snd_rawmidi_t*, const void*, size_t);
-ssize_t snd_rawmidi_read(snd_rawmidi_t*, void*, size_t);
+//struct snd_rawmidi_t {}
+//int snd_rawmidi_open(snd_rawmidi_t**, snd_rawmidi_t**, const(char)*, int);
+//int snd_rawmidi_close(snd_rawmidi_t*);
+//int snd_rawmidi_drain(snd_rawmidi_t*);
+//ssize_t snd_rawmidi_write(snd_rawmidi_t*, const void*, size_t);
+//ssize_t snd_rawmidi_read(snd_rawmidi_t*, void*, size_t);
 
 // mixer
 
@@ -308,8 +308,8 @@ int snd_rawmidi_open_lconf (snd_rawmidi_t** in_rmidi, snd_rawmidi_t** out_rmidi,
 		snd_config_t* lconf);
 int snd_rawmidi_close (snd_rawmidi_t* rmidi);
 int snd_rawmidi_poll_descriptors_count (snd_rawmidi_t* rmidi); 
-int snd_rawmidi_poll_descriptors (snd_rawmidi_t* rmidi, pollfd* pfds, uint space);
-int snd_rawmidi_poll_descriptors_revents (snd_rawmidi_t* rawmidi, pollfd* pfds, uint nfds, ushort* revent);
+//int snd_rawmidi_poll_descriptors (snd_rawmidi_t* rmidi, pollfd* pfds, uint space);
+//int snd_rawmidi_poll_descriptors_revents (snd_rawmidi_t* rawmidi, pollfd* pfds, uint nfds, ushort* revent);
 int snd_rawmidi_nonblock (snd_rawmidi_t* rmidi, int nonblock);
 size_t snd_rawmidi_info_sizeof ();
 int snd_rawmidi_info_malloc (snd_rawmidi_info_t** ptr);
