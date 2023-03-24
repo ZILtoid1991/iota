@@ -19,8 +19,9 @@ public class ALSAMIDIInput : MIDIInput {
 	protected bool			isRunning;		///Set to true if the reader is in operation
 	protected string		nameID;			///Device name identifier with added null terminator
 	public ssize_t			errCode;		///Last returned error code
-	package this(string nameID) {
+	package this(string nameID, uint bufferSize = 4096) {
 		this.nameID = nameID ~ "/00";
+		buffer.length = bufferSize;
 	}
 	/** 
 	 * Returns the content of the buffer and clears it.
