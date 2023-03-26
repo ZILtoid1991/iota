@@ -51,13 +51,13 @@ public int initDriver(DriverType type = OS_PREFERRED_DRIVER) {
 			break;
 		case ALSA:
 			version (linux) {
-				pcmDevNames = listdev("pcm", pcmDevDirs);
+				pcmDevNames = listdev("PCM\n", pcmDevDirs);
 				initializedDriver = DriverType.ALSA;
-				if (pcmDevNames.length) {
+				//if (pcmDevNames.length) {
 					return AudioInitializationStatus.AllOk;
-				} else {
-					return AudioInitializationStatus.NoAudioDeviceFound;
-				}
+				//} else {
+				//	return AudioInitializationStatus.NoAudioDeviceFound;
+				//}
 			} else {
 				return AudioInitializationStatus.OSNotSupported;
 			}
@@ -133,7 +133,7 @@ public int openDevice(int devID, ref AudioDevice device) {
 		if (initializedDriver == DriverType.ALSA) {
 			snd_pcm_t* pcmHandle;
 			//lastErrorCode = snd_ctl_open(&pcmHandle, devID >= 0 ? devicenames[devID] : "default", 0);
-			lastErrorCode = snd_pcm_open(&pcmHandle, devID >= 0 ? devicenames[devID] : "default", 
+			lastErrorCode = snd_pcm_open(&pcmHandle, devID >= 0 ? pcmDevNames[devID].ptr : "default", 
 					snd_pcm_stream_t.SND_PCM_STREAM_PLAYBACK, 0);
 			if (lastErrorCode) {
 				return AudioInitializationStatus.DeviceNotFound;

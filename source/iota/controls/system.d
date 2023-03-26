@@ -8,9 +8,9 @@ version (Windows) {
 	import iota.controls.mouse;
 	import std.utf;
 	import std.stdio;
+	import iota.controls.keybscancodes : translateSC;
 }
 import iota.controls.types;
-import iota.controls.keybscancodes : translateSC;
 import iota.etc.charcode;
 import iota.window;
 
@@ -436,6 +436,8 @@ public class System : InputDevice {
 			}
 
 			return 1;
+		} else {
+			return 0;
 		}
 	}
 }

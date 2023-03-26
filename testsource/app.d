@@ -89,7 +89,8 @@ int main(string[] args) {
 					getErrorString(lastErrorCode));
 			return 0;
 		}
-		AudioSpecs givenSpecs = device.requestSpecs(AudioSpecs(predefinedFormats[3], 48_000, 0x00, 0x02, 1024, Duration.init));
+		AudioSpecs givenSpecs = device.requestSpecs(AudioSpecs(predefinedFormats[PredefinedFormats.FP32], 44_100, 0x00, 0x02, 
+				1024, Duration.init));
 		writeln("Received specs: ", givenSpecs.toString);
 		ALSADevice ldevice = cast(ALSADevice)device;
 		if (ldevice.alsaerrCode) {

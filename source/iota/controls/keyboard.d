@@ -56,6 +56,8 @@ public class Keyboard : InputDevice {
 			_type = InputDeviceType.Keyboard;
 			status |= StatusFlags.IsConnected;
 		}
+	} else {
+		package void*		devHandle;
 	}
 	package this() nothrow {
 		_type = InputDeviceType.Keyboard;

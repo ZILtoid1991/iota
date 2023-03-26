@@ -11,7 +11,7 @@ import core.stdc.stdlib;
  *   direction = Device direction.
  * Returns: An array of strings with the names of the devices
  */
-string[] listdev(char* devname, out ubyte[] direction) {
+string[] listdev(string devname, out ubyte[] direction) {
 	import std.string : fromStringz;
 	char**	hints;
 	int		err;
@@ -21,7 +21,7 @@ string[] listdev(char* devname, out ubyte[] direction) {
 	string[] result;
 
 	//Enumerate sound devices
-	err = snd_device_name_hint(-1, devname, cast(void***)&hints);
+	err = snd_device_name_hint(-1, devname.ptr, cast(void***)&hints);
 	if (err != 0) {
 		return null;
 	}
@@ -40,6 +40,6 @@ string[] listdev(char* devname, out ubyte[] direction) {
 		free(dir);
 		n++;
 	}
-	snd_device_name_free_hint(hints);
+	snd_device_name_free_hint(cast(void**)hints);
 	return result;
 }

@@ -239,13 +239,17 @@ public class OSWindow {
 	 * Manually maximizes the window from code.
 	 */
 	public void maximizeWindow() {
-		ShowWindow(windowHandle, SW_MAXIMIZE);
+		version (Windows) {
+			ShowWindow(windowHandle, SW_MAXIMIZE);
+		}
 	}
 	/**
 	 * Manually minimizes the window from code.
 	 */
 	public void minimizeWindow() {
-		ShowWindow(windowHandle, SW_MINIMIZE);
+		version (Windows) {
+			ShowWindow(windowHandle, SW_MINIMIZE);
+		}
 	}
 	/** 
 	 * Callback function for windowing. Can be overridden to process more messages than by default.

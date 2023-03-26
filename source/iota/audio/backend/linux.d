@@ -21,7 +21,6 @@ private import core.sys.posix.poll;
 
 const(char)* snd_strerror(int);
 
-alias ssize_t = sizediff_t;
 // ctl
 
 enum snd_ctl_elem_iface_t {
@@ -304,8 +303,8 @@ struct snd_rawmidi_status_t {}
 struct snd_rawmidi_t {}
 
 int snd_rawmidi_open (snd_rawmidi_t** in_rmidi, snd_rawmidi_t** out_rmidi, const(char)* name, int mode);
-int snd_rawmidi_open_lconf (snd_rawmidi_t** in_rmidi, snd_rawmidi_t** out_rmidi, const(char)* name, int mode, 
-		snd_config_t* lconf);
+/+int snd_rawmidi_open_lconf (snd_rawmidi_t** in_rmidi, snd_rawmidi_t** out_rmidi, const(char)* name, int mode, 
+		snd_config_t* lconf);+/
 int snd_rawmidi_close (snd_rawmidi_t* rmidi);
 int snd_rawmidi_poll_descriptors_count (snd_rawmidi_t* rmidi); 
 //int snd_rawmidi_poll_descriptors (snd_rawmidi_t* rmidi, pollfd* pfds, uint space);
@@ -329,7 +328,7 @@ void snd_rawmidi_info_set_device (snd_rawmidi_info_t* obj, uint val);
 void snd_rawmidi_info_set_subdevice (snd_rawmidi_info_t* obj, uint val);
 void snd_rawmidi_info_set_stream (snd_rawmidi_info_t* obj, snd_rawmidi_stream_t val);
 int snd_rawmidi_info (snd_rawmidi_t* rmidi, snd_rawmidi_info_t* info);
-size_t snd_rawmidi_params_sizeof (void);
+size_t snd_rawmidi_params_sizeof ();
 int snd_rawmidi_params_malloc (snd_rawmidi_params_t** ptr);
 void snd_rawmidi_params_free (snd_rawmidi_params_t* obj);
 void snd_rawmidi_params_copy (snd_rawmidi_params_t* dst, const snd_rawmidi_params_t* src);
@@ -345,11 +344,11 @@ int snd_rawmidi_params_set_clock_type (const snd_rawmidi_t* rawmidi, snd_rawmidi
 snd_rawmidi_clock_t snd_rawmidi_params_get_clock_type (const(snd_rawmidi_params_t)* params);
 int snd_rawmidi_params (snd_rawmidi_t* rmidi, snd_rawmidi_params_t* params);
 int snd_rawmidi_params_current (snd_rawmidi_t* rmidi, snd_rawmidi_params_t* params);
-size_t snd_rawmidi_status_sizeof (void);
+size_t snd_rawmidi_status_sizeof ();
 int snd_rawmidi_status_malloc (snd_rawmidi_status_t** ptr);
 void snd_rawmidi_status_free (snd_rawmidi_status_t* obj);
 void snd_rawmidi_status_copy (snd_rawmidi_status_t* dst, const(snd_rawmidi_status_t)* src);
-void snd_rawmidi_status_get_tstamp (const(snd_rawmidi_status_t)* obj, snd_htimestamp_t *ptr);
+//void snd_rawmidi_status_get_tstamp (const(snd_rawmidi_status_t)* obj, snd_htimestamp_t *ptr);
 size_t snd_rawmidi_status_get_avail (const(snd_rawmidi_status_t)* obj);
 size_t snd_rawmidi_status_get_xruns (const(snd_rawmidi_status_t)* obj);
 int snd_rawmidi_status (snd_rawmidi_t* rmidi, snd_rawmidi_status_t* status);

@@ -45,14 +45,14 @@ public class ALSAMIDIInput : MIDIInput {
 		if (midiInCallback is null) {
 			mode = 0x0002;
 		}
-		errCode = snd_rawmidi_open(rmidi, null, nameID.ptr, mode);
+		errCode = snd_rawmidi_open(&rmidi, null, cast(const(char)*)nameID.ptr, mode);
 		if (errCode) {
 			return lastStatusCode = MIDIDeviceStatus.UnknownError;
 		}
 		isRunning = true;
 		if (midiInCallback !is null) {
 			autoReader = new Thread(&readerThread);
-			autoReader.run();
+			autoReader.start();
 		}
 		return lastStatusCode = 0;
 	}
@@ -98,7 +98,7 @@ public class ALSAMIDIOutput : MIDIOutput {
      * Returns: Zero on success, or a specific error code.
      */
     public override int start() nothrow {
-		errCode = snd_rawmidi_open(null, nameID, nameID.ptr, mode);
+		errCode = snd_rawmidi_open(null, &rmidi, nameID.ptr, 0);
 		if (!errCode) return 0;
 		else return MIDIDeviceStatus.UnknownError;
 	}

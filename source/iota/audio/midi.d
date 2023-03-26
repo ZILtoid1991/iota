@@ -58,7 +58,7 @@ public int initMIDI() {
 		return 0;
 	} version (linux) {
 		ubyte[] midiDevDirs;
-		string[] midiDevNames = listdev("rawmidi", midiDevDirs);
+		string[] midiDevNames = listdev("rawmidi\n", midiDevDirs);
 		assert(midiDevDirs.length == midiDevNames.length);
 		if (!midiDevDirs.length)
 			return MIDIInitializationStatus.DevicesNotFound;

@@ -149,7 +149,7 @@ public class ALSADevice : AudioDevice {
 	/** 
 	 * Returns the recommended sample rate, or -1 if sample-rate isn't boind to internal clock.
 	 */
-	public abstract int getRecommendedSampleRate() @nogc nothrow {
+	public override int getRecommendedSampleRate() @nogc nothrow {
 		return -1;
 	}
 
