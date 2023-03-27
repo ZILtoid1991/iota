@@ -7,7 +7,7 @@ import core.stdc.stdlib;
 /** 
  * Lists all device names for ALSA
  * Params:
- *   devname = Device name. `pcm`: PCM devices, `rawmidi`: MIDI devices.
+ *   devname = Device name. "pcm\n": PCM devices, "rawmidi\n": MIDI devices.
  *   direction = Device direction.
  * Returns: An array of strings with the names of the devices
  */

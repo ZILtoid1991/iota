@@ -56,7 +56,7 @@ public int initMIDI() {
 				return lastStatusCode = MIDIInitializationStatus.InitError;
 		}
 		return 0;
-	} version (linux) {
+	} else version (linux) {
 		ubyte[] midiDevDirs;
 		string[] midiDevNames = listdev("rawmidi\n", midiDevDirs);
 		assert(midiDevDirs.length == midiDevNames.length);
@@ -71,7 +71,9 @@ public int initMIDI() {
 		}
 		assert(inDevs.length + outDevs.length == midiDevDirs.length);
 		return MIDIInitializationStatus.AllOk;
-	} else return lastStatusCode = MIDIInitializationStatus.OSNotSupported;
+	} else {
+		return lastStatusCode = MIDIInitializationStatus.OSNotSupported;
+	}
 }
 ///Returns the name of all MIDI input devices.
 public string[] getMIDIInputDevs() @safe nothrow {

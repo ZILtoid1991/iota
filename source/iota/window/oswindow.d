@@ -5,6 +5,9 @@ version (Windows) {
 	import core.sys.windows.wtypes;
 	import std.utf : toUTF16z;
 	import std.conv : to;
+} else version (linux) {
+	import deimos.X11.Xlib;
+	import deimos.X11.X;
 }
 public import iota.window.types;
 public import iota.window.exception;
