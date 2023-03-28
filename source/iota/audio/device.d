@@ -51,7 +51,7 @@ public int initDriver(DriverType type = OS_PREFERRED_DRIVER) {
 			break;
 		case ALSA:
 			version (linux) {
-				pcmDevNames = listdev("PCM\n", pcmDevDirs);
+				pcmDevNames = listdev("pcm", pcmDevDirs);
 				initializedDriver = DriverType.ALSA;
 				//if (pcmDevNames.length) {
 					return AudioInitializationStatus.AllOk;
@@ -100,7 +100,7 @@ public string[] getOutputDeviceNames() {
 		if (initializedDriver == DriverType.ALSA) {
 			string[] result;
 			for (int i ; i < pcmDevNames.length ; i++) {
-				if(!pcmDevDirs[i])
+				if(pcmDevDirs[i] & DeviceDirection.Output)
 					result ~= pcmDevNames[i];
 			}
 			return result;

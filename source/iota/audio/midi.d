@@ -58,18 +58,19 @@ public int initMIDI() {
 		return 0;
 	} else version (linux) {
 		ubyte[] midiDevDirs;
-		string[] midiDevNames = listdev("rawmidi\n", midiDevDirs);
+		string[] midiDevNames = listdev("rawmidi", midiDevDirs);
 		assert(midiDevDirs.length == midiDevNames.length);
 		if (!midiDevDirs.length)
 			return MIDIInitializationStatus.DevicesNotFound;
 		for (int i ; i < midiDevNames.length ; i++) {
-			if (midiDevDirs[i]) {
+			if (midiDevDirs[i] & DeviceDirection.Input) {
 				inDevs ~= midiDevNames[i];
-			} else {
+			} 
+			if (midiDevDirs[i] & DeviceDirection.Output) {
 				outDevs ~= midiDevNames[i];
 			}
 		}
-		assert(inDevs.length + outDevs.length == midiDevDirs.length);
+		//assert(inDevs.length + outDevs.length == midiDevDirs.length);
 		return MIDIInitializationStatus.AllOk;
 	} else {
 		return lastStatusCode = MIDIInitializationStatus.OSNotSupported;
@@ -104,6 +105,14 @@ public int openMIDIInput(ref MIDIInput input, uint num, size_t bufSize = 1024) {
 				return MIDIDeviceInitStatus.AllOk;
 			default:
 				return MIDIDeviceInitStatus.InitError;
+		}
+	} else version (linux) {
+		ALSAMIDIInput ami = new ALSAMIDIInput(inDevs[num] ~ 0x00);
+		if (ami.errCode) {
+			return MIDIDeviceInitStatus.UnknownError;
+		} else {
+			input = ami;
+			return MIDIDeviceInitStatus.AllOk;
 		}
 	} else return lastStatusCode = MIDIDeviceInitStatus.OSNotSupported;
 }

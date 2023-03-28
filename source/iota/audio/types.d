@@ -254,3 +254,9 @@ public enum MIDIDeviceStatus {
 	DeviceDisconnected,	///Device disconnected, or invalidated.
 	UnknownError,
 }
+public enum DeviceDirection : ubyte {
+	init,
+	Input	=	0x01,
+	Output	=	0x02,
+	IO		=	0x03,	///Both input and output
+}

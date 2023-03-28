@@ -27,3 +27,4 @@ docs/
 # Code coverage
 *.lst
 iota_audiotest
+iota_miditest
