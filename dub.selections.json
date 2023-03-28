@@ -7,6 +7,7 @@
 		"collections-d": "0.4.7",
 		"darg": "0.1.0",
 		"darg-plus": "2.4.0",
+		"libx11": "0.0.1",
 		"stdx-allocator": "2.77.5",
 		"vibe-d": "0.9.5",
 		"wasapi": "0.1.3"
