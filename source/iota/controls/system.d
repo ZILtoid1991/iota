@@ -256,12 +256,20 @@ public class System : InputDevice {
 						}
 						break;
 					
-					case WM_MOVING, WM_MOVE:
+					case WM_MOVE:
 						output.type = InputEventType.WindowMove;
+						output.window.x = LOWORD(msg.lParam);
+						output.window.y = HIWORD(msg.lParam);
+						output.window.width = 0;
+						output.window.height = 0;
 						output.source = this;
 						break;
-					case WM_SIZING, WM_SIZE:
+					case WM_SIZE:
 						output.type = InputEventType.WindowResize;
+						output.window.x = 0;
+						output.window.y = 0;
+						output.window.width = LOWORD(msg.lParam);
+						output.window.height = HIWORD(msg.lParam);
 						output.source = this;
 						break;
 					case WM_INPUT:		//Raw input

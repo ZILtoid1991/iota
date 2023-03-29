@@ -1,4 +1,9 @@
-# Current
+# 0.3.0-alpha2
+
+* Linux MIDI support added.
+* Improved ALSA device support (it can now differentiate between multiple devices).
+
+# 0.3.0-alpha1
 
 * High-precision timestamps have been made standard.
 
