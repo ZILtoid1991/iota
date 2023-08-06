@@ -5,6 +5,11 @@ public import iota.controls.types;
 version (Windows) {
 	import core.sys.windows.windows;
 	import core.sys.windows.wtypes;
+} else {
+	import x11.extensions.XI;
+	import x11.extensions.XInput;
+	import x11.extensions.XI2;
+	import x11.extensions.XInput2;
 }
 /** 
  * Defines keyboard modifiers.
@@ -57,7 +62,17 @@ public class Keyboard : InputDevice {
 			status |= StatusFlags.IsConnected;
 		}
 	} else {
-		package void*		devHandle;
+		package XDevice*	devHandle;
+		package this(io_str_t _name, ubyte _devNum, XID devID) nothrow {
+			this._name = _name;
+			this._devNum = _devNum;
+			this.devHandle = XOpenDevice(OSWindow.mainDisplay, devID);
+			_type = InputDeviceType.Keyboard;
+			status |= StatusFlags.IsConnected;
+		}
+		~this() {
+			XCloseDevice(OSWindow.mainDisplay, devHandle);
+		}
 	}
 	package this() nothrow {
 		_type = InputDeviceType.Keyboard;
@@ -179,6 +194,49 @@ public class Keyboard : InputDevice {
 			}
 		}
 		return result;
+	}
+	package void processTextCommandEvent(ref InputEvent ie, int code) nothrow {
+		import iota.controls.keybscancodes;
+		if (code > 0) {
+			ie.source = this;
+			ie.type = InputEventType.TextCommand;
+			ie.textCmd.flags = getModifiers() & 31;
+			switch (code) {
+				case ScanCode.BACKSPACE:
+					ie.textCmd.type = TextCommandType.Delete;
+					ie.textCmd.amount = -1;
+					break;
+				case ScanCode.DELETE:
+					ie.textCmd.type = TextCommandType.Delete;
+					ie.textCmd.amount = 1;
+					break;
+				case ScanCode.LEFT:
+					ie.textCmd.type = TextCommandType.Cursor;
+					ie.textCmd.amount = -1;
+					break;
+				case ScanCode.RIGHT:
+					ie.textCmd.type = TextCommandType.Cursor;
+					ie.textCmd.amount = 1;
+					break;
+				case ScanCode.UP:
+					ie.textCmd.type = TextCommandType.CursorV;
+					ie.textCmd.amount = -1;
+					break;
+				case ScanCode.DOWN:
+					ie.textCmd.type = TextCommandType.CursorV;
+					ie.textCmd.amount = 1;
+					break;
+				case ScanCode.HOME:
+					ie.textCmd.type = TextCommandType.Home;
+					break;
+				case ScanCode.END:
+					ie.textCmd.type = TextCommandType.End;
+					break;
+				default:
+					break;
+			}
+		}
+		
 	}
 	public override string toString() @safe const {
 		import std.conv : to;

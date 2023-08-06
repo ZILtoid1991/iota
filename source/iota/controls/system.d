@@ -9,6 +9,11 @@ version (Windows) {
 	import std.utf;
 	import std.stdio;
 	import iota.controls.keybscancodes : translateSC;
+} else {
+	import x11.X;
+	import x11.Xlib;
+	import x11.extensions.XInput;
+	import x11.extensions.XInput2;
 }
 import iota.controls.types;
 import iota.etc.charcode;
@@ -22,8 +27,7 @@ import iota.window;
  */
 public class System : InputDevice {
 	version (Windows) {
-		package Keyboard[]		keybList;	///List of all keyboards (raw input only)
-		package Keyboard		keyb;		///Pointer to the default, non-virtual keyboard.
+		//package Keyboard		keyb;		///Pointer to the default, non-virtual keyboard.
 		version (iota_use_utf8) {
 			///Character input converted to UTF-8
 			char[4]				lastChar;
@@ -31,13 +35,17 @@ public class System : InputDevice {
 			///Character input converted to UTF-32
 			dchar				lastChar;
 		}
-		package Mouse[]			mouseList;	///List of all mice (raw input only)
-		package Mouse			mouse;		///Pointer to the default, non-virtual mouse.
+		//package Mouse			mouse;		///Pointer to the default, non-virtual mouse.
 		///Sizes of the screen. 0 : Virtual desktop width, 1 : Virtual desktop height, 2 : Screen width, 3: Screen height
 		protected int[4]		screenSize; 
 		protected size_t		winCount;	///Window counter.
 		protected InputEvent[]	eventBuff;	///Input event buffer. FIFO.
-	}
+	} 
+	package Mouse			mouse;			///Pointer to the default, non-virtual mouse.
+	package Mouse[]			mouseList;		///List of all mice (raw input only)
+	package Keyboard		keyb;			///Pointer to the default, non-virtual keyboard.
+	package Keyboard[]		keybList;		///List of all keyboards (raw input only)
+	
 	enum SystemFlags : ushort {
 		Win_RawInput		=	1 << 8,
 	}
@@ -52,6 +60,25 @@ public class System : InputDevice {
 			_type = InputDeviceType.System;
 			screenSize = [GetSystemMetrics(SM_CXVIRTUALSCREEN), GetSystemMetrics(SM_CXVIRTUALSCREEN), 
 					GetSystemMetrics(SM_CXSCREEN), GetSystemMetrics(SM_CYSCREEN)];
+		} else {
+			XDeviceInfo* deviceList;
+			int nDevices;
+			ubyte keybID, mouseID, joyID;
+			deviceList = XListInputDevices(OSWindow.mainDisplay, &nDevices);
+			for (int i ; i < nDevices ; i++) {
+				switch (deviceList[i].type) {
+					case XInternAtom(OSWindow.mainDisplay, XI_KEYBOARD, true):
+						Keyboard k = new Keyboard();
+						break;
+					case XInternAtom(OSWindow.mainDisplay, XI_MOUSE, true):
+						break;
+					case XInternAtom(OSWindow.mainDisplay, XI_JOYSTICK, true):
+						break;
+					default:
+						break;
+				}
+			}
+			XFreeDeviceList(deviceList);
 		}
 	}
 	public override int poll(ref InputEvent output) nothrow {
@@ -445,6 +472,63 @@ public class System : InputDevice {
 
 			return 1;
 		} else {
+			/* uint convButtonMasksFromX11(uint src, const uint x11Flags) @nogc @safe pure nothrow const {
+
+			} */
+			/* void updateKeybMods(Keyboard target, KeyCode kc) @safe pure {
+				import 
+				case
+			} */
+			XEvent xe;
+			while (XNextEvent(OSWindow.mainDisplay, &xe)) {
+				output.timestamp = Timestamp.currTime();
+				switch (xe.type) {
+					case ButtonPress, ButtonRelease:
+						output.type = InputEventType.MouseClick;
+						output.source = mouse;
+						output.mouseCE.button = cast(ushort)xe.xbutton.button;
+						if (xe.type == ButtonPress) {
+							output.mouseCE.dir = 0;
+							mouse.lastButtonState |= 1<<(output.mouseCE.button - 1);
+						} else {
+							output.mouseCE.dir = 1;
+							mouse.lastButtonState &= ~(1<<(output.mouseCE.button - 1));
+						}
+						output.mouseCE.x = xe.xbutton.x;
+						output.mouseCE.y = xe.xbutton.y;
+						mouse.lastPosition = [xe.xbutton.x, xe.xbutton.y];
+						return 1;
+					case KeyPress, KeyRelease:
+						output.source = keyb;
+						updateKeybMods(keyb, xe.xkey.keycode);
+						if (keyb.isTextInputEn) {
+							const KeySym ks = XLookupKeysym(&xe.xkey, 0);
+							const int textEditKey = isTextInputCommandKey(ks);
+							if (ks > 0) {
+
+							} else if (ks == 0) {
+								output.type = InputEventType.TextInput;
+								version (iota_use_utf8) {
+									output.textIn.text = encodeUTF8Char(ks) ~ [0,0,0,0,0,0,0,0,0,0,0,0];
+								} else {
+									output.textIn.text[0] = ks;
+								}
+
+							}
+						}
+						output.type = InputEventType.Keyboard;
+						output.button.auxF = float.nan;
+						output.button.id = xe.xkey.keycode;
+						output.button.aux = keyb.getModifiers;
+						return 1;
+					case LASTEvent:
+						output.type = InputEventType.init;
+						output.source = null;
+						return 0;
+					default:
+						break;
+				}
+			}
 			return 0;
 		}
 	}

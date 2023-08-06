@@ -3,9 +3,12 @@ module iota.window.oswindow;
 version (Windows) {
 	import core.sys.windows.windows;
 	import core.sys.windows.wtypes;
-	import std.utf : toUTF16z;
+	import std.utf : toUTF16z, toUTF8;
+	import std.string : toStringz;
 	import std.conv : to;
-} else version (linux) {
+} else {
+	import x11.Xlib;
+	import x11.X;
 	//import deimos.X11.Xlib;
 	//import deimos.X11.X;
 }
@@ -101,6 +104,24 @@ public class OSWindow {
 			//However, this way we can possibly eliminate the need for use of `WinMain` and might also piss off some
 			//people at Microsoft.
 			mainInst = GetModuleHandle(null);
+		}
+	} else {
+		package static Display* mainDisplay;
+		protected static Window root;
+		protected immutable(char)* windowname;
+		protected XSetWindowAttributes attr;
+		/**
+		 * Initializes X11.
+		 */
+		shared static this() {
+			mainDisplay = XOpenDisplay(null);
+			root = XRootWindow(mainDisplay, DefaultScreen(mainDisplay));
+
+		}
+		///Automatic cleanup.
+		shared static ~this() {
+			XDestroyWindow(mainDisplay, root);
+			XCloseDisplay(mainDisplay);
 		}
 	}
 	/** 
@@ -199,6 +220,13 @@ public class OSWindow {
 			SetLayeredWindowAttributes(windowHandle, 0, 0xFF, LWA_ALPHA);
 			ShowWindow(windowHandle, SW_RESTORE);
 			UpdateWindow(windowHandle);
+		} else {
+			string[] nameUTF8 = toUTF8(name);
+			windowname = toStringz(nameUTF8);
+			hndl = XCreateWindow(mainDisplay, (parent is null ? root : parent.windowHandle), x, y, w, h, 15, CopyFromParent, 
+			((flags & WindowStyleIDs.Visible) ? InputOutput : InputOnly), CopyFromParent, 0, &attr);
+			XStoreName(mainDisplay, windowHandle, windowname);
+			XMapWindow(mainDisplay, windowHandle);
 		}
 	}
 	protected this(WindowH hndl) {
@@ -209,6 +237,8 @@ public class OSWindow {
 		version (Windows) {
 			DestroyWindow(windowHandle);
 			UnregisterClassW(registeredClass.lpszClassName, mainInst);
+		} else {
+			XDestroyWindow(mainDisplay, hndl);
 		}
 	}
 	/**
@@ -254,6 +284,29 @@ public class OSWindow {
 			ShowWindow(windowHandle, SW_MINIMIZE);
 		}
 	}
+	public void moveWindow(int x, int y, int w, int h) {
+		version (Windows) {
+			MoveWindow(windowHandle, x, y, w, h, TRUE);
+		} else {
+			XMoveResizeWindow(mainDisplay, windowHandle, x, y, w, h);
+		}
+	}
+	public int[4] getWindowPosition() {
+		version (Windows) {
+			RECT windowSize;
+			GetWindowRect(windowHandle, &windowSize);
+			return [windowSize.left, windowSize.top, windowSize.right - windowSize.left + 1, 
+					windowSize.bottom - windowSize.top + 1];
+		} else {
+			XWindowAttributes winattr;
+			XGetWindowAttributes(mainDisplay, windowHandle, &winattr);
+			return [winattr.x, winattr.y, winattr.width, winattr.height];
+		}
+	}
+	public void setWindowToFullscreen(int mode) {
+
+	}
+
 	/** 
 	 * Callback function for windowing. Can be overridden to process more messages than by default.
 	 * See Microsoft documentation for details on return value and parameters.

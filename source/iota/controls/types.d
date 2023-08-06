@@ -70,10 +70,12 @@ public enum TextCommandType {
 
 	Delete,
 
-	Insert,
+	Insert,		///Insert toggle
 
 	NewLine,	///Shift + Enter
 	NewPara,	///Enter
+	Cancel,		///End text input
+
 	
 }
 /** 
@@ -284,7 +286,8 @@ public struct TextInputEvent {
 	io_chr_t[CHARS_PER_PACKAGE] text;
 	mixin(bitfields!(
 			bool, "isClipboard",	1,	///True if the text input originates from a clipboard event.
-			uint, "language",		31	///Input language code
+			bool, "hasMore",		1,	///True if there's characters left.
+			uint, "language",		30	///Input language code
 	));
 	//bool		isClipboard;///True if the text input originates from a clipboard event.
 	string toString() @safe pure const {
@@ -297,7 +300,7 @@ public struct TextInputEvent {
 public struct TextCommandEvent {
 	TextCommandType	type;	///The type of the text editing event.
 	int			amount;		///Amount of the event + direction, if applicable.
-	uint		flags;		///Extra flags for text edit events.
+	uint		flags;		///Extra flags for text edit events, i.e. modifiers.
 }
 /**
  * Defines an axis event.
@@ -371,6 +374,17 @@ public struct WindowEvent {
 	string toString() @safe pure const {
 		return "x: " ~ to!string(x) ~ "; y: " ~ to!string(y) ~ "; width: " ~ to!string(width) ~ "; height:" ~ 
 				to!string(height);
+	}
+}
+public struct ClipboardEvent {
+	size_t		length;
+	ubyte*		data;
+	uint		type;
+	ubyte[] getData() @trusted {
+		ubyte[] _getData() @system {
+			return data[0..length];
+		}
+		return _getData();
 	}
 }
 /**

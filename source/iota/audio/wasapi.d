@@ -241,11 +241,12 @@ public class WASAPIOutputStream : OutputStream {
 				backend.Stop();
 				errCode = StreamRuntimeStatus.Unknown;
 			}
+			if (buffer is null) return;
 			ubyte* data;
-			do {		// To do: This is a bit janky, and there's like some glitches in the test audio.
+			do {		// To do: This is a bit janky, and there's like some glitches in the test audio. (Not so much in real tests)
 				werrCode = buffer.GetBuffer(bufferSize, data);
 				if (werrCode == AUDCLNT_E_BUFFER_TOO_LARGE) statusCode |= StatusFlags.BufferOverrun;	//Set buffer overrun flag if protection was engaged.
-			} while (werrCode == AUDCLNT_E_BUFFER_TOO_LARGE && (statusCode & StatusFlags.IsRunning));
+			} while (werrCode == AUDCLNT_E_BUFFER_TOO_LARGE && (statusCode & StatusFlags.IsRunning) && buffer !is null);
 			switch (werrCode) {
 				case AUDCLNT_E_BUFFER_TOO_LARGE: return;
 				case AUDCLNT_E_BUFFER_ERROR, AUDCLNT_E_BUFFER_SIZE_ERROR, AUDCLNT_E_OUT_OF_ORDER, 

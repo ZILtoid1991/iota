@@ -12,7 +12,7 @@ Input-output (audio, controls, etc) library for D. Intended as a D language nati
 |Pen Tablet                |Not yet implemented                 |Not yet implemented                 |
 |Game controllers          |XInput : works                      |Not yet implemented                 |
 |Windowing                 |A bit buggy                         |In progress                         |
-|OpenGL output             |In progress, not working yet        |Not yet implemented                 |
+|OpenGL output             |In progress, not working yet        |In progress                         |
 
 MacOSX is not yet supported due to lack of hardware. Please consider contributing to this project!
 
@@ -53,6 +53,12 @@ XInput is implemented and works. There should be a way to detect whether a devic
 #### Raw input
 
 This library is (mostly) equipped to handle raw input data, but currently it has some bugs. For some reason, it cannot differentiate between input devices at the moment, as all the device handles are null.
+
+## Windowing
+
+### Linux
+
+Linux is using X11 for its windowing and I/O.
 
 # Examples
 

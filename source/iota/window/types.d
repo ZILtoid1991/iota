@@ -1,8 +1,13 @@
 module iota.window.types;
 
+import std.typecons : BitFlags;
+
 version (Windows) {
 	import core.sys.windows.windows;
 	import core.sys.windows.wtypes;
+} else {
+	import x11.Xlib;
+	import x11.X;
 }
 /** 
  * Implements Window handles for GUI apps.
@@ -10,7 +15,8 @@ version (Windows) {
 version (Windows) {
 	alias WindowH = HWND;
 } else {
-	alias WindowH = void*;
+	alias WindowH = Window;
+	//alias WindowH = void*;
 }
 /** 
  * Window style identifiers.
@@ -94,4 +100,19 @@ public class WindowBitmap {
 
 public class WindowMenu {
 	
+}
+
+public enum ScreenModeFlags : ushort {
+	FullScreen		=	1<<0,
+	Interlaced		=	1<<1,
+	AdaptiveSync	=	1<<2,
+	HDR				=	1<<3,
+}
+
+public struct ScreenMode {
+	uint width;
+	uint height;
+	float refreshRate;
+	ushort bitDepth;
+	BitFlags!ScreenModeFlags flags;
 }

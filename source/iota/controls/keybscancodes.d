@@ -454,3 +454,47 @@ version(Windows) package uint translateSC(uint input, uint aux) @nogc @safe pure
 			return 0xFF_FF;
 	}
 }
+else {
+	package int isTextInputCommandKey(uint keysym) {
+		import x11.keysymdef;
+		if (keysym & 0xff_00 = 0xFF_00) {
+			if (keysym >= 0xffbe || keysym <= 0xffe0) {
+				return -1;		//Key is function key
+			} else if (keysym >= 0xffe1 || keysym <= 0xffee) {
+				return -2;		//Key is modifier
+			} else {			//Key is potential text edit event key
+				switch (keysym) {
+					case XK_BackSpace:
+						return ScanCode.BACKSPACE;
+					/* case XK_Tab:
+						return ScanCode.TAB; */
+					case XK_Linefeed, XK_Return:
+						return ScanCode.ENTER;
+					case XK_Delete:
+						return ScanCode.DELETE;
+					case XK_Escape:
+						return ScanCode.ESCAPE;
+					case XK_Home:
+						return ScanCode.HOME;
+					case XK_Left:
+						return ScanCode.LEFT;
+					case XK_Up:
+						return ScanCode.UP;
+					case XK_Right:
+						return ScanCode.RIGHT;
+					case XK_Down:
+						return ScanCode.DOWN;
+					case XK_Page_Up:
+						return ScanCode.PAGEUP;
+					case XK_Page_Down:
+						return ScanCode.PAGEDOWN;
+					case XK_End:
+						return ScanCode.END;
+					default:
+						break;
+				}
+			}
+		}
+		return 0;
+	}
+}
