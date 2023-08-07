@@ -19,15 +19,14 @@ import iota.controls.types;
 import iota.etc.charcode;
 import iota.window;
 
-/** 
- * Implements a class for system-wide events.
- *
- * Under Windows, this class also handles keyboard and mouse inputs, because of Microsoft of course (Why? You did great
- * with WASAPI and relatively good with MIDI!)
- */
-public class System : InputDevice {
-	version (Windows) {
-		//package Keyboard		keyb;		///Pointer to the default, non-virtual keyboard.
+version (Windows){
+	/** 
+	 * Implements a class for system-wide events.
+	 *
+	 * Under Windows, this class also handles keyboard and mouse inputs, because of Microsoft of course (Why? You did great
+	 * with WASAPI and relatively good with MIDI!)
+	 */
+	public class System : InputDevice {
 		version (iota_use_utf8) {
 			///Character input converted to UTF-8
 			char[4]				lastChar;
@@ -35,22 +34,21 @@ public class System : InputDevice {
 			///Character input converted to UTF-32
 			dchar				lastChar;
 		}
-		//package Mouse			mouse;		///Pointer to the default, non-virtual mouse.
 		///Sizes of the screen. 0 : Virtual desktop width, 1 : Virtual desktop height, 2 : Screen width, 3: Screen height
 		protected int[4]		screenSize; 
 		protected size_t		winCount;	///Window counter.
 		protected InputEvent[]	eventBuff;	///Input event buffer. FIFO.
-	} 
-	package Mouse			mouse;			///Pointer to the default, non-virtual mouse.
-	package Mouse[]			mouseList;		///List of all mice (raw input only)
-	package Keyboard		keyb;			///Pointer to the default, non-virtual keyboard.
-	package Keyboard[]		keybList;		///List of all keyboards (raw input only)
+
+		package Mouse			mouse;			///Pointer to the default, non-virtual mouse.
+		package Mouse[]			mouseList;		///List of all mice (raw input only)
+		package Keyboard		keyb;			///Pointer to the default, non-virtual keyboard.
+		package Keyboard[]		keybList;		///List of all keyboards (raw input only)
 	
-	enum SystemFlags : ushort {
-		Win_RawInput		=	1 << 8,
-	}
-	package this(uint config = 0, uint osConfig = 0) nothrow {
-		version (Windows) {
+		enum SystemFlags : ushort {
+			Win_RawInput		=	1 << 8,
+		}
+		package this(uint config = 0, uint osConfig = 0) nothrow {
+		/* version (Windows) { */
 			if (!(osConfig & OSConfigFlags.win_RawInput)) {
 				keyb = new Keyboard();
 				mouse = new Mouse();
@@ -60,7 +58,7 @@ public class System : InputDevice {
 			_type = InputDeviceType.System;
 			screenSize = [GetSystemMetrics(SM_CXVIRTUALSCREEN), GetSystemMetrics(SM_CXVIRTUALSCREEN), 
 					GetSystemMetrics(SM_CXSCREEN), GetSystemMetrics(SM_CYSCREEN)];
-		} else {
+		/* } else {
 			XDeviceInfo* deviceList;
 			int nDevices;
 			ubyte keybID, mouseID, joyID;
@@ -79,10 +77,10 @@ public class System : InputDevice {
 				}
 			}
 			XFreeDeviceList(deviceList);
+		} */
 		}
-	}
-	public override int poll(ref InputEvent output) nothrow {
-		version (Windows) {
+		public override int poll(ref InputEvent output) nothrow {
+		/* version (Windows) { */
 			int GET_X_LPARAM(LPARAM lParam) @nogc nothrow pure {
 				return cast(int)(cast(short) LOWORD(lParam));
         	}
@@ -471,14 +469,8 @@ public class System : InputDevice {
 			}
 
 			return 1;
-		} else {
-			/* uint convButtonMasksFromX11(uint src, const uint x11Flags) @nogc @safe pure nothrow const {
-
-			} */
-			/* void updateKeybMods(Keyboard target, KeyCode kc) @safe pure {
-				import 
-				case
-			} */
+		/* } else {
+			
 			XEvent xe;
 			while (XNextEvent(OSWindow.mainDisplay, &xe)) {
 				output.timestamp = Timestamp.currTime();
@@ -530,6 +522,7 @@ public class System : InputDevice {
 				}
 			}
 			return 0;
+		} */
 		}
 	}
 }

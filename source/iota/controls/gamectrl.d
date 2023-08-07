@@ -30,9 +30,13 @@ public enum GameControllerButtons : ubyte {
 	///The button to the south on the right hand side of the gamepad.
 	///XB: X, PS: Square, N: Y
 	West,
+	///The upper-left shoulder button (usually digital)
 	LeftShoulder,
+	///The upper-right shoulder button (usually digital)
 	RightShoulder,
+	///The lower-left shoulder button (usually analog)
 	LeftTrigger,
+	///The lower-right shoulder button (usually analog)
 	RightTrigger,
 	LeftThumbstick,
 	RightThumbstick,

@@ -104,6 +104,8 @@ public enum OSConfigFlags : uint {
 	///Enables raw handling of keyboard input data in Windows.
 	///This enables diffetentiating between multiple keyboard devices.
 	win_RawKeyboard				=	1 << 3,
+	///Enables x11 input extensions.
+	x11_InputExtensions			=	1 << 0,
 }
 /** 
  * Defines return codes for the `iota.controls.initInput` function.
@@ -112,6 +114,8 @@ public enum InputInitializationStatus {
 	AllOk					=	0,
 	win_RawInputError		=	-1,
 	win_DevicesAdded		=	-2,
+
+	x11_InputExtNotAvailable=	-32,
 }
 /** 
  * Defines return codes for event polling.
@@ -219,8 +223,9 @@ public abstract class InputDevice {
 	/** 
 	 * Polls the device for events.
 	 * Params:
-	 *   output = InputEvents outputted by the 
+	 *   output = InputEvents outputted by the input device
 	 * Returns: 1 if there's still events to be polled, 0 if no events left. Other values are error codes.
+	 * Note to self: Probably I should remove it from here.
 	 */
 	public abstract int poll(ref InputEvent output) nothrow;
 }
