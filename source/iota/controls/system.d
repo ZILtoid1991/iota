@@ -178,14 +178,9 @@ version (Windows){
 						} else {
 							output.button.dir = 0;
 						}
-						//SHORT rshift = GetAsyncKeyState(VK_RSHIFT);
-						//SHORT lshift = GetAsyncKeyState(VK_LSHIFT);
 						output.button.id = translateSC(cast(uint)msg.wParam, cast(uint)msg.lParam);
 						output.button.repeat = (msg.lParam & 0xFF_FF) < 255 ? cast(ubyte)(msg.lParam & 0xFF) : 0xFF;
 						output.button.aux = keyb.getModifiers();
-						//keyb.win_rshift = rshift =! 0;
-						//keyb.win_lshift = lshift =! 0;
-						
 						break;
 					case 0x020E , WM_MOUSEWHEEL:
 						output.type = InputEventType.MouseScroll;

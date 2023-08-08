@@ -5,7 +5,7 @@ import std.conv : to;
 import std.bitmanip : bitfields;
 public import core.time : MonoTime;
 
-alias Timestamp = MonoTime;
+alias Timestamp = ulong;
 
 /** 
  * Generates a relatively high precision timesstamp.
@@ -306,6 +306,7 @@ public struct TextCommandEvent {
 	TextCommandType	type;	///The type of the text editing event.
 	int			amount;		///Amount of the event + direction, if applicable.
 	uint		flags;		///Extra flags for text edit events, i.e. modifiers.
+	uint		buttonID;	///Used if the source is a keyboard
 }
 /**
  * Defines an axis event.

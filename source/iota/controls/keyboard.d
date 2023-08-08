@@ -42,6 +42,7 @@ public enum KeyboardLocklights : ubyte {
  * Implements keyboard I/O.
  */
 public class Keyboard : InputDevice {
+	protected static uint globalFlags;
 	///Defines keyboard-specific flags.
 	enum KeyboardFlags : ushort {
 		TextInput		=	1<<8,	///Set if text input is enabled.
@@ -96,78 +97,78 @@ public class Keyboard : InputDevice {
 	/**
 	 * Returns true if the text input has been enabled.
 	 */
-	public final bool isTextInputEn() @property @nogc @safe pure nothrow const {
-		return (status & KeyboardFlags.TextInput) != 0;
+	public static bool isTextInputEn() @property @nogc @safe nothrow {
+		return (globalFlags & KeyboardFlags.TextInput) != 0;
 	}
 	/**
 	 * Sets whether the text input is enabled or not, then 
 	 */
-	public bool setTextInput(bool val) @property @nogc @safe pure nothrow {
+	public static bool setTextInput(bool val) @property @nogc @safe nothrow {
 		if (val)
-			status |= KeyboardFlags.TextInput;
+			globalFlags |= KeyboardFlags.TextInput;
 		else
-			status &= ~KeyboardFlags.TextInput;
+			globalFlags &= ~KeyboardFlags.TextInput;
 		return isTextInputEn();
 	}
 	/**
 	 * Returns true if locklight modifiers are ignored.
 	 */
-	public final bool isIgnoringLockLights() @property @nogc @safe pure nothrow const {
-		return (status & KeyboardFlags.IgnoreLLMods) != 0;
+	public static bool isIgnoringLockLights() @property @nogc @safe nothrow {
+		return (globalFlags & KeyboardFlags.IgnoreLLMods) != 0;
 	}
 	/**
 	 * Sets locklight ignoring behavior.
 	 */
-	public bool setIgnoreLockLights(bool val) @property @nogc @safe pure nothrow {
+	public static bool setIgnoreLockLights(bool val) @property @nogc @safe nothrow {
 		if (val)
-			status |= KeyboardFlags.IgnoreLLMods;
+			globalFlags |= KeyboardFlags.IgnoreLLMods;
 		else
-			status &= ~KeyboardFlags.IgnoreLLMods;
+			globalFlags &= ~KeyboardFlags.IgnoreLLMods;
 		return isIgnoringLockLights();
 	}
 	/**
 	 * Returns true if menu key (Alt and F10 on Windows) behavior is disabled.
 	 * If disabled, these keys won't open the menu bar of a Window.
 	 */
-	public final bool isMenuKeyDisabled() @property @nogc @safe pure nothrow const {
-		return (status & KeyboardFlags.MenuKeyFix) != 0;
+	public static bool isMenuKeyDisabled() @property @nogc @safe nothrow {
+		return (globalFlags & KeyboardFlags.MenuKeyFix) != 0;
 	}
 	/**
 	 * Disables menu key (Alt and F10 on Windows) behavior.
 	 * If disabled, these keys won't open the menu bar of a Window.
 	 */
-	public bool setMenuKeyDisabled(bool val) @property @nogc @safe pure nothrow {
+	public static bool setMenuKeyDisabled(bool val) @property @nogc @safe nothrow {
 		if (val)
-			status |= KeyboardFlags.MenuKeyFix;
+			globalFlags |= KeyboardFlags.MenuKeyFix;
 		else
-			status &= ~KeyboardFlags.MenuKeyFix;
+			globalFlags &= ~KeyboardFlags.MenuKeyFix;
 		return isMenuKeyDisabled();
 	}
 	/**
 	 * Returns true if single meta key presses are not passed to the OS.
 	 */
-	public final bool isMetaKeyDisabled() @property @nogc @safe pure nothrow const {
-		return (status & KeyboardFlags.DisableMetaKey) != 0;
+	public static bool isMetaKeyDisabled() @property @nogc @safe nothrow {
+		return (globalFlags & KeyboardFlags.DisableMetaKey) != 0;
 	}
 	/**
 	 * If set true, single meta key presses won't be passed to the OS.
 	 * NOTE: May disable combinations too.
 	 */
-	public bool setMetaKeyDisabled(bool val) @property @nogc @safe pure nothrow {
+	public static bool setMetaKeyDisabled(bool val) @property @nogc @safe nothrow {
 		if (val)
-			status |= KeyboardFlags.DisableMetaKey;
+			globalFlags |= KeyboardFlags.DisableMetaKey;
 		else
-			status &= ~KeyboardFlags.DisableMetaKey;
+			globalFlags &= ~KeyboardFlags.DisableMetaKey;
 		return isMetaKeyDisabled();
 	}
-	public final bool isMetaKeyCombDisabled() @property @nogc @safe pure nothrow const {
-		return (status & KeyboardFlags.DisableMetaKeyComb) != 0;
+	public static bool isMetaKeyCombDisabled() @property @nogc @safe nothrow {
+		return (globalFlags & KeyboardFlags.DisableMetaKeyComb) != 0;
 	}
-	public bool setMetaKeyCombDisabled(bool val) @property @nogc @safe pure nothrow {
+	public static bool setMetaKeyCombDisabled(bool val) @property @nogc @safe nothrow {
 		if (val)
-			status |= KeyboardFlags.DisableMetaKeyComb;
+			globalFlags |= KeyboardFlags.DisableMetaKeyComb;
 		else
-			status &= ~KeyboardFlags.DisableMetaKeyComb;
+			globalFlags &= ~KeyboardFlags.DisableMetaKeyComb;
 		return isMenuKeyDisabled();
 	}
 	/**
@@ -195,12 +196,13 @@ public class Keyboard : InputDevice {
 		}
 		return result;
 	}
-	package void processTextCommandEvent(ref InputEvent ie, int code) nothrow {
+	package void processTextCommandEvent(ref InputEvent ie, int code, ubyte dir) nothrow {
 		import iota.controls.keybscancodes;
-		if (code > 0) {
-			ie.source = this;
-			ie.type = InputEventType.TextCommand;
-			ie.textCmd.flags = getModifiers() & 31;
+		
+		ie.source = this;
+		ie.type = InputEventType.TextCommand;
+		ie.textCmd.flags = getModifiers() & 31;
+		if (dir) {	//down
 			switch (code) {
 				case ScanCode.BACKSPACE:
 					ie.textCmd.type = TextCommandType.Delete;
@@ -232,10 +234,37 @@ public class Keyboard : InputDevice {
 				case ScanCode.END:
 					ie.textCmd.type = TextCommandType.End;
 					break;
+				case ScanCode.PAGEUP:
+					ie.textCmd.type = TextCommandType.PageUp;
+					break;
+				case ScanCode.PAGEDOWN:
+					ie.textCmd.type = TextCommandType.PageDown;
+					break;
+				case ScanCode.ENTER, ScanCode.NP_ENTER:
+					if (getModifiers & KeyboardModifiers.Shift)
+						ie.textCmd.type = TextCommandType.NewLine;
+					else
+						ie.textCmd.type = TextCommandType.NewPara;
+					break;
 				default:
+					ie.type = InputEventType.init;
+					break;
+			}
+		} else {	//up
+			switch (code) {
+				case ScanCode.INSERT:
+					ie.textCmd.type = TextCommandType.Insert;
+					break;
+				case ScanCode.ESCAPE:
+					ie.textCmd.type = TextCommandType.Cancel;
+					break;
+				default:
+					ie.type = InputEventType.init;
 					break;
 			}
 		}
+		
+		
 		
 	}
 	public override string toString() @safe const {
