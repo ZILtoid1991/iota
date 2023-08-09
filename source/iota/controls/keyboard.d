@@ -174,7 +174,7 @@ public class Keyboard : InputDevice {
 	/**
 	 * Returns the currently active modifier keys.
 	 */
-	public ubyte getModifiers() @nogc nothrow {
+	public ubyte getModifiers() @nogc nothrow @trusted {
 		ubyte result;
 		version (Windows) {
 			if (GetAsyncKeyState(VK_SHIFT))
@@ -196,7 +196,7 @@ public class Keyboard : InputDevice {
 		}
 		return result;
 	}
-	package void processTextCommandEvent(ref InputEvent ie, int code, ubyte dir) nothrow {
+	package void processTextCommandEvent(ref InputEvent ie, int code, int dir) nothrow @nogc @safe {
 		import iota.controls.keybscancodes;
 		
 		ie.source = this;

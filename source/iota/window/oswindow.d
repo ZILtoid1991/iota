@@ -45,7 +45,8 @@ public class OSWindow {
 			LPARAM lParam;
 		}
 	}
-	/** 
+	/**
+	 * NOT MEANT TO BE USER MODIFIED!
 	 * Used for reference counting purposes.
 	 * External keys should be added to it with function `addRef()`.
 	 */
@@ -97,8 +98,7 @@ public class OSWindow {
 		///NOTE: This is Windows exclusive, and won't be accessable under other OSes.
 		public static HINSTANCE		mainInst;
 		///The current input language code (Windows).
-		///Stored here due to ease of access.
-		public static uint			inputLang;
+		package static uint			inputLang;
 		shared static this() {
 			//NOTE: This is not the proper way of doing stuff like this.
 			//However, this way we can possibly eliminate the need for use of `WinMain` and might also piss off some
@@ -263,6 +263,8 @@ public class OSWindow {
 	public WindowH getHandle() @nogc @safe pure nothrow {
 		return windowHandle;
 	}
+	///Note to end user: DO NOT USE! IT IS MADE PUBLIC DUE TO ANOTHER PACKAGE NEEDING IT!
+	///Returns the last window event code, then clears the variable that stored it.
 	public Status getWindowStatus() @nogc @safe pure nothrow {
 		Status result = statusFlags;
 		statusFlags = Status.init;
@@ -305,6 +307,12 @@ public class OSWindow {
 	}
 	public void setWindowToFullscreen(int mode) {
 
+	}
+	public uint getInputLangCode() @nogc @safe nothrow const {
+		version (Windows)
+			return inputLang;
+		else
+			return 0;
 	}
 
 	/** 

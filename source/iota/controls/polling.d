@@ -3,6 +3,7 @@ module iota.controls.polling;
 public import iota.controls.types;
 public import iota.controls.keyboard;
 public import iota.controls.mouse;
+public import iota.controls.system;
 import iota.window.oswindow;
 import iota.controls.keybscancodes;
 
@@ -18,9 +19,17 @@ public int poll(ref InputEvent output) nothrow {
 }
 Keyboard keyb;          ///Main keyboard, or the only keyboard on APIs not supporting differentiating between keyboards.
 Mouse mouse;            ///Main mouse, or the only mouse on APIs not supporting differentiating between mice.
+System sys;				///System device, originator of system events.
+InputDevice[] devList;	///List of input devices.
+
 version (Windows) {
     import core.sys.windows.windows;
 	import core.sys.windows.wtypes;
+	version (iota_use_utf8)
+		package char[4]	lastChar;
+	else
+		package dchar	lastChar;
+	package int winCount;
     package int GET_X_LPARAM(LPARAM lParam) @nogc nothrow pure {
 		return cast(int)(cast(short) LOWORD(lParam));
     }
@@ -51,12 +60,21 @@ version (Windows) {
 			src &= ~MouseButtonFlags.Next;
 		return src;
 	}
+	///Returns the given device by RawInput handle.
+	package InputDevice getDevByHandle(HANDLE hndl) nothrow @nogc {
+		foreach (InputDevice dev ; devList) {
+			if (dev.hDevice == hndl)
+				return dev;
+		}
+		return null;
+	}
     ///Polls event using legacy API under Windows (no RawInput)
     package int poll_win_LegacyIO(ref InputEvent output) nothrow @nogc {
+	tryAgain:
         MSG msg;
         BOOL bret = PeekMessageW(&msg, OSWindow.refCount[winCount].getHandle, 0, 0, PM_REMOVE);
 		if (bret) {
-            output.timestamp = msg.time;
+            output.timestamp = msg.time * 1000L;
 			output.handle = OSWindow.refCount[winCount].getHandle;
             auto message = msg.message & 0xFF_FF;
             if (!(Keyboard.isMenuKeyDisabled() && (message == WM_SYSKEYDOWN || message == WM_SYSKEYUP)) || 
@@ -213,7 +231,7 @@ version (Windows) {
 		    		output.window.y = HIWORD(msg.lParam);
 		    		output.window.width = 0;
 		    		output.window.height = 0;
-		    		output.source = this;
+		    		output.source = sys;
 		    		break;
 		    	case WM_SIZE:
 		    		output.type = InputEventType.WindowResize;
@@ -221,11 +239,11 @@ version (Windows) {
 		    		output.window.y = 0;
 		    		output.window.width = LOWORD(msg.lParam);
 		    		output.window.height = HIWORD(msg.lParam);
-		    		output.source = this;
+		    		output.source = sys;
 		    		break;
-                      default:
+                default:
 		    		//check for window status
-		    		output.source = this;
+		    		output.source = sys;
 		    		final switch (OSWindow.refCount[winCount].getWindowStatus) with (OSWindow.Status) {
 		    			case init: break;
 		    			case Quit: 
@@ -246,15 +264,262 @@ version (Windows) {
 		    			case InputLangCh: 
 		    				output.type = InputEventType.InputLangChange;
 		    				break;
-		    			case InputLangChReq: break;
+		    			case InputLangChReq: 
+							break;
 		    		}
 		    		break;
 		    }
-        }
-        return 0;
+        } else {	//No more events for this window, move onto the next if any
+			winCount++;
+			if (winCount < OSWindow.refCount.length)
+				goto tryAgain;	//Not the nicest solution, could have been done with recursive calls, but that would have had stack allocation.
+			else	//All windows have tested for events, reset window counter, then return with 0 (finished)
+				winCount = 0;
+			return 0;
+		}
+        return 1;
     }
-
+	///Polls inputs using the more modern RawInput API.
     package int poll_win_RawInput(ref InputEvent output) nothrow @nogc {
-        return 0;
+        tryAgain:
+        MSG msg;
+        BOOL bret = PeekMessageW(&msg, OSWindow.refCount[winCount].getHandle, 0, 0, PM_REMOVE);
+		if (bret) {
+            output.timestamp = msg.time * 1000L;
+			output.handle = OSWindow.refCount[winCount].getHandle;
+            auto message = msg.message & 0xFF_FF;
+            if (!(Keyboard.isMenuKeyDisabled() && (message == WM_SYSKEYDOWN || message == WM_SYSKEYUP)) || 
+					(Keyboard.isMetaKeyDisabled() && (message == WM_KEYDOWN || message == WM_KEYUP) && (msg.wParam == VK_LWIN 
+					|| msg.wParam == VK_RWIN)) ||
+					(Keyboard.isMetaKeyCombDisabled() && (message == WM_KEYDOWN || message == WM_KEYUP) && 
+					(keyb.getModifiers | KeyboardModifiers.Meta))) {
+				DispatchMessageW(&msg);
+			}
+            if (Keyboard.isTextInputEn()) {
+				TranslateMessage(&msg);     //This function only translates messages that are mapped to characters, but we still need to translate any keys to text command events
+                if ((msg.message & 0xFF_FF) == WM_KEYDOWN) {
+                    keyb.processTextCommandEvent(output, translateSC(cast(uint)msg.wParam, cast(uint)msg.lParam), 1);
+                    if (output.type == InputEventType.TextCommand) return 1;
+                } else if ((msg.message & 0xFF_FF) == WM_KEYUP) {
+                    keyb.processTextCommandEvent(output, translateSC(cast(uint)msg.wParam, cast(uint)msg.lParam), 0);
+                    if (output.type == InputEventType.TextCommand) return 1;
+                }
+			}
+        
+            switch (msg.message & 0xFF_FF) {
+		    	case WM_CHAR, WM_SYSCHAR:
+		    		output.type = InputEventType.TextInput;
+		    		output.source = keyb;
+		    		version (iota_use_utf8) {
+		    			lastChar[0] = cast(char)(msg.wParam);
+		    			output.textIn.text[0] = lastChar[0];
+		    		} else {
+		    			lastChar = cast(dchar)(msg.wParam);
+		    			output.textIn.text[0] = lastChar;
+		    		}
+		    		output.textIn.isClipboard = false;
+		    		break;
+		    	case WM_UNICHAR, WM_DEADCHAR, WM_SYSDEADCHAR:
+		    		output.type = InputEventType.TextInput;
+		    		output.source = keyb;
+		    		version (iota_use_utf8) {
+		    			lastChar = encodeUTF8Char(cast(dchar)(msg.wParam));
+		    		} else {
+		    			lastChar = cast(dchar)(msg.wParam);
+		    			output.textIn.text[0] = lastChar;
+		    		}
+		    		output.textIn.isClipboard = false;
+		    		break;
+		    	
+				case WM_INPUT:		//Raw input
+					UINT dwSize;
+					GetRawInputData(cast(HRAWINPUT)msg.lParam, RID_INPUT, null, &dwSize, RAWINPUTHEADER.sizeof);
+					if (!dwSize) return 1;
+					void[] lpb;
+					lpb.length = dwSize;
+
+					if (GetRawInputData(cast(HRAWINPUT)msg.lParam, RID_INPUT, lpb.ptr, &dwSize, RAWINPUTHEADER.sizeof))
+						return EventPollStatus.win_RawInputError;
+					RAWINPUT* rawInput = cast(RAWINPUT*)lpb.ptr;
+					
+					switch (rawInput.header.dwType) {
+						case RIM_TYPEMOUSE:
+							Mouse device = getDevByHandle(rawInput.header.hDevice);
+							if (device !is null) {
+								mouse = device;
+								RAWMOUSE inputData = rawInput.data.mouse;
+								int[2] absolute;
+								int[2] relative;
+								if (inputData.usFlags & MOUSE_MOVE_ABSOLUTE) {
+									const bool isVirtualDesktop = (inputData.usFlags & MOUSE_VIRTUAL_DESKTOP) != 0;
+									/* absolute[0] = cast(int)((inputData.lLastX / 65_535.0) * (isVirtualDesktop ? screenSize[0] : screenSize[2]));
+									absolute[1] = cast(int)((inputData.lLastY / 65_535.0) * (isVirtualDesktop ? screenSize[1] : screenSize[3])); */
+									relative[0] = device.lastPosition[0] - absolute[0];
+									relative[1] = device.lastPosition[1] - absolute[1];
+								} else {
+									relative[0] = inputData.lLastX;
+									relative[1] = inputData.lLastY;
+									absolute[0] = device.lastPosition[0] + relative[0];
+									absolute[1] = device.lastPosition[1] + relative[1];
+								}
+								device.lastPosition[0] = absolute[0];
+								device.lastPosition[1] = absolute[1];
+								output.source = device;
+								if (relative[0] || relative[1]) {	//Mouse move event
+									InputEvent ie;
+									ie = output;
+									ie.type = InputEventType.MouseMove;
+									ie.mouseME.x = absolute[0];
+									ie.mouseME.y = absolute[1];
+									ie.mouseME.xD = relative[0];
+									ie.mouseME.yD = relative[1];
+									ie.mouseME.buttons = device.lastButtonState;
+									//eventBuff ~= ie;
+								}
+								if ((inputData.usButtonFlags & 0x03FF) == 0x03FF) {	//Mouse click event
+									uint buttons = toIOTAMouseButtonFlags(device.lastButtonState, inputData.usButtonFlags);
+									uint prevButtons = device.lastButtonState;
+									device.lastButtonState = buttons;
+									ushort buttonCntr = 1;
+									while (buttons) {
+										if ((buttons & 1) ^ (prevButtons & 1)) {
+											InputEvent ie;
+											ie = output;
+											ie.type = InputEventType.MouseClick;
+											ie.mouseCE.button = buttonCntr;
+											ie.mouseCE.dir = (buttons & 1) ? 0 : 1;
+											ie.mouseCE.x = absolute[0];
+											ie.mouseCE.y = absolute[1];
+											//eventBuff ~= ie;
+										} 
+										buttonCntr = 1;
+										buttons >>= 1;
+										prevButtons >>= 1;
+									}
+								} 
+								if ((inputData.usButtonFlags & 0x0B00) == 0x0B00) { //Mouse wheel event
+									InputEvent ie;
+									ie = output;
+									ie.type = InputEventType.MouseScroll;
+									ie.mouseSE.x = device.lastPosition[0];
+									ie.mouseSE.y = device.lastPosition[1];
+									if (inputData.usButtonFlags & RI_MOUSE_WHEEL) {
+										ie.mouseSE.yS = cast(short)inputData.usButtonData;
+									} else {
+										ie.mouseSE.xS = cast(short)inputData.usButtonData;
+									}
+									//eventBuff ~= ie;
+								} 
+							}
+							/* if (eventBuff.length) {
+								output = eventBuff[0];
+								eventBuff = eventBuff[1..$];
+							} */
+							break;
+						case RIM_TYPEKEYBOARD:
+							RAWKEYBOARD inputData = rawInput.data.keyboard;
+							Keyboard device = getDeviceByHandle(keybList, rawInput.header.hDevice);
+							output.type = InputEventType.Keyboard;
+							output.source = device;
+							output.button.dir = cast(ubyte)(inputData.Flags & 1);
+							output.button.id = translateSC(inputData.VKey, 
+									(inputData.Flags & 2 ? 1<24 : 0) | ((inputData.MakeCode & 127) == 0x36 ? 1 << 18 : 0));
+							output.button.aux = device.getModifiers();
+							break;
+						default:
+							break;
+					}
+						
+					switch (msg.wParam & 0xFF) {
+						case RIM_INPUT:
+							output.handle = null;
+							DefWindowProcW(msg.hwnd, msg.message, msg.wParam, msg.lParam);
+							break;
+						default:
+							break;
+					}
+					break;
+
+				case 0x00FE:		//Raw input device added/removed
+					if (msg.wParam == 2) {	//Device removed
+						foreach (size_t i, Keyboard dev ; keybList) {
+							if (dev.devHandle == cast(HANDLE)msg.lParam) {
+								dev.status |= InputDevice.StatusFlags.IsInvalidated;
+								dev.status &= ~InputDevice.StatusFlags.IsConnected;
+								output.source = dev;
+								keybList = keybList[0..i] ~ keybList[i+1..$];
+								goto breakTwoLoopsAtOnce;
+							}
+						}
+						foreach (size_t i, Mouse dev ; mouseList) {
+							if (dev.devHandle == cast(HANDLE)msg.lParam) {
+								dev.status |= InputDevice.StatusFlags.IsInvalidated;
+								dev.status &= ~InputDevice.StatusFlags.IsConnected;
+								output.source = dev;
+								mouseList = mouseList[0..i] ~ mouseList[i+1..$];
+								goto breakTwoLoopsAtOnce;
+							}
+						}
+						breakTwoLoopsAtOnce:
+						output.type = InputEventType.DeviceRemoved;
+					} else if (msg.wParam == 1) {	//Device added
+						output.type = InputEventType.DeviceAdded;
+						HANDLE devHandle = cast(HANDLE)msg.lParam;
+					}
+					break;
+				
+		    	case WM_MOVE:
+		    		output.type = InputEventType.WindowMove;
+		    		output.window.x = LOWORD(msg.lParam);
+		    		output.window.y = HIWORD(msg.lParam);
+		    		output.window.width = 0;
+		    		output.window.height = 0;
+		    		output.source = sys;
+		    		break;
+		    	case WM_SIZE:
+		    		output.type = InputEventType.WindowResize;
+		    		output.window.x = 0;
+		    		output.window.y = 0;
+		    		output.window.width = LOWORD(msg.lParam);
+		    		output.window.height = HIWORD(msg.lParam);
+		    		output.source = sys;
+		    		break;
+                default:
+		    		//check for window status
+		    		output.source = sys;
+		    		final switch (OSWindow.refCount[winCount].getWindowStatus) with (OSWindow.Status) {
+		    			case init: break;
+		    			case Quit: 
+		    				output.type = InputEventType.WindowClose;
+		    				break;
+		    			case Minimize: 
+		    				output.type = InputEventType.WindowMinimize;
+		    				break;
+		    			case Maximize: 
+		    				output.type = InputEventType.WindowMaximize;
+		    				break;
+		    			case Move, MoveEnded: 
+		    				output.type = InputEventType.WindowMove;
+		    				break;
+		    			case Resize, ResizeEnded: 
+		    				output.type = InputEventType.WindowResize;
+		    				break;
+		    			case InputLangCh: 
+		    				output.type = InputEventType.InputLangChange;
+		    				break;
+		    			case InputLangChReq: 
+							break;
+		    		}
+		    		break;
+		    }
+        } else {	//No more events for this window, move onto the next if any
+			winCount++;
+			if (winCount < OSWindow.refCount.length)
+				goto tryAgain;	//Not the nicest solution, could have been done with recursive calls, but that would have had stack allocation.
+			else	//All windows have tested for events, reset window counter, then return with 0 (finished)
+				winCount = 0;
+			return 0;
+		}
+        return 1;
     }
 }

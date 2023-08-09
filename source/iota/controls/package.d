@@ -46,9 +46,9 @@ public int initInput(uint config = 0, uint osConfig = 0) nothrow {
 		if (osConfig & OSConfigFlags.win_RawInput) {
 			RAWINPUTDEVICE[] rid;
 			if (osConfig & OSConfigFlags.win_RawKeyboard)
-				rid ~= RAWINPUTDEVICE(0x0001, 0x0006, RIDEV_NOLEGACY, null);
+				rid ~= RAWINPUTDEVICE(0x0001, 0x0006, 0x2000, null);
 			if (osConfig & OSConfigFlags.win_RawMouse)
-				rid ~= RAWINPUTDEVICE(0x0001, 0x0002, RIDEV_NOLEGACY, null);
+				rid ~= RAWINPUTDEVICE(0x0001, 0x0002, RIDEV_NOLEGACY | 0x2000, null);
 			if (config & ConfigFlags.enableTouchscreen) {
 				rid ~= RAWINPUTDEVICE(0x000D, 0x0004, 0x2000, null);
 			}

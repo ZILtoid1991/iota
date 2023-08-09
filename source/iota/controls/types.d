@@ -4,14 +4,20 @@ public import iota.window.oswindow;
 import std.conv : to;
 import std.bitmanip : bitfields;
 public import core.time : MonoTime;
+version (Windows) {
+	import core.sys.windows.wtypes;
+	import core.sys.windows.windows;
+}
 
+///Defines the type of the timestamp
+///Resolution is 1 microsecond, but full resolution might not be available depending on OS.
 alias Timestamp = ulong;
 
 /** 
  * Generates a relatively high precision timesstamp.
  */
 package Timestamp getTimestamp() @nogc nothrow {
-	return Timestamp.currTime;
+	return 0; //Timestamp.currTime;
 }
 /** 
  * Defines the types of the input devices.
@@ -154,6 +160,8 @@ public abstract class InputDevice {
 	/// Bits 0-7 are common, 8-15 are special to each device/interface type.
 	/// Note: flags related to indicators/etc should be kept separately.
 	protected ushort			status;
+	version (Windows)
+	protected HANDLE			hDevice;	/// Windows only field for RawInput
 	/**
 	 * Defines common status codes
 	 */
@@ -336,15 +344,18 @@ public struct MouseClickEvent {
 }
 /**
  * Defines a mouse motion event with the buttons that are held down.
+ * Coordinates are as is in normal precision mode, and contain fractionals in high precision mode in the following format:
+ * WWWW.FFFF
+ * Where `W` is a whole pixel, and F is a fractional (up to 65_536 levels).
  */
 public struct MouseMotionEvent {
 	///If a bit high, it indicates that button is being held down.
 	///See enum MouseButtonFlags to identify each button.
 	uint		buttons;
-	int			x;		///X position of the cursor
-	int			y;		///Y position of the cursor
-	int			xD;		///X amount of the motion
-	int			yD;		///Y amount of the motion
+	int			x;		///X position of the cursor.
+	int			y;		///Y position of the cursor.
+	int			xD;		///X amount of the motion.
+	int			yD;		///Y amount of the motion.
 	string toString() @safe pure const {
 		return "Buttons: " ~ to!string(buttons) ~ " ; x: " ~ to!string(x) ~ " ; y: " ~ to!string(y) ~ " ; xD: " ~ 
 				to!string(xD) ~ " ; yD " ~ to!string(yD) ~ " ; ";
