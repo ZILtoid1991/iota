@@ -69,7 +69,7 @@ public class Mouse : InputDevice {
 		return lastButtonState;
 	}
 	
-	override public int poll(ref InputEvent output) @nogc nothrow {
+	/* override public int poll(ref InputEvent output) @nogc nothrow {
 		return 0;
-	}
+	} */
 }

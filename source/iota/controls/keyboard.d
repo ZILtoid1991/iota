@@ -79,21 +79,6 @@ public class Keyboard : InputDevice {
 		_type = InputDeviceType.Keyboard;
 		status |= StatusFlags.IsConnected;
 	}
-	/** 
-	 * Polls the device for events.
-	 * Params:
-	 *   output = InputEvents outputted by the 
-	 * Returns: 1 if there's still events to be polled, 0 if no events left. Other values are error codes.
-	 */
-	public override int poll(ref InputEvent output) @nogc nothrow {
-		version (Windows) {
-			//Since Windows is a bit weird when it comes to inputs, inputs are polled from system.
-			//This class mainly exists here to provide context and other interfaces
-			return 0;
-		} else {
-			return 0;
-		}
-	}
 	/**
 	 * Returns true if the text input has been enabled.
 	 */

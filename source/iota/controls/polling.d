@@ -280,7 +280,7 @@ version (Windows) {
         return 1;
     }
 	///Polls inputs using the more modern RawInput API.
-    package int poll_win_RawInput(ref InputEvent output) nothrow @nogc {
+    package int poll_win_RawInput(ref InputEvent output) nothrow {
         tryAgain:
         MSG msg;
         BOOL bret = PeekMessageW(&msg, OSWindow.refCount[winCount].getHandle, 0, 0, PM_REMOVE);
@@ -333,10 +333,11 @@ version (Windows) {
 		    	
 				case WM_INPUT:		//Raw input
 					UINT dwSize;
-					GetRawInputData(cast(HRAWINPUT)msg.lParam, RID_INPUT, null, &dwSize, RAWINPUTHEADER.sizeof);
+					/* GetRawInputData(cast(HRAWINPUT)msg.lParam, RID_INPUT, null, &dwSize, RAWINPUTHEADER.sizeof);
 					if (!dwSize) return 1;
 					void[] lpb;
-					lpb.length = dwSize;
+					lpb.length = dwSize; */
+					ubyte[256] lpb;
 
 					if (GetRawInputData(cast(HRAWINPUT)msg.lParam, RID_INPUT, lpb.ptr, &dwSize, RAWINPUTHEADER.sizeof))
 						return EventPollStatus.win_RawInputError;
@@ -344,7 +345,7 @@ version (Windows) {
 					
 					switch (rawInput.header.dwType) {
 						case RIM_TYPEMOUSE:
-							Mouse device = getDevByHandle(rawInput.header.hDevice);
+							Mouse device = cast(Mouse)getDevByHandle(rawInput.header.hDevice);
 							if (device !is null) {
 								mouse = device;
 								RAWMOUSE inputData = rawInput.data.mouse;
@@ -418,13 +419,12 @@ version (Windows) {
 							break;
 						case RIM_TYPEKEYBOARD:
 							RAWKEYBOARD inputData = rawInput.data.keyboard;
-							Keyboard device = getDeviceByHandle(keybList, rawInput.header.hDevice);
 							output.type = InputEventType.Keyboard;
-							output.source = device;
+							output.source = getDevByHandle(rawInput.header.hDevice);
 							output.button.dir = cast(ubyte)(inputData.Flags & 1);
 							output.button.id = translateSC(inputData.VKey, 
 									(inputData.Flags & 2 ? 1<24 : 0) | ((inputData.MakeCode & 127) == 0x36 ? 1 << 18 : 0));
-							output.button.aux = device.getModifiers();
+							output.button.aux = (cast(Keyboard)output.source).getModifiers();
 							break;
 						default:
 							break;
@@ -442,7 +442,7 @@ version (Windows) {
 
 				case 0x00FE:		//Raw input device added/removed
 					if (msg.wParam == 2) {	//Device removed
-						foreach (size_t i, Keyboard dev ; keybList) {
+						/* foreach (size_t i, Keyboard dev ; keybList) {
 							if (dev.devHandle == cast(HANDLE)msg.lParam) {
 								dev.status |= InputDevice.StatusFlags.IsInvalidated;
 								dev.status &= ~InputDevice.StatusFlags.IsConnected;
@@ -460,7 +460,10 @@ version (Windows) {
 								goto breakTwoLoopsAtOnce;
 							}
 						}
-						breakTwoLoopsAtOnce:
+						breakTwoLoopsAtOnce: */
+						output.source = getDevByHandle(cast(HANDLE)msg.lParam);
+						output.source.status |= InputDevice.StatusFlags.IsInvalidated;
+						output.source.status &= ~InputDevice.StatusFlags.IsConnected;
 						output.type = InputEventType.DeviceRemoved;
 					} else if (msg.wParam == 1) {	//Device added
 						output.type = InputEventType.DeviceAdded;

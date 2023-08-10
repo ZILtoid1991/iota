@@ -159,9 +159,9 @@ public abstract class InputDevice {
 	/// Status flags of the device.
 	/// Bits 0-7 are common, 8-15 are special to each device/interface type.
 	/// Note: flags related to indicators/etc should be kept separately.
-	protected ushort			status;
+	package ushort				status;
 	version (Windows)
-	protected HANDLE			hDevice;	/// Windows only field for RawInput
+	package HANDLE				hDevice;	/// Windows only field for RawInput
 	/**
 	 * Defines common status codes
 	 */
@@ -228,14 +228,6 @@ public abstract class InputDevice {
 		import std.conv : to;
 		return _name.to!string;
 	}
-	/** 
-	 * Polls the device for events.
-	 * Params:
-	 *   output = InputEvents outputted by the input device
-	 * Returns: 1 if there's still events to be polled, 0 if no events left. Other values are error codes.
-	 * Note to self: Probably I should remove it from here.
-	 */
-	public abstract int poll(ref InputEvent output) nothrow;
 }
 /**
  * Defines basic functions for haptic devices.

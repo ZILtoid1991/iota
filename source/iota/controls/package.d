@@ -20,7 +20,7 @@ package static InputDevice[]    deviceList;
 ///Contains the polling position.
 package static size_t           pollPos;
 
-package enum IOTA_INPUTCONFIG_DEFAULT = 0;
+package enum IOTA_INPUTCONFIG_MANDATORY = 0;
 /** 
  * Initializes the input subsystem
  * Params:
@@ -29,7 +29,7 @@ package enum IOTA_INPUTCONFIG_DEFAULT = 0;
  * Returns: 0 if everything is successful, or a specific errorcode.
  */
 public int initInput(uint config = 0, uint osConfig = 0) nothrow {
-	config |= IOTA_INPUTCONFIG_DEFAULT;
+	config |= IOTA_INPUTCONFIG_MANDATORY;
 	System s = new System(config, osConfig);
 	deviceList ~= s;
 	version (Windows) {
@@ -102,23 +102,4 @@ public int initInput(uint config = 0, uint osConfig = 0) nothrow {
 		}
 	}
 	return InputInitializationStatus.AllOk;
-}
-/** 
- * Polls all input devices one by one.
- * Also manages current list of all input devices upon invalidation.
- * Params:
- *   output = The input event is returned here.
- * Returns: 1 if there's more, 0 if all input events have been processed, or a specific error code (See EventPollStatus
- * for specifics).
- */
-public int pollInputs(ref InputEvent output) nothrow {
-	if (!deviceList.length) return EventPollStatus.NoDevsFound;
-	if (pollPos == deviceList.length) pollPos = 0;
-	int statusCode;
-	while (pollPos < deviceList.length && (statusCode == 0)) {
-		statusCode = deviceList[pollPos].poll(output);
-		if (statusCode) return statusCode;	//If statuscode isn't zero, return now
-		pollPos++;			//Step to next device, this one has no more events
-	}
-	return statusCode;
 }

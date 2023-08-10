@@ -8,7 +8,7 @@ version (Windows) {
 	import iota.controls.mouse;
 	import std.utf;
 	import std.stdio;
-	import iota.controls.keybscancodes : translateSC;
+	import iota.controls.keybscancodes : translateSC, translatePS2MC;
 } else {
 	import x11.X;
 	import x11.Xlib;
@@ -79,9 +79,9 @@ version (Windows){
 			XFreeDeviceList(deviceList);
 		} */
 		}
-		public override int poll(ref InputEvent output) nothrow {
+		/* public override int poll(ref InputEvent output) nothrow { */
 		/* version (Windows) { */
-			int GET_X_LPARAM(LPARAM lParam) @nogc nothrow pure {
+			/* int GET_X_LPARAM(LPARAM lParam) @nogc nothrow pure {
 				return cast(int)(cast(short) LOWORD(lParam));
         	}
 
@@ -383,8 +383,9 @@ version (Windows){
 								output.type = InputEventType.Keyboard;
 								output.source = device;
 								output.button.dir = cast(ubyte)(inputData.Flags & 1);
-								output.button.id = translateSC(inputData.VKey, 
-										(inputData.Flags & 2 ? 1<24 : 0) | ((inputData.MakeCode & 127) == 0x36 ? 1 << 18 : 0));
+								/* output.button.id = translateSC(inputData.VKey, 
+										(inputData.Flags & 2 ? 1<24 : 0) | ((inputData.MakeCode & 127) == 0x36 ? 1 << 18 : 0)); */
+					/* 			output.button.id = translatePS2MC(inputData.MakeCode, (inputData.Flags & 2) != 0);
 								output.button.aux = device.getModifiers();
 								break;
 							default:
@@ -463,7 +464,7 @@ version (Windows){
 				return 0;
 			}
 
-			return 1;
+			return 1; */
 		/* } else {
 			
 			XEvent xe;
@@ -518,6 +519,6 @@ version (Windows){
 			}
 			return 0;
 		} */
-		}
+		//}
 	}
 }
