@@ -53,10 +53,11 @@ int main(string[] args) {
 		writeln("Input initialization error! Code: ", errCode);
 		return 1;
 	}
+	writeln(devList);
 	bool isRunning = true;
 	while (isRunning) {
 		InputEvent event;
-		pollInputs(event);
+		poll(event);
 		if (event.type == InputEventType.ApplExit || event.type == InputEventType.WindowClose) {
 			isRunning = false;
 		} else if (event.type != InputEventType.init) {

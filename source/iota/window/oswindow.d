@@ -347,6 +347,8 @@ public class OSWindow {
 			case WM_INPUTLANGCHANGEREQUEST:
 				statusFlags = Status.InputLangChReq;
 				inputLang = cast(uint)lParam;
+				int next = HKL_NEXT, prev = HKL_PREV;
+				ActivateKeyboardLayout(((wParam & 2) ? &next : &prev), 0);
 				goto default;
 			case WM_INPUTLANGCHANGE:
 				statusFlags = Status.InputLangCh;

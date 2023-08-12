@@ -35,30 +35,18 @@ version (Windows){
 			dchar				lastChar;
 		}
 		///Sizes of the screen. 0 : Virtual desktop width, 1 : Virtual desktop height, 2 : Screen width, 3: Screen height
-		protected int[4]		screenSize; 
-		protected size_t		winCount;	///Window counter.
-		protected InputEvent[]	eventBuff;	///Input event buffer. FIFO.
-
-		package Mouse			mouse;			///Pointer to the default, non-virtual mouse.
-		package Mouse[]			mouseList;		///List of all mice (raw input only)
-		package Keyboard		keyb;			///Pointer to the default, non-virtual keyboard.
-		package Keyboard[]		keybList;		///List of all keyboards (raw input only)
+		package int[4]			screenSize; 
+		protected size_t		winCount;	///Window counter.	
 	
 		enum SystemFlags : ushort {
 			Win_RawInput		=	1 << 8,
 		}
 		package this(uint config = 0, uint osConfig = 0) nothrow {
-		/* version (Windows) { */
-			if (!(osConfig & OSConfigFlags.win_RawInput)) {
-				keyb = new Keyboard();
-				mouse = new Mouse();
-			} else {
-				status |= SystemFlags.Win_RawInput | StatusFlags.IsConnected;
-			}
-			_type = InputDeviceType.System;
+		version (Windows) {
+			
 			screenSize = [GetSystemMetrics(SM_CXVIRTUALSCREEN), GetSystemMetrics(SM_CXVIRTUALSCREEN), 
 					GetSystemMetrics(SM_CXSCREEN), GetSystemMetrics(SM_CYSCREEN)];
-		/* } else {
+		} /*else {
 			XDeviceInfo* deviceList;
 			int nDevices;
 			ubyte keybID, mouseID, joyID;

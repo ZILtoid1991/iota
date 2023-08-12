@@ -6,6 +6,7 @@ public import iota.controls.mouse;
 public import iota.controls.system;
 import iota.window.oswindow;
 import iota.controls.keybscancodes;
+import iota.controls.gamectrl;
 
 /** 
  * Polls all input devices, and returns the found events in a given order.
@@ -14,9 +15,15 @@ import iota.controls.keybscancodes;
  * Returns: 1 if an event has been polled, 0 if no events left. Other values are error codes.
  */
 public int poll(ref InputEvent output) nothrow {
-    
+    int status = mainPollingFun(output);
+	if (status) return status;
+	version (Windows) {
+		status = XInputDevice.poll(output);
+		if (status) return status;
+	}
     return 0;
 }
+package nothrow int function(ref InputEvent) mainPollingFun;
 Keyboard keyb;          ///Main keyboard, or the only keyboard on APIs not supporting differentiating between keyboards.
 Mouse mouse;            ///Main mouse, or the only mouse on APIs not supporting differentiating between mice.
 System sys;				///System device, originator of system events.
@@ -30,6 +37,7 @@ version (Windows) {
 	else
 		package dchar	lastChar;
 	package int winCount;
+	package InputEvent[3] mouse_inputEventBuff;		///RawInput IO buffer for mouse
     package int GET_X_LPARAM(LPARAM lParam) @nogc nothrow pure {
 		return cast(int)(cast(short) LOWORD(lParam));
     }
@@ -78,9 +86,9 @@ version (Windows) {
 			output.handle = OSWindow.refCount[winCount].getHandle;
             auto message = msg.message & 0xFF_FF;
             if (!(Keyboard.isMenuKeyDisabled() && (message == WM_SYSKEYDOWN || message == WM_SYSKEYUP)) || 
-					(Keyboard.isMetaKeyDisabled() && (message == WM_KEYDOWN || message == WM_KEYUP) && (msg.wParam == VK_LWIN 
+					(!Keyboard.isMetaKeyDisabled() && (message == WM_KEYDOWN || message == WM_KEYUP) && (msg.wParam == VK_LWIN 
 					|| msg.wParam == VK_RWIN)) ||
-					(Keyboard.isMetaKeyCombDisabled() && (message == WM_KEYDOWN || message == WM_KEYUP) && 
+					(!Keyboard.isMetaKeyCombDisabled() && (message == WM_KEYDOWN || message == WM_KEYUP) && 
 					(keyb.getModifiers | KeyboardModifiers.Meta))) {
 				DispatchMessageW(&msg);
 			}
@@ -280,8 +288,15 @@ version (Windows) {
         return 1;
     }
 	///Polls inputs using the more modern RawInput API.
-    package int poll_win_RawInput(ref InputEvent output) nothrow {
-        tryAgain:
+    package int poll_win_RawInput(ref InputEvent output) nothrow @nogc {
+		foreach (ref InputEvent key; mouse_inputEventBuff) {
+			if (key.type != InputEventType.init) {
+				output = key;
+				key.type = InputEventType.init;
+				return 1;
+			}
+		}
+    tryAgain:
         MSG msg;
         BOOL bret = PeekMessageW(&msg, OSWindow.refCount[winCount].getHandle, 0, 0, PM_REMOVE);
 		if (bret) {
@@ -289,9 +304,9 @@ version (Windows) {
 			output.handle = OSWindow.refCount[winCount].getHandle;
             auto message = msg.message & 0xFF_FF;
             if (!(Keyboard.isMenuKeyDisabled() && (message == WM_SYSKEYDOWN || message == WM_SYSKEYUP)) || 
-					(Keyboard.isMetaKeyDisabled() && (message == WM_KEYDOWN || message == WM_KEYUP) && (msg.wParam == VK_LWIN 
+					!(Keyboard.isMetaKeyDisabled() && (message == WM_KEYDOWN || message == WM_KEYUP) && (msg.wParam == VK_LWIN 
 					|| msg.wParam == VK_RWIN)) ||
-					(Keyboard.isMetaKeyCombDisabled() && (message == WM_KEYDOWN || message == WM_KEYUP) && 
+					!(Keyboard.isMetaKeyCombDisabled() && (message == WM_KEYDOWN || message == WM_KEYUP) && 
 					(keyb.getModifiers | KeyboardModifiers.Meta))) {
 				DispatchMessageW(&msg);
 			}
@@ -332,86 +347,62 @@ version (Windows) {
 		    		break;
 		    	
 				case WM_INPUT:		//Raw input
-					UINT dwSize;
-					/* GetRawInputData(cast(HRAWINPUT)msg.lParam, RID_INPUT, null, &dwSize, RAWINPUTHEADER.sizeof);
-					if (!dwSize) return 1;
-					void[] lpb;
-					lpb.length = dwSize; */
+					/* UINT hdrSize = RAWINPUT.sizeof;
+					ubyte[RAWINPUT.sizeof] hdr; */
+					UINT dwSize = 256;
 					ubyte[256] lpb;
-
-					if (GetRawInputData(cast(HRAWINPUT)msg.lParam, RID_INPUT, lpb.ptr, &dwSize, RAWINPUTHEADER.sizeof))
-						return EventPollStatus.win_RawInputError;
-					RAWINPUT* rawInput = cast(RAWINPUT*)lpb.ptr;
+					/* GetRawInputData(cast(HRAWINPUT)msg.lParam, RID_INPUT, hdr.ptr, &hdrSize, RAWINPUTHEADER.sizeof); */
+					GetRawInputData(cast(HRAWINPUT)msg.lParam, RID_INPUT, lpb.ptr, &dwSize, RAWINPUTHEADER.sizeof);
+					RAWINPUT rawInput = *cast(RAWINPUT*)lpb.ptr;
+					/* RAWINPUT* riHeader = cast(RAWINPUT*)hdr.ptr; */
 					
 					switch (rawInput.header.dwType) {
 						case RIM_TYPEMOUSE:
-							Mouse device = cast(Mouse)getDevByHandle(rawInput.header.hDevice);
-							if (device !is null) {
-								mouse = device;
-								RAWMOUSE inputData = rawInput.data.mouse;
-								int[2] absolute;
-								int[2] relative;
-								if (inputData.usFlags & MOUSE_MOVE_ABSOLUTE) {
-									const bool isVirtualDesktop = (inputData.usFlags & MOUSE_VIRTUAL_DESKTOP) != 0;
-									/* absolute[0] = cast(int)((inputData.lLastX / 65_535.0) * (isVirtualDesktop ? screenSize[0] : screenSize[2]));
-									absolute[1] = cast(int)((inputData.lLastY / 65_535.0) * (isVirtualDesktop ? screenSize[1] : screenSize[3])); */
-									relative[0] = device.lastPosition[0] - absolute[0];
-									relative[1] = device.lastPosition[1] - absolute[1];
-								} else {
-									relative[0] = inputData.lLastX;
-									relative[1] = inputData.lLastY;
-									absolute[0] = device.lastPosition[0] + relative[0];
-									absolute[1] = device.lastPosition[1] + relative[1];
-								}
-								device.lastPosition[0] = absolute[0];
-								device.lastPosition[1] = absolute[1];
-								output.source = device;
-								if (relative[0] || relative[1]) {	//Mouse move event
-									InputEvent ie;
-									ie = output;
-									ie.type = InputEventType.MouseMove;
-									ie.mouseME.x = absolute[0];
-									ie.mouseME.y = absolute[1];
-									ie.mouseME.xD = relative[0];
-									ie.mouseME.yD = relative[1];
-									ie.mouseME.buttons = device.lastButtonState;
-									//eventBuff ~= ie;
-								}
-								if ((inputData.usButtonFlags & 0x03FF) == 0x03FF) {	//Mouse click event
-									uint buttons = toIOTAMouseButtonFlags(device.lastButtonState, inputData.usButtonFlags);
-									uint prevButtons = device.lastButtonState;
-									device.lastButtonState = buttons;
-									ushort buttonCntr = 1;
-									while (buttons) {
-										if ((buttons & 1) ^ (prevButtons & 1)) {
-											InputEvent ie;
-											ie = output;
-											ie.type = InputEventType.MouseClick;
-											ie.mouseCE.button = buttonCntr;
-											ie.mouseCE.dir = (buttons & 1) ? 0 : 1;
-											ie.mouseCE.x = absolute[0];
-											ie.mouseCE.y = absolute[1];
-											//eventBuff ~= ie;
-										} 
-										buttonCntr = 1;
-										buttons >>= 1;
-										prevButtons >>= 1;
-									}
-								} 
-								if ((inputData.usButtonFlags & 0x0B00) == 0x0B00) { //Mouse wheel event
-									InputEvent ie;
-									ie = output;
-									ie.type = InputEventType.MouseScroll;
-									ie.mouseSE.x = device.lastPosition[0];
-									ie.mouseSE.y = device.lastPosition[1];
-									if (inputData.usButtonFlags & RI_MOUSE_WHEEL) {
-										ie.mouseSE.yS = cast(short)inputData.usButtonData;
-									} else {
-										ie.mouseSE.xS = cast(short)inputData.usButtonData;
-									}
-									//eventBuff ~= ie;
-								} 
+							//BUG: `GetRawInputData` returns null for header.hDevice, no documentation on what causes it.
+							//Mouse device = cast(Mouse)getDevByHandle(rawInput.header.hDevice);
+							Mouse device = mouse;
+							/* if (device !is null) { */ 
+							
+								//mouse = device;
+							RAWMOUSE inputData = rawInput.data.mouse;
+							int[2] absolute;
+							int[2] relative;
+							if (inputData.usFlags & MOUSE_MOVE_ABSOLUTE) {
+								const bool isVirtualDesktop = (inputData.usFlags & MOUSE_VIRTUAL_DESKTOP) != 0;
+								absolute[0] = cast(int)((inputData.lLastX / 1.0) * 
+										(isVirtualDesktop ? sys.screenSize[0] : sys.screenSize[2]));
+								absolute[1] = cast(int)((inputData.lLastY / 1.0) * 
+										(isVirtualDesktop ? sys.screenSize[1] : sys.screenSize[3]));
+								relative[0] = device.lastPosition[0] - absolute[0];
+								relative[1] = device.lastPosition[1] - absolute[1];
+							} else {
+								relative[0] = inputData.lLastX * 65_536;
+								relative[1] = inputData.lLastY * 65_536;
+								absolute[0] = device.lastPosition[0] + relative[0];
+								absolute[1] = device.lastPosition[1] + relative[1];
 							}
+							device.lastPosition[0] = absolute[0];
+							device.lastPosition[1] = absolute[1];
+							output.source = device;
+							output.type = InputEventType.HPMouse;
+							//Mouse move event
+							output.mouseHP.x = absolute[0];
+							output.mouseHP.y = absolute[1];
+							output.mouseHP.xD = relative[0];
+							output.mouseHP.yD = relative[1];
+							//Mouse click event
+							uint buttons = toIOTAMouseButtonFlags(device.lastButtonState, inputData.usButtonFlags);
+							device.lastButtonState = buttons;
+							output.mouseHP.buttons = cast(ushort)buttons;
+							
+							if (inputData.usButtonFlags & 0x0B00) { //Mouse wheel event
+								if (inputData.usButtonFlags & RI_MOUSE_WHEEL) {
+									output.mouseHP.hScroll = cast(byte)inputData.usButtonData;
+								} else {
+									output.mouseHP.vScroll = cast(byte)inputData.usButtonData;
+								}
+							} 
+							//}
 							/* if (eventBuff.length) {
 								output = eventBuff[0];
 								eventBuff = eventBuff[1..$];
@@ -420,10 +411,11 @@ version (Windows) {
 						case RIM_TYPEKEYBOARD:
 							RAWKEYBOARD inputData = rawInput.data.keyboard;
 							output.type = InputEventType.Keyboard;
-							output.source = getDevByHandle(rawInput.header.hDevice);
+							//BUG: `GetRawInputData` returns null for header.hDevice, no documentation on what causes it.
+							//output.source = getDevByHandle(rawInput.header.hDevice);
+							output.source = keyb;
 							output.button.dir = cast(ubyte)(inputData.Flags & 1);
-							output.button.id = translateSC(inputData.VKey, 
-									(inputData.Flags & 2 ? 1<24 : 0) | ((inputData.MakeCode & 127) == 0x36 ? 1 << 18 : 0));
+							output.button.id = translatePS2MC(inputData.MakeCode, (inputData.Flags & 2) == 2);
 							output.button.aux = (cast(Keyboard)output.source).getModifiers();
 							break;
 						default:
@@ -442,25 +434,6 @@ version (Windows) {
 
 				case 0x00FE:		//Raw input device added/removed
 					if (msg.wParam == 2) {	//Device removed
-						/* foreach (size_t i, Keyboard dev ; keybList) {
-							if (dev.devHandle == cast(HANDLE)msg.lParam) {
-								dev.status |= InputDevice.StatusFlags.IsInvalidated;
-								dev.status &= ~InputDevice.StatusFlags.IsConnected;
-								output.source = dev;
-								keybList = keybList[0..i] ~ keybList[i+1..$];
-								goto breakTwoLoopsAtOnce;
-							}
-						}
-						foreach (size_t i, Mouse dev ; mouseList) {
-							if (dev.devHandle == cast(HANDLE)msg.lParam) {
-								dev.status |= InputDevice.StatusFlags.IsInvalidated;
-								dev.status &= ~InputDevice.StatusFlags.IsConnected;
-								output.source = dev;
-								mouseList = mouseList[0..i] ~ mouseList[i+1..$];
-								goto breakTwoLoopsAtOnce;
-							}
-						}
-						breakTwoLoopsAtOnce: */
 						output.source = getDevByHandle(cast(HANDLE)msg.lParam);
 						output.source.status |= InputDevice.StatusFlags.IsInvalidated;
 						output.source.status &= ~InputDevice.StatusFlags.IsConnected;
@@ -470,7 +443,101 @@ version (Windows) {
 						HANDLE devHandle = cast(HANDLE)msg.lParam;
 					}
 					break;
-				
+				//begin of legacy mouse events
+				case 0x020E , WM_MOUSEWHEEL:
+		    		output.type = InputEventType.MouseScroll;
+		    		output.source = mouse;
+		    		if (message == 0x020E)
+		    			output.mouseSE.xS = GET_WHEEL_DELTA_WPARAM(msg.wParam);
+		    		else
+		    			output.mouseSE.yS = GET_WHEEL_DELTA_WPARAM(msg.wParam);
+		    		output.mouseSE.x = GET_X_LPARAM(msg.lParam);
+		    		output.mouseSE.y = GET_Y_LPARAM(msg.lParam);
+		    		mouse.lastPosition[0] = output.mouseSE.x;
+		    		mouse.lastPosition[1] = output.mouseSE.y;
+		    		//lastMousePos[0] = output.mouseSE.x;
+		    		//lastMousePos[1] = output.mouseSE.y;
+		    		break;
+		    	case WM_MOUSEMOVE:
+		    		output.type = InputEventType.MouseMove;
+		    		output.source = mouse;
+		    		if (msg.wParam & MK_LBUTTON)
+		    			output.mouseME.buttons |= MouseButtonFlags.Left;
+		    		if (msg.wParam & MK_RBUTTON)
+		    			output.mouseME.buttons |= MouseButtonFlags.Right;
+		    		if (msg.wParam & MK_MBUTTON)
+		    			output.mouseME.buttons |= MouseButtonFlags.Middle;
+		    		if (msg.wParam & MK_XBUTTON1)
+		    			output.mouseME.buttons |= MouseButtonFlags.Prev;
+		    		if (msg.wParam & MK_XBUTTON2)
+		    			output.mouseME.buttons |= MouseButtonFlags.Next;
+		    		output.mouseME.x = GET_X_LPARAM(msg.lParam);
+		    		output.mouseME.y = GET_Y_LPARAM(msg.lParam);
+		    		output.mouseME.xD = output.mouseME.x - mouse.lastPosition[0];
+		    		output.mouseME.yD = output.mouseME.y - mouse.lastPosition[1];
+		    		mouse.lastPosition[0] = output.mouseME.x;
+		    		mouse.lastPosition[1] = output.mouseME.y;
+		    		break;
+		    	case WM_LBUTTONUP, WM_LBUTTONDOWN, WM_LBUTTONDBLCLK, WM_MBUTTONUP, WM_MBUTTONDOWN, WM_MBUTTONDBLCLK,
+		    	WM_RBUTTONUP, WM_RBUTTONDOWN, WM_RBUTTONDBLCLK, WM_XBUTTONUP, WM_XBUTTONDOWN, WM_XBUTTONDBLCLK:
+		    		output.type = InputEventType.MouseClick;
+		    		output.source = mouse;
+		    		output.mouseCE.x = GET_X_LPARAM(msg.lParam);
+		    		output.mouseCE.y = GET_Y_LPARAM(msg.lParam);
+		    		mouse.lastPosition[0] = output.mouseCE.x;
+		    		mouse.lastPosition[1] = output.mouseCE.y;
+		    		output.mouseCE.repeat = 0;
+		    		switch (msg.message & 0xFF_FF) {
+		    			case WM_LBUTTONUP:
+		    				output.mouseCE.dir = 0;
+		    				output.mouseCE.button = MouseButtons.Left;
+		    				break;
+		    			case WM_LBUTTONDOWN:
+		    				output.mouseCE.dir = 1;
+		    				output.mouseCE.button = MouseButtons.Left;
+		    				break;
+		    			case WM_LBUTTONDBLCLK:
+		    				output.mouseCE.repeat = 1;
+		    				goto case WM_LBUTTONDOWN;
+		    			case WM_RBUTTONUP:
+		    				output.mouseCE.dir = 0;
+		    				output.mouseCE.button = MouseButtons.Right;
+		    				break;
+		    			case WM_RBUTTONDOWN:
+		    				output.mouseCE.dir = 1;
+		    				output.mouseCE.button = MouseButtons.Right;
+		    				break;
+		    			case WM_RBUTTONDBLCLK:
+		    				output.mouseCE.repeat = 1;
+		    				goto case WM_RBUTTONDOWN;
+		    			case WM_MBUTTONUP:
+		    				output.mouseCE.dir = 0;
+		    				output.mouseCE.button = MouseButtons.Middle;
+		    				break;
+		    			case WM_MBUTTONDOWN:
+		    				output.mouseCE.dir = 1;
+		    				output.mouseCE.button = MouseButtons.Middle;
+		    				break;
+		    			case WM_MBUTTONDBLCLK:
+		    				output.mouseCE.repeat = 1;
+		    				goto case WM_MBUTTONDOWN;
+		    			case WM_XBUTTONUP:
+		    				output.mouseCE.dir = 0;
+		    				output.mouseCE.button = HIWORD(msg.wParam) == 1 ? MouseButtons.Next : MouseButtons.Prev;
+		    				break;
+		    			case WM_XBUTTONDOWN:
+		    				output.mouseCE.dir = 1;
+		    				output.mouseCE.button = HIWORD(msg.wParam) == 1 ? MouseButtons.Next : MouseButtons.Prev;
+		    				break;
+		    			case WM_XBUTTONDBLCLK:
+		    				output.mouseCE.repeat = 1;
+		    				goto case WM_XBUTTONDOWN;
+		    			default:
+
+		    				break;
+		    		}
+		    		break;
+				//end of legacy mouse events
 		    	case WM_MOVE:
 		    		output.type = InputEventType.WindowMove;
 		    		output.window.x = LOWORD(msg.lParam);

@@ -114,10 +114,11 @@ version (Windows) public class XInputDevice : GameController {
 		} else {
 			status |= StatusFlags.IsInvalidated;
 		}
+		ctrlList ~= this;
 	}
 	public override string toString() const @safe pure nothrow {
 		import std.conv : to;
-		return "XInputDevice; DevID: " ~ devNum().to!string;
+		return "{XInputDevice; DevID: " ~ devNum().to!string ~ "}";
 	}
 	package static int poll(ref InputEvent output) @nogc nothrow {
 		while (devC < ctrlList.length) {
@@ -305,15 +306,15 @@ version (Windows) public class XInputDevice : GameController {
 						output.button.repeat = 0;
 						output.button.aux = 0;
 						output.button.auxF = float.nan;
-						return EventPollStatus.HasMore;
+						goto case 384;
 					case 256:	//Axis of any kind
 						output.type = InputEventType.GCAxis;
-						return EventPollStatus.HasMore;
+						goto case 384;
 					case 257:	//Triggers when handled as buttons
 						output.type = InputEventType.GCButton;
 						output.button.repeat = 0;
 						output.button.aux = 0;
-						return EventPollStatus.HasMore;
+						goto case 384;
 					case 384:	//All event commons
 						output.source = dev;
 						output.timestamp = getTimestamp();

@@ -52,9 +52,13 @@ XInput is implemented and works. There should be a way to detect whether a devic
 
 #### Raw input
 
-This library is (mostly) equipped to handle raw input data, but currently it has some bugs. For some reason, it cannot differentiate between input devices at the moment, as all the device handles are null.
+This library is (mostly) equipped to handle raw input data, but currently it is very buggy. The documentation isn't clear on everything, and many things are just assumed to work as is. I'm getting null for all device handles, and mouse handling doesn't work as intended.
 
 ## Windowing
+
+### Windows
+
+Some non-basic stuff don't really work, as you should use already written libraries instead of writing your own.
 
 ### Linux
 

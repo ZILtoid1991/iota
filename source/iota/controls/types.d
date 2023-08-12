@@ -17,7 +17,7 @@ alias Timestamp = ulong;
  * Generates a relatively high precision timesstamp.
  */
 package Timestamp getTimestamp() @nogc nothrow {
-	return 0; //Timestamp.currTime;
+	return MonoTime.currTime.ticks / 10;
 }
 /** 
  * Defines the types of the input devices.
@@ -45,6 +45,7 @@ public enum InputEventType {
 	MouseClick,
 	MouseMove,
 	MouseScroll,
+	HPMouse,
 	GCButton,
 	GCAxis,
 	GCHat,
@@ -104,12 +105,6 @@ public enum OSConfigFlags : uint {
 	win_RawInput				=	1 << 0,
 	///Uses the older Wintab over other options.
 	win_Wintab					=	1 << 1,
-	///Enables raw handling of mouse input data in Windows.
-	///This enables differentiating between multiple mice and overriding OS sensitivity settings.
-	win_RawMouse				=	1 << 2,
-	///Enables raw handling of keyboard input data in Windows.
-	///This enables diffetentiating between multiple keyboard devices.
-	win_RawKeyboard				=	1 << 3,
 	///Enables x11 input extensions.
 	x11_InputExtensions			=	1 << 0,
 }
@@ -336,9 +331,6 @@ public struct MouseClickEvent {
 }
 /**
  * Defines a mouse motion event with the buttons that are held down.
- * Coordinates are as is in normal precision mode, and contain fractionals in high precision mode in the following format:
- * WWWW.FFFF
- * Where `W` is a whole pixel, and F is a fractional (up to 65_536 levels).
  */
 public struct MouseMotionEvent {
 	///If a bit high, it indicates that button is being held down.
@@ -363,6 +355,26 @@ public struct MouseScrollEvent {
 	int			y;		///Y position of the cursor
 	string toString() @safe pure const {
 		return "xS: " ~ to!string(xS) ~ " ; yS: " ~ to!string(yS) ~ " ; x: " ~ to!string(x) ~ " ; y: " ~ to!string(y) ~ " ; ";
+	}
+}
+/** 
+ * Defines a high-precision mouse event. Only available with drivers that support such capability.
+ * X and Y coordinates are fixed-point fractional with the lower half containing the fraction, and the higher-half 
+ * containing the whole numbers.
+ * WWWW.FFFF
+ */
+public struct HighPrecMouseEvent {
+	byte		hScroll;
+	byte		vScroll;
+	ushort		buttons;
+	int			x;		///X position of the cursor.
+	int			y;		///Y position of the cursor.
+	int			xD;		///X amount of the motion.
+	int			yD;		///Y amount of the motion.
+	string toString() @safe pure const {
+		return "Buttons: " ~ to!string(buttons) ~ " ; x: " ~ to!string(x / 65_536.0) ~ " ; y: " ~ to!string(y / 65_536.0) ~ 
+				" ; xD: " ~ to!string(xD / 65_536.0) ~ " ; yD " ~ to!string(yD / 65_536.0) ~ " ; hScroll: " ~ to!string(hScroll) ~ 
+				" ; vScroll: " ~ to!string(vScroll) ~ " ; ";
 	}
 }
 /**
@@ -412,6 +424,7 @@ public struct InputEvent {
 		MouseClickEvent		mouseCE;
 		MouseMotionEvent	mouseME;
 		MouseScrollEvent	mouseSE;
+		HighPrecMouseEvent	mouseHP;
 		PenEvent			pen;
 		WindowEvent			window;
 	}
@@ -441,6 +454,9 @@ public struct InputEvent {
 			case InputEventType.WindowMaximize, InputEventType.WindowMinimize, InputEventType.WindowMove, 
 					InputEventType.WindowResize, InputEventType.WindowRestore:
 				result ~= window.toString();
+				break;
+			case InputEventType.HPMouse:
+				result ~= mouseHP.toString();
 				break;
 			default:
 				break;

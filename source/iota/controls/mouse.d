@@ -69,6 +69,10 @@ public class Mouse : InputDevice {
 		return lastButtonState;
 	}
 	
+	public override string toString() @safe const {
+		import std.conv : to;
+		return "{" ~ _name.to!string ~ "; devID: " ~ _devNum.to!string ~ "; devHandle: " ~ devHandle.to!string ~ "}";
+	}
 	/* override public int poll(ref InputEvent output) @nogc nothrow {
 		return 0;
 	} */
