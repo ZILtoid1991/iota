@@ -17,6 +17,7 @@ public import iota.window.exception;
 public import iota.etc.vers;
 public import iota.window.fbdev;
 import std.algorithm.mutation : remove;
+import iota.controls.types;
 //import collections.treemap;
 
 /** 
@@ -57,6 +58,7 @@ public class OSWindow {
 	protected Status			statusFlags;
 	///Window renderer should be kept here to ensure safe destruction.
 	public FrameBufferRenderer	renderer;
+	public static InputEvent	lastInputEvent;
 	///Delegate called when a draw request is sent to the class.
 	///It can intercept it for various reasons, but this is not OS independent, and so far no drawing API is planned 
 	///that uses OS provided functions. 
@@ -328,31 +330,41 @@ public class OSWindow {
 				return 0;
 			case WM_CLOSE:
 				statusFlags = Status.Quit;
+				lastInputEvent.handle = this.windowHandle;
+				lastInputEvent.type = InputEventType.WindowClose;
 				return 0;
 			case WM_QUIT:
 				statusFlags = Status.Quit;
 				goto default;
-			case WM_MOVE:
-				statusFlags = Status.MoveEnded;
-				goto default;
-			case WM_MOVING:
+			case WM_MOVE, WM_MOVING:
 				statusFlags = Status.Move;
+				with (lastInputEvent) {
+					handle = this.windowHandle;
+					type = InputEventType.WindowMove;
+					window.x = cast(short)LOWORD(lParam);
+					window.y = cast(short)HIWORD(lParam);
+					window.width = 0;
+					window.height = 0;
+				}
 				goto default;
-			case WM_SIZE:
-				statusFlags = Status.ResizeEnded;
-				goto default;
-			case WM_SIZING:
+			case WM_SIZE, WM_SIZING:
 				statusFlags = Status.Resize;
+				with (lastInputEvent) {
+					handle = this.windowHandle;
+					type = InputEventType.WindowResize;
+					window.x = 0;
+					window.y = 0;
+					window.width = LOWORD(lParam);
+					window.height = HIWORD(lParam);
+				}
 				goto default;
-			case WM_INPUTLANGCHANGEREQUEST:
-				statusFlags = Status.InputLangChReq;
-				inputLang = cast(uint)lParam;
-				int next = HKL_NEXT, prev = HKL_PREV;
-				ActivateKeyboardLayout(((wParam & 2) ? &next : &prev), 0);
-				goto default;
-			case WM_INPUTLANGCHANGE:
+			case WM_INPUTLANGCHANGEREQUEST, WM_INPUTLANGCHANGE:
 				statusFlags = Status.InputLangCh;
 				inputLang = cast(uint)lParam;
+				with (lastInputEvent) {
+					handle = this.windowHandle;
+					type = InputEventType.WindowMove;
+				}
 				goto default;
 			case WM_PAINT:
 				if (drawDeleg !is null)

@@ -96,3 +96,11 @@ public int initInput(uint config = 0, uint osConfig = 0) nothrow {
 	}
 	return InputInitializationStatus.AllOk;
 }
+public int removeInvalidatedDevices() {
+	for (int i ; i < devList.length ; i++) {
+		if (devList[i].isInvalidated) {
+			devList = devList[0..i] ~ devList[i + 1..$];
+		}
+	}
+	return 0;
+}

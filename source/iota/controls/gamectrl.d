@@ -134,7 +134,7 @@ version (Windows) public class XInputDevice : GameController {
 			while (cntr < 20) {
 				switch (cntr++) {
 					case 0:
-						if (dev.state.Gamepad.bLeftTrigger != dev.prevState.Gamepad.bLeftTrigger) {
+ 						if (dev.state.Gamepad.bLeftTrigger != dev.prevState.Gamepad.bLeftTrigger) {
 							if (dev.status & TriggerAsButton) {
 								output.button.id = GameControllerButtons.LeftTrigger;
 								output.button.auxF = dev.state.Gamepad.bLeftTrigger / 255.0;
@@ -273,7 +273,7 @@ version (Windows) public class XInputDevice : GameController {
 						if ((dev.state.Gamepad.wButtons & XINPUT_BUTTONS.XINPUT_GAMEPAD_A) ^
 								(dev.prevState.Gamepad.wButtons & XINPUT_BUTTONS.XINPUT_GAMEPAD_A)) {
 							output.button.id = GameControllerButtons.South;
-							output.button.dir = (dev.state.Gamepad.wButtons & XINPUT_BUTTONS.XINPUT_GAMEPAD_A) ? 1 : 0;
+							output.button.dir  = (dev.state.Gamepad.wButtons & XINPUT_BUTTONS.XINPUT_GAMEPAD_A) ? 1 : 0;
 							goto case 255;
 						}
 						break;
@@ -301,6 +301,11 @@ version (Windows) public class XInputDevice : GameController {
 							goto case 255;
 						}
 						break;
+					case 20:
+						devC++;
+						cntr = 0;
+						output.type = InputEventType.init;
+						return EventPollStatus.HasMore;
 					case 255:	//Button events global
 						output.type = InputEventType.GCButton;
 						output.button.repeat = 0;
@@ -323,8 +328,8 @@ version (Windows) public class XInputDevice : GameController {
 						break;
 				}
 			}
-			cntr = 0;
 			devC++;
+			//cntr = 0;
 		}
 		cntr = 0;
 		devC = 0;
