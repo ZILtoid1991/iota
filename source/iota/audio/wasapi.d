@@ -98,7 +98,7 @@ public class WASAPIDevice : AudioDevice {
 		return _shareMode = val;
 	}
 	/** 
-	 * Returns the recommended sample rate, or -1 if sample-rate isn't boind to internal clock.
+	 * Returns the recommended sample rate, or -1 if sample-rate isn't bound to internal clock.
 	 */
 	public override int getRecommendedSampleRate() nothrow {
 		WAVEFORMATEX* format;
