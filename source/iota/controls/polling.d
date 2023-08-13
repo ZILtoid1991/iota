@@ -110,12 +110,13 @@ version (Windows) {
 					output.source = keyb;
 					version (iota_use_utf8) {
 						lastChar[0] = cast(char)(msg.wParam);
-						output.textIn.text[0] = lastChar[0];
+						//output.textIn.text[0] = lastChar[0];
 					} else {
 						lastChar = cast(dchar)(msg.wParam);
-						output.textIn.text[0] = lastChar;
+						//output.textIn.text[0] = lastChar;
 					}
-					output.textIn.isClipboard = false;
+					output.textIn = TextInputEvent(&lastChar, 1);
+					//output.textIn.isClipboard = false;
 					break;
 				case WM_UNICHAR, WM_DEADCHAR, WM_SYSDEADCHAR:
 					output.type = InputEventType.TextInput;
@@ -124,9 +125,10 @@ version (Windows) {
 						lastChar = encodeUTF8Char(cast(dchar)(msg.wParam));
 					} else {
 						lastChar = cast(dchar)(msg.wParam);
-						output.textIn.text[0] = lastChar;
+						output.textIn = TextInputEvent(&lastChar, 1);
+						//output.textIn.text[0] = lastChar;
 					}
-					output.textIn.isClipboard = false;
+					//output.textIn.isClipboard = false;
 					break;
 				case WM_KEYDOWN, WM_KEYUP, WM_SYSKEYDOWN, WM_SYSKEYUP:
 					output.type = InputEventType.Keyboard;
@@ -291,12 +293,13 @@ version (Windows) {
 					output.source = keyb;
 					version (iota_use_utf8) {
 						lastChar[0] = cast(char)(msg.wParam);
-						output.textIn.text[0] = lastChar[0];
+						//output.textIn.text[0] = lastChar[0];
 					} else {
 						lastChar = cast(dchar)(msg.wParam);
-						output.textIn.text[0] = lastChar;
+						//output.textIn.text[0] = lastChar;
 					}
-					output.textIn.isClipboard = false;
+					output.textIn = TextInputEvent(&lastChar, 1);
+					//output.textIn.isClipboard = false;
 					break;
 				case WM_UNICHAR, WM_DEADCHAR, WM_SYSDEADCHAR:
 					output.type = InputEventType.TextInput;
@@ -305,9 +308,10 @@ version (Windows) {
 						lastChar = encodeUTF8Char(cast(dchar)(msg.wParam));
 					} else {
 						lastChar = cast(dchar)(msg.wParam);
-						output.textIn.text[0] = lastChar;
+						output.textIn = TextInputEvent(&lastChar, 1);
+						//output.textIn.text[0] = lastChar;
 					}
-					output.textIn.isClipboard = false;
+					//output.textIn.isClipboard = false;
 					break;
 				
 				case WM_INPUT:		//Raw input
@@ -516,5 +520,98 @@ version (Windows) {
 			return 0;
 		}
 		return 1;
+	}
+} else {
+	import x11.X;
+	import x11.Xlib;
+	import x11.Xresource;
+	//import x11.Xlocale;
+	
+	version (iota_use_utf8) {
+		package char[32] chrBuf;
+		package int chrCntr;
+	} else {
+		package wchar[32] chrBuf;
+		package int chrCntr;
+		package dchar[32] chrOut;
+	}
+	shared static this() {
+		
+	}
+	package int poll_x11_RegularIO(ref InputEvent output) nothrow @nogc {
+		tryAgain:
+		XEvent xe;
+		while (XNextEvent(OSWindow.mainDisplay, &xe)) {
+			switch (xe.type) {
+				case MappingNotify:
+					XRefreshKeyboardMapping(&ev.xmapping);
+					goto tryAgain;
+				case ButtonPress, ButtonRelease:
+					output.timestamp = xe.xbutton.time * 1000L;
+					output.handle = xe.xbutton.window;
+					output.type = InputEventType.MouseClick;
+					output.source = mouse;
+					output.handle = xe.xbutton.window;
+					output.mouseCE.button = cast(ushort)xe.xbutton.button;
+					if (xe.type == ButtonPress) {
+						output.mouseCE.dir = 0;
+						mouse.lastButtonState |= 1<<(output.mouseCE.button - 1);
+					} else {
+						output.mouseCE.dir = 1;
+						mouse.lastButtonState &= ~(1<<(output.mouseCE.button - 1));
+					}
+					output.mouseCE.x = xe.xbutton.x;
+					output.mouseCE.y = xe.xbutton.y;
+					mouse.lastPosition = [xe.xbutton.x, xe.xbutton.y];
+					return 1;
+				case KeyPress, KeyRelease:
+					output.timestamp = xe.xkey.time * 1000L;
+					output.handle = xe.xkey.window;
+					output.source = keyb;
+					updateKeybMods(keyb, xe.xkey.keycode);
+					if (keyb.isTextInputEn) {
+						KeySym ks;
+						Status status;
+						OSWindow w = OSWindow.byRef(xe.xkey.window);
+						//XFilterEvent(&xe, xe.xkey.window);
+						output.type = InputEventType.TextInput;
+						version (iota_use_utf8) {
+							Xutf8LookupString(w.ic, cast(XKeyPressedEvent*)&xe, chrBuf, chrCntr, chrBuf.length, &ks, status);
+							output.textIn = TextInputEvent(chrBuf, chrCntr);
+						} else {
+							XwcLookupString(w.ic, cast(XKeyPressedEvent*)&xe, chrBuf, chrCntr, chrBuf.length, &ks, status);
+							for (int i ; i < chrCntr ; i++) {
+								chrOut[i] = chrBuf[i];
+							}
+							output.textIn = TextInputEvent(chrOut, chrCntr);
+						}
+					} else {
+						output.type = InputEventType.Keyboard;
+						output.button.auxF = float.nan;
+						output.button.id = xe.xkey.keycode;
+						output.button.aux = keyb.getModifiers;
+						
+					}
+					return 1;
+				case ConfigureNotify:
+					output.timestamp = 0;
+					output.handle = xe.xconfigure.event;
+					output.type = InputEventType.WindowResize;
+					with (output.window) {
+						x = xe.xconfigure.x;
+						y = xe.xconfigure.y;
+						width = xe.xconfigure.width;
+						height = xe.xconfigure.height;
+					}
+					break;
+				case LASTEvent:
+					output.type = InputEventType.init;
+					output.source = null;
+					return 0;
+				default:
+					break;
+			}
+		}
+		return 0;
 	}
 }

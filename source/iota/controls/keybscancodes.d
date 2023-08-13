@@ -453,6 +453,115 @@ version(Windows) package uint translateSC(uint input, uint aux) @nogc @safe pure
 		default:
 			return 0xFF_FF;
 	}
+} else {
+	package uint translateKeySym (const uint code) {
+		if (code >= 0xFFbe && code <= 0xFFc9) {			//F1-12
+			return code - 0xFFbe + 0x3A;
+		} else if (code >= 0xFFca && code <= 0xFFd5) {	//F13-24
+			return code - 0xFFca + 0x68;
+		} else if (code >= 0xFFb1 && code <= 0xFFb9) {	//np1-9 (0 is at a different order)
+			return code - 0xFFb1 + 0x59;
+		} else if (code >= 0xFF51 && code <= 0xFF55) {	//cursor keys
+			
+		} else {
+			switch (code) {
+			
+			case 0xFF08:
+				return ScanCode.BACKSPACE;
+			case 0xFF09:
+				return ScanCode.TAB;
+			case 0xFF0d:
+				return ScanCode.ENTER;
+			case 0xFF13:
+				return ScanCode.PAUSE;
+			case 0xFF14:
+				return ScanCode.SCROLLLOCK;
+			case 0xFF15:
+				return ScanCode.SYSREQ;
+			case 0xFF1b:
+				return ScanCode.ESCAPE;
+			case 0xFFff:
+				return ScanCode.DELETE;
+			case 0xFF50:
+				return ScanCode.HOME;	//Navblock begin
+			case 0xFF51:
+				return ScanCode.LEFT;
+			case 0xFF52:
+				return ScanCode.UP;
+			case 0xFF53:
+				return ScanCode.RIGHT;
+			case 0xFF54:
+				return ScanCode.DOWN;
+			case 0xFF55:
+				return ScanCode.PAGEUP;
+			case 0xFF56:
+				return ScanCode.PAGEDOWN;
+			case 0xFF57:
+				return ScanCode.END;	//Navblock end
+			case 0xFF60:
+				return ScanCode.SELECT;
+			case 0xFF62:
+				return ScanCode.EXECUTE;
+			case 0xFF63:
+				return ScanCode.INSERT;
+			case 0xFF65:
+				return ScanCode.UNDO;
+			case 0xFF66:
+				return ScanCode.REDO;
+			case 0xFF67:
+				return ScanCode.MENU;
+			case 0xFF68:
+				return ScanCode.FIND;
+			case 0xFF69:
+				return ScanCode.CANCEL;
+			case 0xFF6a:
+				return ScanCode.HELP;
+			case 0xFF7F:
+				return ScanCode.NUMLOCK;
+			case 0xFF80:				//Numpad misc. begin
+				return ScanCode.NP_SPACE;
+			case 0xFFb0:
+				return ScanCode.np0;
+			case 0xFF89:
+				return ScanCode.NP_TAB;
+			case 0xFF8d:
+				return ScanCode.NP_ENTER;
+			case 0xFFbd:
+				return ScanCode.NP_EQUALS;
+			case 0xFFaa:
+				return ScanCode.NP_MULTIPLY;
+			case 0xFFab:
+				return ScanCode.NP_PLUS;
+			case 0xFFac:
+				return ScanCode.NP_COMMA;
+			case 0xFFad:
+				return ScanCode.NP_MINUS;
+			case 0xFFae:
+				return ScanCode.NP_DECIMAL;
+			case 0xFFaf:
+				return ScanCode.NP_DIVIDE;//Numpad misc. end
+			case 0xFFe1:				//Modifiers begin
+				return ScanCode.LSHIFT;
+			case 0xFFe2:
+				return ScanCode.RSHIFT;
+			case 0xFFe3:
+				return ScanCode.LCTRL;
+			case 0xFFe4:
+				return ScanCode.RCTRL;
+			case 0xFFe9:
+				return ScanCode.LALT;
+			case 0xFFea:
+				return ScanCode.RALT;
+			case 0xFFeb:
+				return ScanCode.LGUI;
+			case 0xFFec:
+				return ScanCode.RGUI;	//Modifiers end
+			default:
+				return 0;
+			}
+		}
+		
+	}
 }
 ///Translates PS/2 make codes to USB HID codes.
 ///(Why did they had to use PS/2 codes when USB HID was already available by that time?)

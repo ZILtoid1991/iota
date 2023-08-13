@@ -9,6 +9,7 @@ version (Windows) {
 } else {
 	import x11.Xlib;
 	import x11.X;
+	import x11.Xresource;
 	//import deimos.X11.Xlib;
 	//import deimos.X11.X;
 }
@@ -108,8 +109,10 @@ public class OSWindow {
 			mainInst = GetModuleHandle(null);
 		}
 	} else {
-		package static Display* mainDisplay;
-		protected static Window root;
+		public static Display* mainDisplay;
+		public static Window root;
+		public XIM im;
+		public XIC ic;
 		protected immutable(char)* windowname;
 		protected XSetWindowAttributes attr;
 		/**
@@ -118,7 +121,9 @@ public class OSWindow {
 		shared static this() {
 			mainDisplay = XOpenDisplay(null);
 			root = XRootWindow(mainDisplay, DefaultScreen(mainDisplay));
-
+			//XSelectInput();
+			im = XOpenIM(mainDisplay, null, null, null);
+			ic = XCreateIC(im);
 		}
 		///Automatic cleanup.
 		shared static ~this() {
@@ -142,6 +147,13 @@ public class OSWindow {
 		} else {
 			return 1;
 		}
+	}
+	public static OSWindow byRef(WindowH hndl) @nogc nothrow {
+		foreach (OSWindow key; refCount) {
+			if (hndl == key.windowHandle)
+				return key;
+		}
+		return null;
 	}
 	/** 
 	 * Creates an empty window. It can either be used by getting its handle and adding elements manually (not OS 
@@ -225,10 +237,16 @@ public class OSWindow {
 		} else {
 			string[] nameUTF8 = toUTF8(name);
 			windowname = toStringz(nameUTF8);
-			hndl = XCreateWindow(mainDisplay, (parent is null ? root : parent.windowHandle), x, y, w, h, 15, CopyFromParent, 
+			Window pH = root;
+			if (parent !is null)
+				pH = parent.windowHandle;
+			hndl = XCreateWindow(mainDisplay, pH, x, y, w, h, 15, CopyFromParent, 
 			((flags & WindowStyleIDs.Visible) ? InputOutput : InputOnly), CopyFromParent, 0, &attr);
 			XStoreName(mainDisplay, windowHandle, windowname);
 			XMapWindow(mainDisplay, windowHandle);
+			XSelectInput(mainDisplay, windowHandle, c_long.max);
+			im = XOpenIM(mainDisplay, null, null, null);
+			ic = XCreateIC(im, XNInputStyle, XIMPreeditNothing | XIMStatusNothing, XNClientWindow, windowHandle, null);
 		}
 	}
 	protected this(WindowH hndl) {
@@ -288,14 +306,14 @@ public class OSWindow {
 			ShowWindow(windowHandle, SW_MINIMIZE);
 		}
 	}
-	public void moveWindow(int x, int y, int w, int h) {
+	public void moveWindow(int x, int y, int w, int h) @nogc nothrow {
 		version (Windows) {
 			MoveWindow(windowHandle, x, y, w, h, TRUE);
 		} else {
 			XMoveResizeWindow(mainDisplay, windowHandle, x, y, w, h);
 		}
 	}
-	public int[4] getWindowPosition() {
+	public int[4] getWindowPosition() @nogc nothrow {
 		version (Windows) {
 			RECT windowSize;
 			GetWindowRect(windowHandle, &windowSize);

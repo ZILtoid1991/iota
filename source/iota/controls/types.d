@@ -278,20 +278,27 @@ public struct ButtonEvent {
  * it out will make UTF32 as the standard
  */
 public struct TextInputEvent {
-	version (iota_use_utf8)
-		static enum CHARS_PER_PACKAGE = 16;
-	else
-		static enum CHARS_PER_PACKAGE = 4;
-	///The characters 
-	io_chr_t[CHARS_PER_PACKAGE] text;
-	mixin(bitfields!(
+	///Pointer to the character buffer.
+	private io_chr_t* _text;
+	///The amount of characters on the buffer.
+	private size_t _length;
+	/* mixin(bitfields!(
 			bool, "isClipboard",	1,	///True if the text input originates from a clipboard event.
 			bool, "hasMore",		1,	///True if there's characters left.
 			uint, "language",		30	///Input language code
-	));
+	)); */
 	//bool		isClipboard;///True if the text input originates from a clipboard event.
 	string toString() @safe pure const {
-		return "Text: \"" ~ to!string(text) ~ "\" isClipboard: " ~ to!string(isClipboard) ~ " ; "; 
+		return "Text: \"" ~ to!string(text)/*  ~ "\" isClipboard: " ~ to!string(isClipboard) ~ " ; " */; 
+	}
+	io_str_t text() @nogc @trusted pure nothrow const {
+		io_str_t helperFunc() @nogc @system pure nothrow const {
+			return cast(dstring)_text[0.._length];
+		}
+		return helperFunc();
+	}
+	size_t length() @nogc @safe pure nothrow const {
+		return _length;
 	}
 }
 /** 
