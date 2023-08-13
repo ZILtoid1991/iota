@@ -58,7 +58,7 @@ This library is (mostly) equipped to handle raw input data, but currently it is 
 
 ### Windows
 
-Some non-basic stuff don't really work, as you should use already written libraries instead of writing your own.
+Got most of the non-basic stuff working. If you find anything else not working as should, then please tell me!
 
 ### Linux
 
