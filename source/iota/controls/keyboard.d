@@ -64,6 +64,7 @@ public class Keyboard : InputDevice {
 		}
 	} else {
 		package XDevice*	devHandle;
+		package uint		modifierTracker;
 		package this(io_str_t _name, ubyte _devNum, XID devID) nothrow {
 			this._name = _name;
 			this._devNum = _devNum;
@@ -178,8 +179,34 @@ public class Keyboard : InputDevice {
 				if (GetKeyState(VK_SCROLL))
 					result |= KeyboardModifiers.ScrollLock;
 			}
+		} else {
+			if (modifierTracker & ShiftMask)
+				result |= KeyboardModifiers.Shift;
+			if (modifierTracker & ControlMask)
+				result |= KeyboardModifiers.Ctrl;
+			if (modifierTracker & Mod1Mask)
+				result |= KeyboardModifiers.Alt;
+			if (modifierTracker & Mod4Mask)
+				result |= KeyboardModifiers.Meta;
+			if (modifierTracker & Mod5Mask)
+				result |= KeyboardModifiers.Aux;
+			if (!isIgnoringLockLights()) {
+				if (modifierTracker & LockMask)
+					result |= KeyboardModifiers.CapsLock;
+				if (modifierTracker & Mod2Mask)
+					result |= KeyboardModifiers.NumLock;
+				if (modifierTracker & Mod3Mask)
+					result |= KeyboardModifiers.ScrollLock;
+			}
 		}
 		return result;
+	}
+	package void setModifiers(uint flags) @nogc @safe pure nothrow {
+		version (Windows) {
+
+		} else {
+			modifierTracker = flags;
+		}
 	}
 	package void processTextCommandEvent(ref InputEvent ie, int code, int dir) nothrow @nogc @safe {
 		import iota.controls.keybscancodes;

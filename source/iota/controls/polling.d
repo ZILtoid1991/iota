@@ -546,7 +546,7 @@ version (Windows) {
 				case MappingNotify:
 					XRefreshKeyboardMapping(&ev.xmapping);
 					goto tryAgain;
-				case ButtonPress, ButtonRelease:
+				case ButtonPress, ButtonRelease:		//Note: Under X11, scrollwheel events are also mapped here.
 					output.timestamp = xe.xbutton.time * 1000L;
 					output.handle = xe.xbutton.window;
 					output.type = InputEventType.MouseClick;
@@ -563,6 +563,8 @@ version (Windows) {
 					output.mouseCE.x = xe.xbutton.x;
 					output.mouseCE.y = xe.xbutton.y;
 					mouse.lastPosition = [xe.xbutton.x, xe.xbutton.y];
+					return 1;
+				case MotionNotify:
 					return 1;
 				case KeyPress, KeyRelease:
 					output.timestamp = xe.xkey.time * 1000L;
@@ -588,8 +590,9 @@ version (Windows) {
 					} else {
 						output.type = InputEventType.Keyboard;
 						output.button.auxF = float.nan;
-						output.button.id = xe.xkey.keycode;
-						output.button.aux = keyb.getModifiers;
+						output.button.id = translateKeyCode(xe.xkey.keycode);
+						keyb.setModifiers(xe.xkey.state);
+						output.button.aux = keyb.getModifiers();
 						
 					}
 					return 1;
@@ -603,7 +606,7 @@ version (Windows) {
 						width = xe.xconfigure.width;
 						height = xe.xconfigure.height;
 					}
-					break;
+					return 1;
 				case LASTEvent:
 					output.type = InputEventType.init;
 					output.source = null;
