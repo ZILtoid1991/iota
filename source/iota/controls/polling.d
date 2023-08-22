@@ -565,6 +565,16 @@ version (Windows) {
 					mouse.lastPosition = [xe.xbutton.x, xe.xbutton.y];
 					return 1;
 				case MotionNotify:
+					output.timestamp = xe.xmotion.time * 1000L;
+					output.handle = xe.xmotion.window;
+					output.source = mouse;
+					output.type = InputEventType.MouseMove;
+					output.mouseME.x = xe.xmotion.x;
+					output.mouseME.y = xe.xmotion.y;
+					output.mouseME.xD = xe.xmotion.x - mouse.lastPosition[0];
+					output.mouseME.yD = xe.xmotion.y - mouse.lastPosition[1];
+					output.mouseME.buttons = (xe.xmotion.state & 0x1f_00)>>8;
+					mouse.lastPosition = [xe.xmotion.x, xe.xmotion.y];
 					return 1;
 				case KeyPress, KeyRelease:
 					output.timestamp = xe.xkey.time * 1000L;
