@@ -306,6 +306,14 @@ public class OSWindow {
 			ShowWindow(windowHandle, SW_MINIMIZE);
 		}
 	}
+	/**
+	 * Moves and resizes the window.
+	 * Params:
+	 *   x = X coordinate on the screen.
+	 *   y = Y coordinate on the screen.
+	 *   w = Width of the active area of the window.
+	 *   h = Height of the active area of the window.
+	 */
 	public void moveWindow(int x, int y, int w, int h) @nogc nothrow {
 		version (Windows) {
 			MoveWindow(windowHandle, x, y, w, h, TRUE);
@@ -313,6 +321,11 @@ public class OSWindow {
 			XMoveResizeWindow(mainDisplay, windowHandle, x, y, w, h);
 		}
 	}
+	/**
+	 * Returns an array, of which the first two elements are the top-left coordinates 
+	 * of the window, and the last two elements are the size of the active area of the
+	 * window.
+	 */
 	public int[4] getWindowPosition() @nogc nothrow {
 		version (Windows) {
 			RECT windowSize;
@@ -325,6 +338,9 @@ public class OSWindow {
 			return [winattr.x, winattr.y, winattr.width, winattr.height];
 		}
 	}
+	/**
+	 * Sets the window to full screen using the supplied video mode number. (UNIMPLEMENTED)
+	 */
 	public void setWindowToFullscreen(int mode) {
 
 	}
