@@ -147,9 +147,11 @@ public class Keyboard : InputDevice {
 			globalFlags &= ~KeyboardFlags.DisableMetaKey;
 		return isMetaKeyDisabled();
 	}
+	///Returns true if the meta key combinations are disabled.
 	public static bool isMetaKeyCombDisabled() @property @nogc @safe nothrow {
 		return (globalFlags & KeyboardFlags.DisableMetaKeyComb) != 0;
 	}
+	///If set true, meta key combinations won't be sent to OS.
 	public static bool setMetaKeyCombDisabled(bool val) @property @nogc @safe nothrow {
 		if (val)
 			globalFlags |= KeyboardFlags.DisableMetaKeyComb;
@@ -201,6 +203,7 @@ public class Keyboard : InputDevice {
 		}
 		return result;
 	}
+	///Sets the modifier flags for X11 input tracking.
 	package void setModifiers(uint flags) @nogc @safe pure nothrow {
 		version (Windows) {
 
@@ -208,6 +211,7 @@ public class Keyboard : InputDevice {
 			modifierTracker = flags;
 		}
 	}
+	///Processes text command key events.
 	package void processTextCommandEvent(ref InputEvent ie, int code, int dir) nothrow @nogc @safe {
 		import iota.controls.keybscancodes;
 		
