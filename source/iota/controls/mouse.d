@@ -5,6 +5,10 @@ public import iota.controls.types;
 version (Windows) {
 	import core.sys.windows.windows;
 	import core.sys.windows.wtypes;
+} else {
+	import x11.X;
+	import x11.Xlib;
+	import x11.extensions.XInput;
 }
 /** 
  * Defines mouse button codes.

@@ -263,7 +263,7 @@ int snd_mixer_selem_id_malloc(snd_mixer_selem_id_t**);
 void snd_mixer_selem_id_free(snd_mixer_selem_id_t*);
 void snd_mixer_selem_id_set_index(snd_mixer_selem_id_t*, uint);
 void snd_mixer_selem_id_set_name(snd_mixer_selem_id_t*, const(char)*);
-snd_mixer_elem_t* snd_mixer_find_selem(snd_mixer_t*, in snd_mixer_selem_id_t*);
+snd_mixer_elem_t* snd_mixer_find_selem(snd_mixer_t*, snd_mixer_selem_id_t*);
 // FIXME: the int should be an enum for channel identifier
 int snd_mixer_selem_get_playback_volume(snd_mixer_elem_t*, int, c_long*);
 int snd_mixer_selem_get_playback_volume_range(snd_mixer_elem_t*, c_long*, c_long*);

@@ -65,7 +65,7 @@ public class Keyboard : InputDevice {
 	} else {
 		package XDevice*	devHandle;
 		package uint		modifierTracker;
-		package this(io_str_t _name, ubyte _devNum, XID devID) nothrow {
+		package this(io_str_t _name, ubyte _devNum, XID devID) {
 			this._name = _name;
 			this._devNum = _devNum;
 			this.devHandle = XOpenDevice(OSWindow.mainDisplay, devID);
