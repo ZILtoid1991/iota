@@ -1,16 +1,16 @@
 {
 	"fileVersion": 1,
 	"versions": {
-		"bindbc-loader": "1.0.1",
-		"bindbc-opengl": "1.0.3",
+		"bindbc-loader": "1.1.3",
+		"bindbc-opengl": "1.1.0",
 		"bitleveld": "0.1.0",
-		"collections-d": "0.4.7",
+		"collections-d": "0.5.0",
 		"darg": "0.1.0",
 		"darg-plus": "2.4.0",
 		"libx11": "0.0.1",
 		"stdx-allocator": "2.77.5",
 		"vibe-d": "0.9.5",
 		"wasapi": "0.1.3",
-		"x11d": "~master"
+		"x11d": "1.0.23"
 	}
 }

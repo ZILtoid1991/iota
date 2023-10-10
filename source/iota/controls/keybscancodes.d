@@ -563,7 +563,7 @@ version(Windows) package uint translateSC(uint input, uint aux) @nogc @safe pure
 			case 0x30, 0x21:
 				return ScanCode.n0;
 			case 0x20:
-				return Scancode.SPACE;
+				return ScanCode.SPACE;
 			case 0x3b, 0x3a:
 				return ScanCode.SEMICOLON;
 			case 0x44, 0x22:

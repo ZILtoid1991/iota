@@ -3,8 +3,6 @@ module iota.window.oswindow;
 version (Windows) {
 	import core.sys.windows.windows;
 	import core.sys.windows.wtypes;
-	import std.utf : toUTF16z, toUTF8;
-	import std.string : toStringz;
 	import std.conv : to;
 } else {
 	import x11.Xlib;
@@ -18,6 +16,8 @@ public import iota.window.exception;
 public import iota.etc.vers;
 public import iota.window.fbdev;
 import std.algorithm.mutation : remove;
+import std.utf : toUTF16z, toUTF8;
+import std.string : toStringz;
 import iota.controls.types;
 //import collections.treemap;
 
@@ -122,13 +122,19 @@ public class OSWindow {
 			mainDisplay = XOpenDisplay(null);
 			root = XRootWindow(mainDisplay, DefaultScreen(mainDisplay));
 			//XSelectInput();
-			im = XOpenIM(mainDisplay, null, null, null);
-			ic = XCreateIC(im);
+			//im = XOpenIM(mainDisplay, null, null, null);
+			/* assert(im !is null, "Input method couldn't be opened!");
+			ic = XCreateIC(im); */
 		}
 		///Automatic cleanup.
 		shared static ~this() {
+			/* XDestroyIC(ic); */
+			//XCloseIM(im);
 			XDestroyWindow(mainDisplay, root);
 			XCloseDisplay(mainDisplay);
+		}
+		debug public void testDraw(DrawParams params) @system nothrow {
+
 		}
 	}
 	/** 
@@ -235,18 +241,21 @@ public class OSWindow {
 			ShowWindow(windowHandle, SW_RESTORE);
 			UpdateWindow(windowHandle);
 		} else {
-			string[] nameUTF8 = toUTF8(name);
+			string nameUTF8 = toUTF8(name);
 			windowname = toStringz(nameUTF8);
 			Window pH = root;
 			if (parent !is null)
 				pH = parent.windowHandle;
-			hndl = XCreateWindow(mainDisplay, pH, x, y, w, h, 15, CopyFromParent, 
-			((flags & WindowStyleIDs.Visible) ? InputOutput : InputOnly), CopyFromParent, 0, &attr);
-			XStoreName(mainDisplay, windowHandle, windowname);
-			XMapWindow(mainDisplay, windowHandle);
-			XSelectInput(mainDisplay, windowHandle, c_long.max);
+			const int scr = DefaultScreen(mainDisplay);
+			/* windowHandle = XCreateWindow(mainDisplay, pH, x, y, w, h, 15, CopyFromParent, 
+			((flags & WindowStyleIDs.Visible) ? InputOutput : InputOnly), cast(Visual*)CopyFromParent, 0, &attr); */
+			windowHandle = XCreateSimpleWindow(mainDisplay, pH, x, y, w, h, 1, BlackPixel(mainDisplay, scr), 
+					WhitePixel(mainDisplay, scr));
+			XStoreName(mainDisplay, windowHandle, cast(char*)windowname);
+			XSelectInput(mainDisplay, windowHandle, long.max);
 			im = XOpenIM(mainDisplay, null, null, null);
 			ic = XCreateIC(im, XNInputStyle, XIMPreeditNothing | XIMStatusNothing, XNClientWindow, windowHandle, null);
+			XMapWindow(mainDisplay, windowHandle);
 		}
 	}
 	protected this(WindowH hndl) {
@@ -257,8 +266,10 @@ public class OSWindow {
 		version (Windows) {
 			DestroyWindow(windowHandle);
 			UnregisterClassW(registeredClass.lpszClassName, mainInst);
+			if (ic) XDestroyIC(ic);
+			if (im) XCloseIM(im);
 		} else {
-			XDestroyWindow(mainDisplay, hndl);
+			XDestroyWindow(mainDisplay, windowHandle);
 		}
 	}
 	/**

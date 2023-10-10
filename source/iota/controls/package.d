@@ -93,6 +93,10 @@ public int initInput(uint config = 0, uint osConfig = 0) nothrow {
 			mouse = new Mouse();
 			mainPollingFun = &poll_win_LegacyIO;
 		}
+	} else {
+		keyb = new Keyboard();
+		mouse = new Mouse();
+		mainPollingFun = &poll_x11_RegularIO;
 	}
 	return InputInitializationStatus.AllOk;
 }

@@ -68,12 +68,12 @@ public class Keyboard : InputDevice {
 		package this(io_str_t _name, ubyte _devNum, XID devID) {
 			this._name = _name;
 			this._devNum = _devNum;
-			this.devHandle = XOpenDevice(OSWindow.mainDisplay, devID);
+			//this.devHandle = XOpenDevice(OSWindow.mainDisplay, devID);
 			_type = InputDeviceType.Keyboard;
 			status |= StatusFlags.IsConnected;
 		}
 		~this() {
-			XCloseDevice(OSWindow.mainDisplay, devHandle);
+			//XCloseDevice(OSWindow.mainDisplay, devHandle);
 		}
 	}
 	package this() nothrow {

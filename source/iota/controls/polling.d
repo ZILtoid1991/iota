@@ -544,7 +544,7 @@ version (Windows) {
 		while (XNextEvent(OSWindow.mainDisplay, &xe)) {
 			switch (xe.type) {
 				case MappingNotify:
-					XRefreshKeyboardMapping(&ev.xmapping);
+					XRefreshKeyboardMapping(&xe.xmapping);
 					goto tryAgain;
 				case ButtonPress, ButtonRelease:		//Note: Under X11, scrollwheel events are also mapped here.
 					output.timestamp = xe.xbutton.time * 1000L;
@@ -580,7 +580,7 @@ version (Windows) {
 					output.timestamp = xe.xkey.time * 1000L;
 					output.handle = xe.xkey.window;
 					output.source = keyb;
-					updateKeybMods(keyb, xe.xkey.keycode);
+					//keyb.updateKeybMods(keyb, xe.xkey.keycode);
 					if (keyb.isTextInputEn) {
 						KeySym ks;
 						Status status;
@@ -588,14 +588,14 @@ version (Windows) {
 						//XFilterEvent(&xe, xe.xkey.window);
 						output.type = InputEventType.TextInput;
 						version (iota_use_utf8) {
-							Xutf8LookupString(w.ic, cast(XKeyPressedEvent*)&xe, chrBuf, chrCntr, chrBuf.length, &ks, status);
+							Xutf8LookupString(w.ic, cast(XKeyPressedEvent*)&xe, chrBuf.ptr, chrCntr, &ks, &status);
 							output.textIn = TextInputEvent(chrBuf, chrCntr);
 						} else {
-							XwcLookupString(w.ic, cast(XKeyPressedEvent*)&xe, chrBuf, chrCntr, chrBuf.length, &ks, status);
+							XwcLookupString(w.ic, cast(XKeyPressedEvent*)&xe, chrBuf.ptr, chrCntr, &ks, &status);
 							for (int i ; i < chrCntr ; i++) {
 								chrOut[i] = chrBuf[i];
 							}
-							output.textIn = TextInputEvent(chrOut, chrCntr);
+							output.textIn = TextInputEvent(chrOut.ptr, chrCntr);
 						}
 					} else {
 						output.type = InputEventType.Keyboard;
