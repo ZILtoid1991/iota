@@ -249,10 +249,10 @@ public class OSWindow {
 			const int scr = DefaultScreen(mainDisplay);
 			/* windowHandle = XCreateWindow(mainDisplay, pH, x, y, w, h, 15, CopyFromParent, 
 			((flags & WindowStyleIDs.Visible) ? InputOutput : InputOnly), cast(Visual*)CopyFromParent, 0, &attr); */
-			windowHandle = XCreateSimpleWindow(mainDisplay, pH, x, y, w, h, 1, BlackPixel(mainDisplay, scr), 
-					WhitePixel(mainDisplay, scr));
+			windowHandle = XCreateSimpleWindow(mainDisplay, pH, x, y, w, h, 1,
+					BlackPixel(mainDisplay, scr), WhitePixel(mainDisplay, scr));
 			XStoreName(mainDisplay, windowHandle, cast(char*)windowname);
-			XSelectInput(mainDisplay, windowHandle, long.max);
+			XSelectInput(mainDisplay, windowHandle, 0x01_ff_ff_ff);
 			im = XOpenIM(mainDisplay, null, null, null);
 			ic = XCreateIC(im, XNInputStyle, XIMPreeditNothing | XIMStatusNothing, XNClientWindow, windowHandle, null);
 			XMapWindow(mainDisplay, windowHandle);

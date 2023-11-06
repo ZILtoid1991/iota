@@ -97,6 +97,8 @@ public int initInput(uint config = 0, uint osConfig = 0) nothrow {
 		keyb = new Keyboard();
 		mouse = new Mouse();
 		mainPollingFun = &poll_x11_RegularIO;
+		devList ~= keyb;
+		devList ~= mouse;
 	}
 	return InputInitializationStatus.AllOk;
 }
