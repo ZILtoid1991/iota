@@ -5,13 +5,13 @@ Input-output (audio, controls, etc) library for D. Intended as a D language nati
 
 |Component                 |Windows                             |Linux                               |
 |--------------------------|------------------------------------|------------------------------------|
-|Audio                     |Preliminary, output stream works    |Output works                        |
+|Audio                     |Preliminary, output stream works    |ALSA: janky, pipewire: coming soon  |
 |MIDI                      |Input+Output, with some caveat      |Input tested, output should also work|
-|Keyboard                  |Legacy: Works; Raw: Buggy           |In progress                         |
-|Mouse                     |Legacy: Works; Raw: Buggy           |In progress                         |
+|Keyboard                  |Legacy: Works; Raw: Buggy           |X11: mostly works                   |
+|Mouse                     |Legacy: Works; Raw: Buggy           |X11: in progress                    |
 |Pen Tablet                |Not yet implemented                 |Not yet implemented                 |
 |Game controllers          |XInput : works                      |Not yet implemented                 |
-|Windowing                 |A bit buggy                         |In progress                         |
+|Windowing                 |A bit buggy                         |X11: preliminary                    |
 |OpenGL output             |In progress, not working yet        |In progress                         |
 
 MacOSX is not yet supported due to lack of hardware. Please consider contributing to this project!
@@ -29,6 +29,8 @@ Deinitialization is automatic through destructors and bug free. Windows-specific
 Error handling is quite preliminary with one having to rely on returned error codes. ALSA device names are now handled.
 
 Audio is tested and confirmed working on 64 bit Raspberry Pi devices, which probably means all 64 bit ARM SoCs are supported under Linux.
+
+NOTE: Due to the janky nature of ALSA, it'll be only be kept as a last-resort compatibility measure.
 
 ## MIDI
 
@@ -53,6 +55,12 @@ XInput is implemented and works. There should be a way to detect whether a devic
 #### Raw input
 
 This library is (mostly) equipped to handle raw input data, but currently it is very buggy. The documentation isn't clear on everything, and many things are just assumed to work as is. I'm getting null for all device handles, and mouse handling doesn't work as intended.
+
+However, once I'm getting it working I might be able to get some "forbidden" Xbox One/Series controller features working...
+
+### Linux
+
+I/O without extensions now works, XInput2 support will be added once I find or someone provides me the API documentation. Quite hard to search, due to same name of what Microsoft has under Windows for Xbox gamepads.
 
 ## Windowing
 

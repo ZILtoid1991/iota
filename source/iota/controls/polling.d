@@ -541,90 +541,90 @@ version (Windows) {
 	package int poll_x11_RegularIO(ref InputEvent output) nothrow @nogc {
 		tryAgain:
 		XEvent xe;
-		while (XNextEvent(OSWindow.mainDisplay, &xe)) {
-			switch (xe.type) {
-				case MappingNotify:
-					XRefreshKeyboardMapping(&xe.xmapping);
-					goto tryAgain;
-				case ButtonPress, ButtonRelease:		//Note: Under X11, scrollwheel events are also mapped here.
-					output.timestamp = xe.xbutton.time * 1000L;
-					output.handle = xe.xbutton.window;
-					output.type = InputEventType.MouseClick;
-					output.source = mouse;
-					output.handle = xe.xbutton.window;
-					output.mouseCE.button = cast(ushort)xe.xbutton.button;
-					if (xe.type == ButtonPress) {
-						output.mouseCE.dir = 0;
-						mouse.lastButtonState |= 1<<(output.mouseCE.button - 1);
+		XNextEvent(OSWindow.mainDisplay, &xe); 
+		switch (xe.type) {
+			case MappingNotify:
+				XRefreshKeyboardMapping(&xe.xmapping);
+				goto tryAgain;
+			case ButtonPress, ButtonRelease:		//Note: Under X11, scrollwheel events are also mapped here.
+				output.timestamp = xe.xbutton.time * 1000L;
+				output.handle = xe.xbutton.window;
+				output.type = InputEventType.MouseClick;
+				output.source = mouse;
+				output.handle = xe.xbutton.window;
+				output.mouseCE.button = cast(ushort)xe.xbutton.button;
+				if (xe.type == ButtonPress) {
+					output.mouseCE.dir = 0;
+					mouse.lastButtonState |= 1<<(output.mouseCE.button - 1);
+				} else {
+					output.mouseCE.dir = 1;
+					mouse.lastButtonState &= ~(1<<(output.mouseCE.button - 1));
+				}
+				output.mouseCE.x = xe.xbutton.x;
+				output.mouseCE.y = xe.xbutton.y;
+				mouse.lastPosition = [xe.xbutton.x, xe.xbutton.y];
+				return 1;
+			case MotionNotify:
+				output.timestamp = xe.xmotion.time * 1000L;
+				output.handle = xe.xmotion.window;
+				output.source = mouse;
+				output.type = InputEventType.MouseMove;
+				output.mouseME.x = xe.xmotion.x;
+				output.mouseME.y = xe.xmotion.y;
+				output.mouseME.xD = xe.xmotion.x - mouse.lastPosition[0];
+				output.mouseME.yD = xe.xmotion.y - mouse.lastPosition[1];
+				output.mouseME.buttons = (xe.xmotion.state & 0x1f_00)>>8;
+				mouse.lastPosition = [xe.xmotion.x, xe.xmotion.y];
+				return 1;
+			case KeyPress, KeyRelease:
+				output.timestamp = xe.xkey.time * 1000L;
+				output.handle = xe.xkey.window;
+				output.source = keyb;
+				//keyb.updateKeybMods(keyb, xe.xkey.keycode);
+				if (keyb.isTextInputEn) {
+					KeySym ks;
+					Status status;
+					OSWindow w = OSWindow.byRef(xe.xkey.window);
+					//XFilterEvent(&xe, xe.xkey.window);
+					output.type = InputEventType.TextInput;
+					version (iota_use_utf8) {
+						Xutf8LookupString(w.ic, cast(XKeyPressedEvent*)&xe, chrBuf.ptr, chrCntr, &ks, &status);
+						output.textIn = TextInputEvent(chrBuf, chrCntr);
 					} else {
-						output.mouseCE.dir = 1;
-						mouse.lastButtonState &= ~(1<<(output.mouseCE.button - 1));
-					}
-					output.mouseCE.x = xe.xbutton.x;
-					output.mouseCE.y = xe.xbutton.y;
-					mouse.lastPosition = [xe.xbutton.x, xe.xbutton.y];
-					return 1;
-				case MotionNotify:
-					output.timestamp = xe.xmotion.time * 1000L;
-					output.handle = xe.xmotion.window;
-					output.source = mouse;
-					output.type = InputEventType.MouseMove;
-					output.mouseME.x = xe.xmotion.x;
-					output.mouseME.y = xe.xmotion.y;
-					output.mouseME.xD = xe.xmotion.x - mouse.lastPosition[0];
-					output.mouseME.yD = xe.xmotion.y - mouse.lastPosition[1];
-					output.mouseME.buttons = (xe.xmotion.state & 0x1f_00)>>8;
-					mouse.lastPosition = [xe.xmotion.x, xe.xmotion.y];
-					return 1;
-				case KeyPress, KeyRelease:
-					output.timestamp = xe.xkey.time * 1000L;
-					output.handle = xe.xkey.window;
-					output.source = keyb;
-					//keyb.updateKeybMods(keyb, xe.xkey.keycode);
-					if (keyb.isTextInputEn) {
-						KeySym ks;
-						Status status;
-						OSWindow w = OSWindow.byRef(xe.xkey.window);
-						//XFilterEvent(&xe, xe.xkey.window);
-						output.type = InputEventType.TextInput;
-						version (iota_use_utf8) {
-							Xutf8LookupString(w.ic, cast(XKeyPressedEvent*)&xe, chrBuf.ptr, chrCntr, &ks, &status);
-							output.textIn = TextInputEvent(chrBuf, chrCntr);
-						} else {
-							XwcLookupString(w.ic, cast(XKeyPressedEvent*)&xe, chrBuf.ptr, chrCntr, &ks, &status);
-							for (int i ; i < chrCntr ; i++) {
-								chrOut[i] = chrBuf[i];
-							}
-							output.textIn = TextInputEvent(chrOut.ptr, chrCntr);
+						XwcLookupString(w.ic, cast(XKeyPressedEvent*)&xe, chrBuf.ptr, chrCntr, &ks, &status);
+						for (int i ; i < chrCntr ; i++) {
+							chrOut[i] = chrBuf[i];
 						}
-					} else {
-						output.type = InputEventType.Keyboard;
-						output.button.auxF = float.nan;
-						output.button.id = translateKeyCode(xe.xkey.keycode);
-						keyb.setModifiers(xe.xkey.state);
-						output.button.aux = keyb.getModifiers();
-						
+						output.textIn = TextInputEvent(chrOut.ptr, chrCntr);
 					}
-					return 1;
-				case ConfigureNotify:
-					output.timestamp = 0;
-					output.handle = xe.xconfigure.event;
-					output.type = InputEventType.WindowResize;
-					with (output.window) {
-						x = xe.xconfigure.x;
-						y = xe.xconfigure.y;
-						width = xe.xconfigure.width;
-						height = xe.xconfigure.height;
-					}
-					return 1;
-				case LASTEvent:
-					output.type = InputEventType.init;
-					output.source = null;
-					return 0;
-				default:
-					break;
-			}
+				} else {
+					output.type = InputEventType.Keyboard;
+					output.button.auxF = float.nan;
+					output.button.id = translateKeyCode(xe.xkey.keycode);
+					keyb.setModifiers(xe.xkey.state);
+					output.button.aux = keyb.getModifiers();
+					
+				}
+				return 1;
+			case ConfigureNotify:
+				output.timestamp = 0;
+				output.handle = xe.xconfigure.event;
+				output.type = InputEventType.WindowResize;
+				with (output.window) {
+					x = xe.xconfigure.x;
+					y = xe.xconfigure.y;
+					width = xe.xconfigure.width;
+					height = xe.xconfigure.height;
+				}
+				return 1;
+			case LASTEvent:
+				output.type = InputEventType.init;
+				output.source = null;
+				return 0;
+			default:
+				return 0;
 		}
-		return 0;
+		
+		
 	}
 }
