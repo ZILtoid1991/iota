@@ -97,6 +97,7 @@ public class OSWindow {
 		protected WNDCLASSEXW		registeredClass;
 		protected ATOM				regClResult;
 		protected LPCWSTR			classname, windowname;
+		protected HGLRC				glRenderingContext;
 		///hInstance is stored here, which is needed for window creation, etc.
 		///NOTE: This is Windows exclusive, and won't be accessable under other OSes.
 		public static HINSTANCE		mainInst;
@@ -180,7 +181,7 @@ public class OSWindow {
 			WindowBitmap icon = null, WindowMenu menu = null, OSWindow parent = null) {
 		version (Windows) {
 			registeredClass.cbSize = WNDCLASSEXW.sizeof;
-			registeredClass.style = CS_HREDRAW | CS_VREDRAW;
+			registeredClass.style = CS_HREDRAW | CS_VREDRAW | CS_OWNDC;
 			registeredClass.hInstance = mainInst;
 			registeredClass.lpfnWndProc = &wndprocCallback;
 			classname = toUTF16z(name);
@@ -264,11 +265,12 @@ public class OSWindow {
 
 	~this() {
 		version (Windows) {
+			if (glRenderingContext) wglDeleteContext(glRenderingContext);
 			DestroyWindow(windowHandle);
 			UnregisterClassW(registeredClass.lpszClassName, mainInst);
+		} else {
 			if (ic) XDestroyIC(ic);
 			if (im) XCloseIM(im);
-		} else {
 			XDestroyWindow(mainDisplay, windowHandle);
 		}
 	}
@@ -356,10 +358,27 @@ public class OSWindow {
 
 	}
 	/**
-	 * Returns the OpenGL handle associated with the window. (UNIMPLEMENTED)
+	 * Creates, then returns the OpenGL handle associated with the window.
 	 */
-	public void* getOpenGLHandle() {
-		return null;
+	public void* getOpenGLHandle() @nogc nothrow {
+		version (Windows) {
+			if (glRenderingContext) return glRenderingContext;
+			HDC windowDeviceContext = GetDC(windowHandle);
+			PIXELFORMATDESCRIPTOR pfd = PIXELFORMATDESCRIPTOR(cast(WORD)PIXELFORMATDESCRIPTOR.sizeof, 1, 
+					PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER, PFD_TYPE_RGBA, 32, 
+					0,0,0,0,0,0,
+					0,0,0,
+					0,0,0,0,
+					24,8,0,PFD_MAIN_PLANE,0,0,0,0);
+			int pixelFormatNum = ChoosePixelFormat(windowDeviceContext, &pfd);
+			SetPixelFormat(windowDeviceContext, pixelFormatNum, &pfd);
+
+			glRenderingContext = wglCreateContext(windowDeviceContext);
+			wglMakeCurrent(windowDeviceContext, glRenderingContext);
+			return glRenderingContext;
+		} else {
+			return null;
+		}
 	}
 	/**
 	 * Returns the current input language code. (Linux UNIMPLEMENTED)

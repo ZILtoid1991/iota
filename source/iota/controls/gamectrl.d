@@ -9,7 +9,7 @@ version (Windows) {
 }
 /**
  * Defines standard codes for game controller buttons shared across device types.
- * Note: HID devices might not follow this standard.
+ * Note: HID devices might not always follow this standard.
  */
 public enum GameControllerButtons : ubyte {
 	///Initial value, or no button has been pressed.
@@ -19,16 +19,16 @@ public enum GameControllerButtons : ubyte {
 	DPadLeft,
 	DPadRight,
 	///The button to the north on the right hand side of the gamepad.
-	///XB: Y, PS: Triangle, N: X
+	///XB: Y, PS: ∆, N: X
 	North,
 	///The button to the south on the right hand side of the gamepad.
 	///XB: A, PS: X, N: B
 	South,
-	///The button to the south on the right hand side of the gamepad.
-	///XB: B, PS: Circle, N: A
+	///The button to the east on the right hand side of the gamepad.
+	///XB: B, PS: O, N: A
 	East,
-	///The button to the south on the right hand side of the gamepad.
-	///XB: X, PS: Square, N: Y
+	///The button to the west on the right hand side of the gamepad.
+	///XB: X, PS: ▢, N: Y
 	West,
 	///The upper-left shoulder button (usually digital)
 	LeftShoulder,
@@ -46,8 +46,14 @@ public enum GameControllerButtons : ubyte {
 	///The navigation button on the right hand side of the controller.
 	///XB: Start, PS: Start (formerly)/ Option, N: Start
 	RightNav,
+	TouchpadClick,
 	Home,
 	Share,
+	///Paddle buttons
+	L4,
+	R4,
+	L5,
+	R5,
 }
 public enum GameControllerAxes : ubyte {
 	init,
@@ -89,7 +95,7 @@ abstract class GameController : InputDevice, HapticDevice {
 }
 /**
  * Implements functionalities related to XInput game controller devices. (Windows)
- * 
+ * Note: maybe implement polling through RawInput instead.
  */
 version (Windows) public class XInputDevice : GameController {
 	///Passed to XInputSetState.
