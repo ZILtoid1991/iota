@@ -355,6 +355,15 @@ public class OSWindow {
 	public void setWindowToFullscreen(int mode) {
 
 	}
+	/**
+	 * Returns the OpenGL handle associated with the window. (UNIMPLEMENTED)
+	 */
+	public void* getOpenGLHandle() {
+		return null;
+	}
+	/**
+	 * Returns the current input language code. (Linux UNIMPLEMENTED)
+	 */
 	public uint getInputLangCode() @nogc @safe nothrow const {
 		version (Windows)
 			return inputLang;
