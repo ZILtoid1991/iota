@@ -7,8 +7,8 @@ Input-output (audio, controls, etc) library for D. Intended as a D language nati
 |--------------------------|------------------------------------|------------------------------------|
 |Audio                     |Preliminary, output stream works    |ALSA: janky, pipewire: coming soon  |
 |MIDI                      |Input+Output, with some caveat      |Input tested, output should also work|
-|Keyboard                  |Legacy: Works; Raw: Buggy           |X11: mostly works                   |
-|Mouse                     |Legacy: Works; Raw: Buggy           |X11: in progress                    |
+|Keyboard                  |Legacy: Works; Raw: Works           |X11: mostly works                   |
+|Mouse                     |Legacy: Works; Raw: Works           |X11: in progress                    |
 |Pen Tablet                |Not yet implemented                 |Not yet implemented                 |
 |Game controllers          |XInput : works                      |Not yet implemented                 |
 |Windowing                 |A bit buggy                         |X11: preliminary                    |
@@ -54,9 +54,9 @@ XInput is implemented and works. There should be a way to detect whether a devic
 
 #### Raw input
 
-This library is (mostly) equipped to handle raw input data, but currently it is very buggy. The documentation isn't clear on everything, and many things are just assumed to work as is. I'm getting null for all device handles, and mouse handling doesn't work as intended.
+This library is (mostly) equipped to handle raw input data. There was a bug that made handle lookup not working, this is no longer the case.
 
-However, once I'm getting it working I might be able to get some "forbidden" Xbox One/Series controller features working...
+I plan to make game controllers working via RawInput, but that will be a bit more work due to scarce documentation, but after that it'll enable some "forbidden" features of the XBox One/Series controller's to be used on Windows...
 
 ### Linux
 

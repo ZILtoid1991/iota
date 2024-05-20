@@ -105,6 +105,8 @@ public enum OSConfigFlags : uint {
 	win_RawInput				=	1 << 0,
 	///Uses the older Wintab over other options.
 	win_Wintab					=	1 << 1,
+	///Disables hotkey handling on Windows.
+	win_DisableHotkeys			=	1 << 2,
 	///Enables x11 input extensions.
 	x11_InputExtensions			=	1 << 0,
 }
@@ -155,8 +157,7 @@ public abstract class InputDevice {
 	/// Bits 0-7 are common, 8-15 are special to each device/interface type.
 	/// Note: flags related to indicators/etc should be kept separately.
 	package ushort				status;
-	version (Windows)
-	package HANDLE				hDevice;	/// Windows only field for RawInput
+	package void*				hDevice;	/// Windows only field for RawInput
 	/**
 	 * Defines common status codes
 	 */

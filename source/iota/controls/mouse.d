@@ -39,11 +39,10 @@ public class Mouse : InputDevice {
 	package uint		lastButtonState;
 	version (Windows) {
 		//package uint	winButtonState;
-		package HANDLE		devHandle;
 		package this(io_str_t _name, ubyte _devNum, HANDLE devHandle) nothrow {
 			this._name = _name;
 			this._devNum = _devNum;
-			this.devHandle = devHandle;
+			this.hDevice = devHandle;
 			_type = InputDeviceType.Mouse;
 			status |= StatusFlags.IsConnected;
 		}
@@ -75,7 +74,7 @@ public class Mouse : InputDevice {
 	
 	public override string toString() @safe const {
 		import std.conv : to;
-		return "{" ~ _name.to!string ~ "; devID: " ~ _devNum.to!string ~ "; devHandle: " ~ devHandle.to!string ~ "}";
+		return "{" ~ _name.to!string ~ "; devID: " ~ _devNum.to!string ~ "; devHandle: " ~ hDevice.to!string ~ "}";
 	}
 	/* override public int poll(ref InputEvent output) @nogc nothrow {
 		return 0;

@@ -71,7 +71,7 @@ version (Windows) {
 	///Returns the given device by RawInput handle.
 	package InputDevice getDevByHandle(HANDLE hndl) nothrow @nogc {
 		foreach (InputDevice dev ; devList) {
-			if (dev.hDevice == hndl)
+			if (dev.hDevice is hndl)
 				return dev;
 		}
 		return null;
@@ -321,9 +321,8 @@ version (Windows) {
 					ubyte[256] lpb;
 					/* GetRawInputData(cast(HRAWINPUT)msg.lParam, RID_INPUT, hdr.ptr, &hdrSize, RAWINPUTHEADER.sizeof); */
 					GetRawInputData(cast(HRAWINPUT)msg.lParam, RID_INPUT, lpb.ptr, &dwSize, RAWINPUTHEADER.sizeof);
-					RAWINPUT rawInput = *cast(RAWINPUT*)lpb.ptr;
+					RAWINPUT* rawInput = cast(RAWINPUT*)lpb.ptr;
 					/* RAWINPUT* riHeader = cast(RAWINPUT*)hdr.ptr; */
-					
 					switch (rawInput.header.dwType) {
 						case RIM_TYPEMOUSE:
 							//BUG: `GetRawInputData` returns null for header.hDevice, no documentation on what causes it.
@@ -386,7 +385,8 @@ version (Windows) {
 							output.button.id = translatePS2MC(inputData.MakeCode, (inputData.Flags & 2) == 2);
 							output.button.aux = (cast(Keyboard)output.source).getModifiers();
 							break;
-						default:
+						default: //Must be RIM_TYPEHID
+
 							break;
 					}
 						

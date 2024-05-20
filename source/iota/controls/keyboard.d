@@ -54,11 +54,10 @@ public class Keyboard : InputDevice {
 		DisableMetaKeyComb=	1<<12,	///Disables meta key shortcut passthrough to OS
 	}
 	version (Windows) {
-		package HANDLE		devHandle;
 		package this(io_str_t _name, ubyte _devNum, HANDLE devHandle) nothrow {
 			this._name = _name;
 			this._devNum = _devNum;
-			this.devHandle = devHandle;
+			this.hDevice = devHandle;
 			_type = InputDeviceType.Keyboard;
 			status |= StatusFlags.IsConnected;
 		}
@@ -285,6 +284,6 @@ public class Keyboard : InputDevice {
 	}
 	public override string toString() @safe const {
 		import std.conv : to;
-		return "{" ~ _name.to!string ~ "; devID: " ~ _devNum.to!string ~ "; devHandle: " ~ devHandle.to!string ~ "}";
+		return "{" ~ _name.to!string ~ "; devID: " ~ _devNum.to!string ~ "; devHandle: " ~ hDevice.to!string ~ "}";
 	}
 }

@@ -8,6 +8,7 @@ public import iota.controls.mouse;
 public import iota.controls.system;
 public import iota.controls.gamectrl;
 public import iota.controls.polling;
+public import iota.window.oswindow;
 
 version (Windows) {
 	import core.sys.windows.windows;
@@ -15,6 +16,7 @@ version (Windows) {
 }
 import core.stdc.stdlib;
 import std.utf;
+import std.stdio;
 
 public enum IOTA_INPUTCONFIG_MANDATORY = 0;
 /** 
@@ -29,7 +31,7 @@ public int initInput(uint config = 0, uint osConfig = 0) nothrow {
 	sys = new System(config, osConfig);
 	devList ~= sys;
 	version (Windows) {
-		if (config & ConfigFlags.gc_Enable) {
+		/* if (config & ConfigFlags.gc_Enable) {
 			import iota.controls.backend.windows;
 			XInputEnable(256);
 			for (int i ; i < 4 ; i++) {
@@ -38,13 +40,20 @@ public int initInput(uint config = 0, uint osConfig = 0) nothrow {
 					devList ~= x;
 				}
 			}
-		}
+		} */
 		if (osConfig & OSConfigFlags.win_RawInput) {
+			const DWORD flags = 0; //= 0x00002000 | RIDEV_NOHOTKEYS;
+			HWND handle = null;
 			RAWINPUTDEVICE[] rid;
-			rid ~= RAWINPUTDEVICE(0x0001, 0x0006, 0, null);
-			rid ~= RAWINPUTDEVICE(0x0001, 0x0002, 0, null);
-			if (config & ConfigFlags.enableTouchscreen) {
-				rid ~= RAWINPUTDEVICE(0x000D, 0x0004, 0x2000, null);
+			rid ~= RAWINPUTDEVICE(0x0001, 0x0006, flags, handle);
+			rid ~= RAWINPUTDEVICE(0x0001, 0x0007, flags, handle);
+			rid ~= RAWINPUTDEVICE(0x0001, 0x0002, flags, handle);
+			rid ~= RAWINPUTDEVICE(0x0001, 0x0003, flags, handle);
+			if (config & ConfigFlags.enableTouchscreen) rid ~= RAWINPUTDEVICE(0x000D, 0x0004, 0, handle);
+			if (config & ConfigFlags.gc_Enable) {
+				rid ~= RAWINPUTDEVICE(0x0001, 0x0005, flags, handle);
+				rid ~= RAWINPUTDEVICE(0x0001, 0x0004, flags, handle);
+				rid ~= RAWINPUTDEVICE(0x0001, 0x0008, flags, handle);
 			}
 			if (RegisterRawInputDevices(rid.ptr, cast(UINT)rid.length, cast(UINT)(RAWINPUTDEVICE.sizeof)) == FALSE) {
 				return InputInitializationStatus.win_RawInputError;
@@ -59,39 +68,58 @@ public int initInput(uint config = 0, uint osConfig = 0) nothrow {
 				return InputInitializationStatus.win_DevicesAdded;
 			ubyte kbNum, mNum;
 			foreach (RAWINPUTDEVICELIST dev ; devices) {
-				wchar[] data;
-				data.length = 256;
-				UINT nameLen = 256;
+				wchar[512] data;
+				//data.length = 512;
+				UINT nameLen = 512;
 				UINT nameRes = GetRawInputDeviceInfoW(dev.hDevice, RIDI_DEVICENAME, cast(void*)data.ptr, &nameLen);
 				//HANDLE hdevice = dev.hDevice;
 				if (nameRes == cast(UINT)-1)
 					return InputInitializationStatus.win_RawInputError;
 				switch (dev.dwType) {
 					case RIM_TYPEMOUSE:
+						//debug writeln("Mouse: ", data[0..nameRes]);
+						Mouse m;
 						version (iota_use_utf8) {
-							devList ~= mouse = new Mouse(toUTF8(data[0..nameRes]), mNum++, dev.hDevice);
+							m = new Mouse(toUTF8(data[0..nameRes]), mNum++, dev.hDevice);
 						} else {
-							devList ~= mouse = new Mouse(toUTF32(data[0..nameRes]), mNum++, dev.hDevice);
+							m = new Mouse(toUTF32(data[0..nameRes]), mNum++, dev.hDevice);
 						}
+						devList ~= m;
+						mouse = m;
 						break;
 					case RIM_TYPEKEYBOARD:
+						//debug writeln("Keyboard: ", data[0..nameRes]);
+						Keyboard k;
 						version (iota_use_utf8) {
-							devList ~= keyb = new Keyboard(toUTF8(data[0..nameRes]), kbNum++, dev.hDevice);
+							k = new Keyboard(toUTF8(data[0..nameRes]), kbNum++, dev.hDevice);
 						} else {
-							devList ~= keyb = new Keyboard(toUTF32(data[0..nameRes]), kbNum++, dev.hDevice);
+							k = new Keyboard(toUTF32(data[0..nameRes]), kbNum++, dev.hDevice);
 						}
+						devList ~= k;
+						keyb = k;
 						break;
-					default:
+					default:	//Must be RIM_TYPEHID
+						debug writeln("Other device: ", data[0..nameRes]);	//For now, just print whatever name we get.
 						break;
 				}
-				if (keyb is null) keyb = new Keyboard();
-				if (mouse is null) mouse = new Mouse();
+				//if (keyb is null) keyb = new Keyboard();
+				//if (mouse is null) mouse = new Mouse();
 				mainPollingFun = &poll_win_RawInput;
 			}
 		} else {
 			keyb = new Keyboard();
 			mouse = new Mouse();
 			mainPollingFun = &poll_win_LegacyIO;
+			if (config & ConfigFlags.gc_Enable) {
+				import iota.controls.backend.windows;
+				XInputEnable(256);
+				for (int i ; i < 4 ; i++) {
+					XInputDevice x = new XInputDevice(i, (config & ConfigFlags.gc_TriggerMode) != 0);
+					if (!x.isInvalidated) {
+						devList ~= x;
+					}
+				}
+			}
 		}
 	} else {
 		keyb = new Keyboard();
