@@ -7,6 +7,11 @@ version (Windows) {
 	import x11.X;
 	import x11.Xlib;
 	public import core.stdc.config;
+	alias GLXContextID = XID;
+	struct GLXFBConfig {}
+	alias GLXFBConfigP = GLXFBConfig*;
+	alias GLXWindow = XID;
+	alias GLXPbuffer = XID;
 	enum GLX_WINDOW_BIT                = 0x00000001;
 	enum GLX_PIXMAP_BIT                = 0x00000002;
 	enum GLX_PBUFFER_BIT               = 0x00000004;
@@ -284,20 +289,96 @@ version (Windows) {
 	alias __int32 = int;
 	alias __int64 = long;
 	alias u__int64 = ulong;
+	enum GLX_SGIS_blended_overlay = 1;
+	enum GLX_BLENDED_RGBA_SGIS             = 0x8025;
+	enum GLX_SGIS_multisample = 1;
+	enum GLX_SAMPLE_BUFFERS_SGIS           = 100000;
+	enum GLX_SAMPLES_SGIS                  = 100001;
+	enum GLX_SGIS_shared_multisample = 1;
+	enum GLX_MULTISAMPLE_SUB_RECT_WIDTH_SGIS = 0x8026;
+	enum GLX_MULTISAMPLE_SUB_RECT_HEIGHT_SGIS = 0x8027;
+	enum GLX_SGIX_dmbuffer = 1;
+	alias GLXPbufferSGIX = XID;
+	enum GLX_DIGITAL_MEDIA_PBUFFER_SGIX    = 0x8024;
+	enum GLX_SGIX_hyperpipe = 1;
+	enum GLX_HYPERPIPE_PIPE_NAME_LENGTH_SGIX = 80;
+	enum GLX_BAD_HYPERPIPE_CONFIG_SGIX     = 91;
+	enum GLX_BAD_HYPERPIPE_SGIX            = 92;
+	enum GLX_HYPERPIPE_DISPLAY_PIPE_SGIX   = 0x00000001;
+	enum GLX_HYPERPIPE_RENDER_PIPE_SGIX    = 0x00000002;
+	enum GLX_PIPE_RECT_SGIX                = 0x00000001;
+	enum GLX_PIPE_RECT_LIMITS_SGIX         = 0x00000002;
+	enum GLX_HYPERPIPE_STEREO_SGIX         = 0x00000003;
+	enum GLX_HYPERPIPE_PIXEL_AVERAGE_SGIX  = 0x00000004;
+	enum GLX_HYPERPIPE_ID_SGIX             = 0x8030;
+	struct GLXHyperpipeNetworkSGIX {
+	    char[GLX_HYPERPIPE_PIPE_NAME_LENGTH_SGIX]	pipeName;
+	    int			networkId;
+	}
+	struct GLXHyperpipeConfigSGIX {
+	    char[GLX_HYPERPIPE_PIPE_NAME_LENGTH_SGIX]    pipeName;
+	    int     	channel;
+	    uint 		participationType;
+	    int     	timeSlice;
+	}
+	struct GLXPipeRect {
+	    char[GLX_HYPERPIPE_PIPE_NAME_LENGTH_SGIX]	pipeName;
+	    int srcXOrigin, srcYOrigin, srcWidth, srcHeight;
+	    int destXOrigin, destYOrigin, destWidth, destHeight;
+	}
+	struct GLXPipeRectLimits {
+    	char[GLX_HYPERPIPE_PIPE_NAME_LENGTH_SGIX] 	pipeName;
+    	int XOrigin, YOrigin, maxHeight, maxWidth;
+	}
+	enum GLX_SGIX_pbuffer = 1;
+	enum GLX_PBUFFER_BIT_SGIX              = 0x00000004;
+	enum GLX_BUFFER_CLOBBER_MASK_SGIX      = 0x08000000;
+	enum GLX_FRONT_LEFT_BUFFER_BIT_SGIX    = 0x00000001;
+	enum GLX_FRONT_RIGHT_BUFFER_BIT_SGIX   = 0x00000002;
+	enum GLX_BACK_LEFT_BUFFER_BIT_SGIX     = 0x00000004;
+	enum GLX_BACK_RIGHT_BUFFER_BIT_SGIX    = 0x00000008;
+	enum GLX_AUX_BUFFERS_BIT_SGIX          = 0x00000010;
+	enum GLX_DEPTH_BUFFER_BIT_SGIX         = 0x00000020;
+	enum GLX_STENCIL_BUFFER_BIT_SGIX       = 0x00000040;
+	enum GLX_ACCUM_BUFFER_BIT_SGIX         = 0x00000080;
+	enum GLX_SAMPLE_BUFFERS_BIT_SGIX       = 0x00000100;
+	enum GLX_MAX_PBUFFER_WIDTH_SGIX        = 0x8016;
+	enum GLX_MAX_PBUFFER_HEIGHT_SGIX       = 0x8017;
+	enum GLX_MAX_PBUFFER_PIXELS_SGIX       = 0x8018;
+	enum GLX_OPTIMAL_PBUFFER_WIDTH_SGIX    = 0x8019;
+	enum GLX_OPTIMAL_PBUFFER_HEIGHT_SGIX   = 0x801A;
+	enum GLX_PRESERVED_CONTENTS_SGIX       = 0x801B;
+	enum GLX_LARGEST_PBUFFER_SGIX          = 0x801C;
+	enum GLX_WIDTH_SGIX                    = 0x801D;
+	enum GLX_HEIGHT_SGIX                   = 0x801E;
+	enum GLX_EVENT_MASK_SGIX               = 0x801F;
+	enum GLX_DAMAGED_SGIX                  = 0x8020;
+	enum GLX_SAVED_SGIX                    = 0x8021;
+	enum GLX_WINDOW_SGIX                   = 0x8022;
+	enum GLX_PBUFFER_SGIX                  = 0x8023;
+	enum GLX_SGIX_swap_barrier = 1;
+	enum GLX_SGIX_swap_group = 1;
+	enum GLX_SGIX_video_resize = 1;
+	enum GLX_SYNC_FRAME_SGIX               = 0x00000000;
+	enum GLX_SYNC_SWAP_SGIX                = 0x00000001;
+	enum GLX_SGIX_video_source = 1;
+	alias GLXVideoSourceSGIX = XID;
+	enum GLX_SGIX_visual_select_group = 1;
+	enum GLX_VISUAL_SELECT_GROUP_SGIX      = 0x8028;
 
 	extern(C) @nogc nothrow:
-		alias PFNGLXGETFBCONFIGSPROC = GLXFBConfig* function (Display* dpy, int screen, int* nelements);
-		alias PFNGLXCHOOSEFBCONFIGPROC = GLXFBConfig* function (Display* dpy, int screen, const(int)* attrib_list, int* nelements);
-		alias PFNGLXGETFBCONFIGATTRIBPROC = int function(Display* dpy, GLXFBConfig config, int attribute, int* value);
-		alias PFNGLXGETVISUALFROMFBCONFIGPROC = XVisualInfo* function (Display* dpy, GLXFBConfig config);
-		alias PFNGLXCREATEWINDOWPROC = GLXWindow function(Display* dpy, GLXFBConfig config, Window win, const(int)* attrib_list);
+		alias PFNGLXGETFBCONFIGSPROC = GLXFBConfigP* function (Display* dpy, int screen, int* nelements);
+		alias PFNGLXCHOOSEFBCONFIGPROC = GLXFBConfigP* function (Display* dpy, int screen, const(int)* attrib_list, int* nelements);
+		alias PFNGLXGETFBCONFIGATTRIBPROC = int function(Display* dpy, GLXFBConfigP config, int attribute, int* value);
+		alias PFNGLXGETVISUALFROMFBCONFIGPROC = XVisualInfo* function (Display* dpy, GLXFBConfigP config);
+		alias PFNGLXCREATEWINDOWPROC = GLXWindow function(Display* dpy, GLXFBConfigP config, Window win, const(int)* attrib_list);
 		alias PFNGLXDESTROYWINDOWPROC = void function(Display* dpy, GLXWindow win);
-		alias PFNGLXCREATEPIXMAPPROC = GLXPixmap function(Display* dpy, GLXFBConfig config, Pixmap pixmap, const(int)* attrib_list);
+		alias PFNGLXCREATEPIXMAPPROC = GLXPixmap function(Display* dpy, GLXFBConfigP config, Pixmap pixmap, const(int)* attrib_list);
 		alias PFNGLXDESTROYPIXMAPPROC = void function(Display* dpy, GLXPixmap pixmap);
-		alias PFNGLXCREATEPBUFFERPROC = GLXPbuffer function(Display* dpy, GLXFBConfig config, const(int)* attrib_list);
+		alias PFNGLXCREATEPBUFFERPROC = GLXPbuffer function(Display* dpy, GLXFBConfigP config, const(int)* attrib_list);
 		alias PFNGLXDESTROYPBUFFERPROC = void function(Display* dpy, GLXPbuffer pbuf);
 		alias PFNGLXQUERYDRAWABLEPROC = void function(Display* dpy, GLXDrawable draw, int attribute, uint* value);
-		alias PFNGLXCREATENEWCONTEXTPROC = GLXContext function(Display* dpy, GLXFBConfig config, int render_type, GLXContext share_list, Bool direct);
+		alias PFNGLXCREATENEWCONTEXTPROC = GLXContext function(Display* dpy, GLXFBConfigP config, int render_type, GLXContext share_list, Bool direct);
 		alias PFNGLXMAKECONTEXTCURRENTPROC = Bool function(Display* dpy, GLXDrawable draw, GLXDrawable read, GLXContext ctx);
 		alias PFNGLXGETCURRENTREADDRAWABLEPROC = GLXDrawable function();
 		alias PFNGLXQUERYCONTEXTPROC = int function(Display* dpy, GLXContext ctx, int attribute, int* value);
@@ -305,7 +386,7 @@ version (Windows) {
 		alias PFNGLXGETSELECTEDEVENTPROC = void function(Display* dpy, GLXDrawable draw, c_ulong* event_mask);
 		alias __GLXextFuncPtr = void function();	
 		alias PFNGLXGETPROCADDRESSPROC = __GLXextFuncPtr function(const(GLubyte)* procName);
-		alias PFNGLXCREATECONTEXTATTRIBSARBPROC = GLXContext function(Display* dpy, GLXFBConfig config, GLXContext share_context, Bool direct, const(int)* attrib_list);
+		alias PFNGLXCREATECONTEXTATTRIBSARBPROC = GLXContext function(Display* dpy, GLXFBConfigP config, GLXContext share_context, Bool direct, const(int)* attrib_list);
 		alias PFNGLXGETPROCADDRESSARBPROC = __GLXextFuncPtr function(const(GLubyte)* procName);
 		alias PFNGLXGETGPUIDSAMDPROC = uint function (uint maxCount, uint* ids);
 		alias PFNGLXGETGPUINFOAMDPROC = int function (uint id, int property, GLenum dataType, uint size, void* data);
@@ -356,29 +437,51 @@ version (Windows) {
 		alias PFNGLXRELEASEVIDEOIMAGENVPROC = int function (Display* dpy, GLXPbuffer pbuf);
 		alias PFNGLXSENDPBUFFERTOVIDEONVPROC = int function (Display* dpy, GLXPbuffer pbuf, int iBufferType, c_ulong* pulCounterPbuffer, GLboolean bBlock);
 		alias PFNGLXGETVIDEOINFONVPROC = int function (Display* dpy, int screen, GLXVideoDeviceNV VideoDevice, c_ulong* pulCounterOutputPbuffer, c_ulong* pulCounterOutputVideo);
-		alias PFNGLXGETSYNCVALUESOMLPROC = Bool function (Display *dpy, GLXDrawable drawable, int64_t *ust, int64_t *msc, int64_t *sbc);
-		alias PFNGLXGETMSCRATEOMLPROC = Bool function (Display *dpy, GLXDrawable drawable, int32_t *numerator, int32_t *denominator);
-		alias PFNGLXSWAPBUFFERSMSCOMLPROC = int64_t function (Display *dpy, GLXDrawable drawable, int64_t target_msc, int64_t divisor, int64_t remainder);
-		alias PFNGLXWAITFORMSCOMLPROC = Bool function (Display *dpy, GLXDrawable drawable, int64_t target_msc, int64_t divisor, int64_t remainder, int64_t *ust, int64_t *msc, int64_t *sbc);
-		alias PFNGLXWAITFORSBCOMLPROC = Bool function (Display *dpy, GLXDrawable drawable, int64_t target_sbc, int64_t *ust, int64_t *msc, int64_t *sbc);
+		alias PFNGLXGETSYNCVALUESOMLPROC = Bool function (Display* dpy, GLXDrawable drawable, int64_t* ust, int64_t* msc, int64_t* sbc);
+		alias PFNGLXGETMSCRATEOMLPROC = Bool function (Display* dpy, GLXDrawable drawable, int32_t* numerator, int32_t* denominator);
+		alias PFNGLXSWAPBUFFERSMSCOMLPROC = int64_t function (Display* dpy, GLXDrawable drawable, int64_t target_msc, int64_t divisor, int64_t remainder);
+		alias PFNGLXWAITFORMSCOMLPROC = Bool function (Display* dpy, GLXDrawable drawable, int64_t target_msc, int64_t divisor, int64_t remainder, int64_t* ust, int64_t* msc, int64_t* sbc);
+		alias PFNGLXWAITFORSBCOMLPROC = Bool function (Display* dpy, GLXDrawable drawable, int64_t target_sbc, int64_t* ust, int64_t* msc, int64_t* sbc);
+		alias PFNGLXASSOCIATEDMPBUFFERSGIXPROC = Bool function (Display* dpy, GLXPbufferSGIX pbuffer, DMparams* params, DMbuffer dmbuffer);
+		alias PFNGLXQUERYHYPERPIPENETWORKSGIXPROC = GLXHyperpipeNetworkSGIX* function (Display* dpy, int* npipes);
+		alias PFNGLXHYPERPIPECONFIGSGIXPROC = int function (Display* dpy, int networkId, int npipes, GLXHyperpipeConfigSGIX* cfg, int* hpId);
+		alias PFNGLXQUERYHYPERPIPECONFIGSGIXPROC = GLXHyperpipeConfigSGIX* function (Display* dpy, int hpId, int* npipes);
+		alias PFNGLXDESTROYHYPERPIPECONFIGSGIXPROC = int function (Display* dpy, int hpId);
+		alias PFNGLXBINDHYPERPIPESGIXPROC = int function (Display* dpy, int hpId);
+		alias PFNGLXQUERYHYPERPIPEBESTATTRIBSGIXPROC = int function (Display* dpy, int timeSlice, int attrib, int size, void* attribList, void* returnAttribList);
+		alias PFNGLXHYPERPIPEATTRIBSGIXPROC = int function (Display* dpy, int timeSlice, int attrib, int size, void* attribList);
+		alias PFNGLXQUERYHYPERPIPEATTRIBSGIXPROC = int function (Display* dpy, int timeSlice, int attrib, int size, void* returnAttribList);
+		alias PFNGLXCREATEGLXPBUFFERSGIXPROC = GLXPbufferSGIX function (Display* dpy, GLXFBConfigPSGIX config, uint width, uint height, int* attrib_list);
+		alias PFNGLXDESTROYGLXPBUFFERSGIXPROC = void function (Display* dpy, GLXPbufferSGIX pbuf);
+		alias PFNGLXQUERYGLXPBUFFERSGIXPROC = void function (Display* dpy, GLXPbufferSGIX pbuf, int attribute, uint* value);
+		alias PFNGLXSELECTEVENTSGIXPROC = void function (Display* dpy, GLXDrawable drawable, c_ulong mask);
+		alias PFNGLXGETSELECTEDEVENTSGIXPROC = void function (Display* dpy, GLXDrawable drawable, c_ulong* mask);
+		alias PFNGLXBINDSWAPBARRIERSGIXPROC = void function (Display* dpy, GLXDrawable drawable, int barrier);
+		alias PFNGLXQUERYMAXSWAPBARRIERSSGIXPROC = Bool function (Display* dpy, int screen, int* max);
+		alias PFNGLXJOINSWAPGROUPSGIXPROC = void function (Display* dpy, GLXDrawable drawable, GLXDrawable member);
+		alias PFNGLXBINDCHANNELTOWINDOWSGIXPROC = int function (Display* display, int screen, int channel, Window window);
+		alias PFNGLXCHANNELRECTSGIXPROC = int function (Display* display, int screen, int channel, int x, int y, int w, int h);
+		alias PFNGLXQUERYCHANNELRECTSGIXPROC = int function (Display* display, int screen, int channel, int* dx, int* dy, int* dw, int* dh);
+		alias PFNGLXQUERYCHANNELDELTASSGIXPROC = int function (Display* display, int screen, int channel, int* x, int* y, int* w, int* h);
+		alias PFNGLXCHANNELRECTSYNCSGIXPROC = int function (Display* display, int screen, int channel, GLenum synctype);
 	
 		Bool glXQueryExtension(Display* dpy, int* error_base, int* event_base);
 		Bool glXQueryVersion(Display* dpy, int* major, int* minor);
 		const(char)* glXQueryExtensionsString(Display* dpy, int screen);
 		const(char)* glXGetClientString(Display* dpy, int name);
 		const(char)* glXQueryServerString(Display* dpy, int screen, int name);
-		GLXFBConfig* glXGetFBConfigs(Display* dpy, int screen, int* nelements);
-		GLXFBConfig* glXChooseFBConfig(Display* dpy, int screen, const(int)* attrib_list, int* nelements);
-		int glXGetFBConfigAttrib(Display* dpy, GLXFBConfig config, int attribute, int* value);
-		XVisualInfo *glXGetVisualFromFBConfig(Display* dpy, GLXFBConfig config);
-		GLXWindow glXCreateWindow(Display* dpy, GLXFBConfig config, Window win, const(int)* attrib_list);
+		GLXFBConfigP* glXGetFBConfigs(Display* dpy, int screen, int* nelements);
+		GLXFBConfigP* glXChooseFBConfig(Display* dpy, int screen, const(int)* attrib_list, int* nelements);
+		int glXGetFBConfigAttrib(Display* dpy, GLXFBConfigP config, int attribute, int* value);
+		XVisualInfo *glXGetVisualFromFBConfig(Display* dpy, GLXFBConfigP config);
+		GLXWindow glXCreateWindow(Display* dpy, GLXFBConfigP config, Window win, const(int)* attrib_list);
 		void glXDestroyWindow(Display* dpy, GLXWindow win);
-		GLXPixmap glXCreatePixmap(Display* dpy, GLXFBConfig config, Pixmap pixmap, const(int)* attrib_list);
+		GLXPixmap glXCreatePixmap(Display* dpy, GLXFBConfigP config, Pixmap pixmap, const(int)* attrib_list);
 		void glXDestroyPixmap(Display* dpy, GLXPixmap pixmap);
-		GLXPbuffer glXCreatePbuffer(Display* dpy, GLXFBConfig config, const(int)* attrib_list);
+		GLXPbuffer glXCreatePbuffer(Display* dpy, GLXFBConfigP config, const(int)* attrib_list);
 		void glXDestroyPbuffer(Display* dpy, GLXPbuffer pbuf);
 		void glXQueryDrawable(Display* dpy, GLXDrawable draw, int attribute, uint* value);
-		GLXContext glXCreateNewContext(Display* dpy, GLXFBConfig config, int render_type, GLXContext share_list, 
+		GLXContext glXCreateNewContext(Display* dpy, GLXFBConfigP config, int render_type, GLXContext share_list, 
 				Bool direct);
 		Bool glXIsDirect(Display* dpy, GLXContext ctx);
 		void glXDestroyContext(Display* dpy, GLXContext ctx);
@@ -399,7 +502,7 @@ version (Windows) {
 		GLXPixmap glXCreateGLXPixmap(Display* dpy, XVisualInfo* visual, Pixmap pixmap);
 		GLXContext glXCreateContext(Display* dpy, XVisualInfo* visual, GLXContext share_list, Bool direct);
 		Bool glXMakeCurrent(Display* dpy, GLXDrawable draw, GLXContext ctx);
-		GLXContext glXCreateContextAttribsARB(Display* dpy, GLXFBConfig config, GLXContext share_context, Bool direct, const(int)* attrib_list);
+		GLXContext glXCreateContextAttribsARB(Display* dpy, GLXFBConfigP config, GLXContext share_context, Bool direct, const(int)* attrib_list);
 		//Might not be present block begin
 		__GLXextFuncPtr glXGetProcAddress (const(GLubyte)* procName); //Might not be present
 		__GLXextFuncPtr glXGetProcAddressARB (const(GLubyte)* procName); //Might not be present
@@ -456,6 +559,28 @@ version (Windows) {
 		Bool glXGetMscRateOML (Display* dpy, GLXDrawable drawable, int32_t* numerator, int32_t* denominator);
 		int64_t glXSwapBuffersMscOML (Display* dpy, GLXDrawable drawable, int64_t target_msc, int64_t divisor, int64_t remainder);
 		Bool glXWaitForMscOML (Display* dpy, GLXDrawable drawable, int64_t target_msc, int64_t divisor, int64_t remainder, int64_t* ust, int64_t* msc, int64_t* sbc);
-		Bool glXWaitForSbcOML (Display* dpy, GLXDrawable drawable, int64_t target_sbc, int64_t* ust, int64_t *msc, int64_t* sbc);
+		Bool glXWaitForSbcOML (Display* dpy, GLXDrawable drawable, int64_t target_sbc, int64_t* ust, int64_t* msc, int64_t* sbc);
+		Bool glXAssociateDMPbufferSGIX (Display* dpy, GLXPbufferSGIX pbuffer, DMparams* params, DMbuffer dmbuffer);
+		GLXHyperpipeNetworkSGIX* glXQueryHyperpipeNetworkSGIX (Display* dpy, int* npipes);
+		int glXHyperpipeConfigSGIX (Display* dpy, int networkId, int npipes, GLXHyperpipeConfigSGIX* cfg, int* hpId);
+		GLXHyperpipeConfigSGIX* glXQueryHyperpipeConfigSGIX (Display* dpy, int hpId, int* npipes);
+		int glXDestroyHyperpipeConfigSGIX (Display* dpy, int hpId);
+		int glXBindHyperpipeSGIX (Display* dpy, int hpId);
+		int glXQueryHyperpipeBestAttribSGIX (Display* dpy, int timeSlice, int attrib, int size, void* attribList, void* returnAttribList);
+		int glXHyperpipeAttribSGIX (Display* dpy, int timeSlice, int attrib, int size, void* attribList);
+		int glXQueryHyperpipeAttribSGIX (Display* dpy, int timeSlice, int attrib, int size, void* returnAttribList);
+		GLXPbufferSGIX glXCreateGLXPbufferSGIX (Display* dpy, GLXFBConfigPSGIX config, uint width, uint height, int* attrib_list);
+		void glXDestroyGLXPbufferSGIX (Display* dpy, GLXPbufferSGIX pbuf);
+		void glXQueryGLXPbufferSGIX (Display* dpy, GLXPbufferSGIX pbuf, int attribute, uint* value);
+		void glXSelectEventSGIX (Display* dpy, GLXDrawable drawable, c_ulong mask);
+		void glXGetSelectedEventSGIX (Display* dpy, GLXDrawable drawable, c_ulong* mask);
+		void glXBindSwapBarrierSGIX (Display* dpy, GLXDrawable drawable, int barrier);
+		Bool glXQueryMaxSwapBarriersSGIX (Display* dpy, int screen, int* max);
+		void glXJoinSwapGroupSGIX (Display* dpy, GLXDrawable drawable, GLXDrawable member);
+		int glXBindChannelToWindowSGIX (Display* display, int screen, int channel, Window window);
+		int glXChannelRectSGIX (Display* display, int screen, int channel, int x, int y, int w, int h);
+		int glXQueryChannelRectSGIX (Display* display, int screen, int channel, int* dx, int* dy, int* dw, int* dh);
+		int glXQueryChannelDeltasSGIX (Display* display, int screen, int channel, int* x, int* y, int* w, int* h);
+		int glXChannelRectSyncSGIX (Display* display, int screen, int channel, GLenum synctype);
 		//Might not be present block end
 }
