@@ -46,9 +46,9 @@ public enum InputEventType {
 	MouseMove,
 	MouseScroll,
 	HPMouse,
-	GCButton,
-	GCAxis,
-	GCHat,
+	GCButton,		///Any button of a game controller
+	GCAxis,			///Any axis of a game controller
+	GCHat,			///POV hat, or D-Pad
 	Pen,
 	DeviceAdded,
 	DeviceRemoved,
@@ -61,6 +61,7 @@ public enum InputEventType {
 	WindowMove,
 	InputLangChange,
 	ApplExit,
+	Debug_DataDump,
 }
 /** 
  * Defines text command event types.
@@ -283,14 +284,9 @@ public struct TextInputEvent {
 	private io_chr_t* _text;
 	///The amount of characters on the buffer.
 	private size_t _length;
-	/* mixin(bitfields!(
-			bool, "isClipboard",	1,	///True if the text input originates from a clipboard event.
-			bool, "hasMore",		1,	///True if there's characters left.
-			uint, "language",		30	///Input language code
-	)); */
-	//bool		isClipboard;///True if the text input originates from a clipboard event.
+	
 	string toString() @safe pure const {
-		return "Text: \"" ~ to!string(text)/*  ~ "\" isClipboard: " ~ to!string(isClipboard) ~ " ; " */; 
+		return "Text: \"" ~ to!string(text[0.._length]); 
 	}
 	io_str_t text() @nogc @trusted pure nothrow const {
 		io_str_t helperFunc() @nogc @system pure nothrow const {
@@ -372,9 +368,9 @@ public struct MouseScrollEvent {
  * WWWW.FFFF
  */
 public struct HighPrecMouseEvent {
-	byte		hScroll;
-	byte		vScroll;
-	ushort		buttons;
+	byte		hScroll;///horizontal scroll amount
+	byte		vScroll;///vertical scroll amount
+	ushort		buttons;///button vector
 	int			x;		///X position of the cursor.
 	int			y;		///Y position of the cursor.
 	int			xD;		///X amount of the motion.
@@ -405,6 +401,10 @@ public struct WindowEvent {
 				to!string(height);
 	}
 }
+/**
+ * Defines a clipboard event.
+ * Also used for data dumping RawInput data.
+ */
 public struct ClipboardEvent {
 	size_t		length;
 	ubyte*		data;
