@@ -28,7 +28,7 @@ public enum GameControllerButtons : ubyte {
 	///XB: B, PS: O, N: A
 	East,
 	///The button to the west on the right hand side of the gamepad.
-	///XB: X, PS: ▢, N: Y
+	///XB: X, PS: ▯, N: Y
 	West,
 	///The upper-left shoulder button (usually digital)
 	LeftShoulder,
@@ -54,6 +54,17 @@ public enum GameControllerButtons : ubyte {
 	R4,
 	L5,
 	R5,
+}
+///Defines potential POV hat states as bitflags.
+public enum POVHatStates : ubyte {
+	N			=	0x01,
+	W			=	0x02,
+	S			=	0x04,
+	E			=	0x08,
+	NE			=	0x09,
+	NW			=	0x03,
+	SE			=	0x0C,
+	SW			=	0x06,
 }
 public enum GameControllerAxes : ubyte {
 	init,
@@ -86,12 +97,42 @@ abstract class GameController : InputDevice, HapticDevice {
 	 *   val: Either the strength of the capability (between 0.0 and 1.0), or the frequency.
 	 * Returns: 0 on success, or a specific error code.
 	 */
-	public abstract int applyEffect(uint capability, uint zone, float val) nothrow;
+	public abstract int applyEffect(uint capability, uint zone, float val, float freq = float.nan) nothrow;
 	/**
 	 * Stops all haptic effects of the device.
 	 * Returns: 0 on success, or a specific error code.
 	 */
 	public abstract int reset() nothrow;
+}
+public class RawGameController : GameController {
+	protected struct AxisDef {
+		int			vOffset;
+		ushort		bOffset;
+		ubyte		bits;
+		ubyte		num;
+	}
+	protected struct ButtonDef {
+		ushort		bOffset;
+		ubyte		bits;
+		ubyte		num;
+	}
+
+	override public uint[] getCapabilities() nothrow {
+		return null; // TODO: implement
+	}
+
+	override public uint[] getZones(uint capability) nothrow {
+		return null; // TODO: implement
+	}
+
+	override public int applyEffect(uint capability, uint zone, float val, float freq = float.nan) nothrow {
+		return int.init; // TODO: implement
+	}
+
+	override public int reset() nothrow {
+		return int.init; // TODO: implement
+	}
+
 }
 /**
  * Implements functionalities related to XInput game controller devices. (Windows)
@@ -363,7 +404,7 @@ version (Windows) public class XInputDevice : GameController {
 	 *   val: Either the strength of the capability (between 0.0 and 1.0), or the frequency.
 	 * Returns: 0 on success, or a specific error code.
 	 */
-	public override int applyEffect(uint capability, uint zone, float val) nothrow {
+	public override int applyEffect(uint capability, uint zone, float val, float freq = float.nan) nothrow {
 		switch (capability) {
 			case HapticDevice.Capabilities.LeftMotor:
 				if (val < 0.0 || val > 1.0)

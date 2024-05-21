@@ -51,6 +51,8 @@ public int initInput(uint config = 0, uint osConfig = 0) nothrow {
 			rid ~= RAWINPUTDEVICE(0x0001, 0x0003, flags, handle);
 			if (config & ConfigFlags.enableTouchscreen) rid ~= RAWINPUTDEVICE(0x000D, 0x0004, 0, handle);
 			if (config & ConfigFlags.gc_Enable) {
+				import iota.controls.backend.windows;
+				//XInputEnable(256);
 				rid ~= RAWINPUTDEVICE(0x0001, 0x0005, flags, handle);
 				rid ~= RAWINPUTDEVICE(0x0001, 0x0004, flags, handle);
 				rid ~= RAWINPUTDEVICE(0x0001, 0x0008, flags, handle);

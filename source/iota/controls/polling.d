@@ -35,7 +35,6 @@ version (Windows) {
 	version (iota_use_utf8) package char[4] lastChar;
 	else package dchar lastChar;
 	package int winCount;
-	package InputEvent[3] mouse_inputEventBuff;		///RawInput IO buffer for mouse
 	package ubyte[1024] rawInputBuf;				///RawInput data buffer
 	package int GET_X_LPARAM(LPARAM lParam) @nogc nothrow pure {
 		return cast(int)(cast(short) LOWORD(lParam));
@@ -359,14 +358,14 @@ version (Windows) {
 							uint buttons = toIOTAMouseButtonFlags(device.lastButtonState, inputData.usButtonFlags);
 							device.lastButtonState = buttons;
 							output.mouseHP.buttons = cast(ushort)buttons;
-							
-							if (inputData.usButtonFlags & 0x0B00) { //Mouse wheel event
-								if (inputData.usButtonFlags & RI_MOUSE_WHEEL) {
-									output.mouseHP.hScroll = cast(byte)inputData.usButtonData;
-								} else {
-									output.mouseHP.vScroll = cast(byte)inputData.usButtonData;
-								}
-							} 
+							if (inputData.usButtonFlags & 0x0800) { //Mouse wheel event (horizontal)
+								output.mouseHP.hScroll = cast(byte)inputData.usButtonData;
+							} else if (inputData.usButtonFlags & 0x0400) { //Mouse wheel event 
+								short amount = cast(short)inputData.usButtonData;
+								if (amount >= byte.max) amount = byte.max;
+								else if (amount <= byte.min) amount = byte.min;
+								output.mouseHP.vScroll = cast(byte)amount;
+							}
 							//}
 							/* if (eventBuff.length) {
 								output = eventBuff[0];
@@ -384,7 +383,11 @@ version (Windows) {
 							output.button.aux = (cast(Keyboard)output.source).getModifiers();
 							break;
 						default: //Must be RIM_TYPEHID
-
+							// BEGIN OF OPTIONAL DATA DUMP BLOCK DO NOT REMOVE!!! //
+							output.type = InputEventType.Debug_DataDump;
+							output.clipboard.data = &rawInput.data.hid.bRawData;
+							output.clipboard.length = rawInput.data.hid.dwSizeHid * rawInput.data.hid.dwCount;
+							//  END OF OPTIONAL DATA DUMP BLOCK DO NOT REMOVE!!!  //
 							break;
 					}
 						
