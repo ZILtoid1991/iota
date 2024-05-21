@@ -61,7 +61,7 @@ public enum InputEventType {
 	WindowMove,
 	InputLangChange,
 	ApplExit,
-	Debug_DataDump,
+	Debug_DataDump,	///RawInput data dump 
 }
 /** 
  * Defines text command event types.
@@ -132,11 +132,15 @@ public enum EventPollStatus {
 	NoDevsFound,
 	win_RawInputError,
 }
+/**
+ * Defines return codes for haptic events.
+ */
 public enum HapticDeviceStatus {
 	AllOk,
 	DeviceInvalidated,
 	UnsupportedCapability,
 	OutOfRange,
+	FrequencyNeeded,
 }
 /** 
  * Defines text edit event flags.
@@ -194,6 +198,7 @@ public abstract class InputDevice {
 	public bool isInvalidated() @nogc @safe pure nothrow const @property {
 		return (status & StatusFlags.IsInvalidated) != 0;
 	}
+	///Returns true if device got haptic capabilities.
 	public bool isHapticCapable() @nogc @safe pure nothrow const @property {
 		return (status & StatusFlags.IsHapticCapable) != 0;
 	}
@@ -230,10 +235,18 @@ public abstract class InputDevice {
  * Defines basic functions for haptic devices.
  */
 public interface HapticDevice {
+	///Defines capabilities of haptic devices.
 	public enum Capabilities {
 		init,
 		LeftMotor,
 		RightMotor,
+		TriggerRumble,
+	}
+	///Defines potential zones of haptic capabilities.
+	public enum Zones {
+		init,		///Used when capability does not have zones
+		Left,
+		Right,
 	}
 	/**
 	 * Returns all capabilities of the haptic device.
@@ -249,10 +262,11 @@ public interface HapticDevice {
 	 * Params:
 	 *   capability: The capability to be used.
 	 *   zone: The zone where the effect should be used.
-	 *   val: Either the strength of the capability (between 0.0 and 1.0), or the frequency.
+	 *   val: The strength of the capability (between 0.0 and 1.0).
+	 *   freq: The frequency if supported, float.nan otherwise.
 	 * Returns: 0 on success, or a specific error code.
 	 */
-	public int applyEffect(uint capability, uint zone, float val) nothrow;
+	public int applyEffect(uint capability, uint zone, float val, float freq = float.nan) nothrow;
 	/**
 	 * Stops all haptic effects of the device.
 	 * Returns: 0 on success, or a specific error code.
