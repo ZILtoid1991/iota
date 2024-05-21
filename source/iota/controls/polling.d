@@ -32,12 +32,11 @@ InputDevice[] devList;	///List of input devices.
 version (Windows) {
 	import core.sys.windows.windows;
 	import core.sys.windows.wtypes;
-	version (iota_use_utf8)
-		package char[4]	lastChar;
-	else
-		package dchar	lastChar;
+	version (iota_use_utf8) package char[4] lastChar;
+	else package dchar lastChar;
 	package int winCount;
 	package InputEvent[3] mouse_inputEventBuff;		///RawInput IO buffer for mouse
+	package ubyte[1024] rawInputBuf;				///RawInput data buffer
 	package int GET_X_LPARAM(LPARAM lParam) @nogc nothrow pure {
 		return cast(int)(cast(short) LOWORD(lParam));
 	}
@@ -317,15 +316,14 @@ version (Windows) {
 				case WM_INPUT:		//Raw input
 					/* UINT hdrSize = RAWINPUT.sizeof;
 					ubyte[RAWINPUT.sizeof] hdr; */
-					UINT dwSize = 256;
-					ubyte[256] lpb;
+					UINT dwSize = 1024;
+					//ubyte[256] lpb;
 					/* GetRawInputData(cast(HRAWINPUT)msg.lParam, RID_INPUT, hdr.ptr, &hdrSize, RAWINPUTHEADER.sizeof); */
-					GetRawInputData(cast(HRAWINPUT)msg.lParam, RID_INPUT, lpb.ptr, &dwSize, RAWINPUTHEADER.sizeof);
-					RAWINPUT* rawInput = cast(RAWINPUT*)lpb.ptr;
+					GetRawInputData(cast(HRAWINPUT)msg.lParam, RID_INPUT, rawInputBuf.ptr, &dwSize, RAWINPUTHEADER.sizeof);
+					RAWINPUT* rawInput = cast(RAWINPUT*)rawInputBuf.ptr;
 					/* RAWINPUT* riHeader = cast(RAWINPUT*)hdr.ptr; */
 					switch (rawInput.header.dwType) {
 						case RIM_TYPEMOUSE:
-							//BUG: `GetRawInputData` returns null for header.hDevice, no documentation on what causes it.
 							Mouse device = cast(Mouse)getDevByHandle(rawInput.header.hDevice);
 							if (device is null) device = mouse;
 							/* if (device !is null) { */ 
