@@ -53,9 +53,21 @@ public int initInput(uint config = 0, uint osConfig = 0) nothrow {
 			if (config & ConfigFlags.gc_Enable) {
 				import iota.controls.backend.windows;
 				//XInputEnable(256);
-				rid ~= RAWINPUTDEVICE(0x0001, 0x0005, flags, handle);
-				rid ~= RAWINPUTDEVICE(0x0001, 0x0004, flags, handle);
-				rid ~= RAWINPUTDEVICE(0x0001, 0x0008, flags, handle);
+				if (osConfig & OSConfigFlags.win_RawInputGC) {
+					rid ~= RAWINPUTDEVICE(0x0001, 0x0005, flags, handle);
+					rid ~= RAWINPUTDEVICE(0x0001, 0x0004, flags, handle);
+					rid ~= RAWINPUTDEVICE(0x0001, 0x0008, flags, handle);
+				}
+				if (osConfig & OSConfigFlags.win_XInput) {
+					import iota.controls.backend.windows;
+					XInputEnable(256);
+					for (int i ; i < 4 ; i++) {
+						XInputDevice x = new XInputDevice(i, (config & ConfigFlags.gc_TriggerMode) != 0);
+						if (!x.isInvalidated) {
+							devList ~= x;
+						}
+					}
+				}
 			}
 			if (RegisterRawInputDevices(rid.ptr, cast(UINT)rid.length, cast(UINT)(RAWINPUTDEVICE.sizeof)) == FALSE) {
 				return InputInitializationStatus.win_RawInputError;
@@ -101,7 +113,7 @@ public int initInput(uint config = 0, uint osConfig = 0) nothrow {
 						keyb = k;
 						break;
 					default:	//Must be RIM_TYPEHID
-						debug writeln("Other device: ", data[0..nameRes]);	//For now, just print whatever name we get.
+						//debug writeln("Other device: ", data[0..nameRes]);	//For now, just print whatever name we get.
 						break;
 				}
 				//if (keyb is null) keyb = new Keyboard();

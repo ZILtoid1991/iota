@@ -50,13 +50,13 @@ Note: Must be deinitialized manually.
 
 Keyboard and mouse works without much issues while using the legacy API. A known bug is that it sometimes generates an additional empty event if the Alt key is pressed (because some people thought it's a good idea to dedicate a whole modifier key for the menubar), this will be fixed in a later release, likely by optionally disabling it.
 
-XInput is implemented and works. There should be a way to detect whether a device is rumble capable or not, but it doesn't work, so it's assumed that all controllers have this capability.
+XInput is implemented and works.
 
 #### Raw input
 
 This library is (mostly) equipped to handle raw input data. There was a bug that made handle lookup not working, this is no longer the case.
 
-I plan to make game controllers working via RawInput, but that will be a bit more work due to scarce documentation, but after that it'll enable some "forbidden" features of the XBox One/Series controller's to be used on Windows...
+I plan to make game controllers working via RawInput, but that will be a bit more work due to scarce documentation...
 
 ### Linux
 

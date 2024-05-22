@@ -108,6 +108,10 @@ public enum OSConfigFlags : uint {
 	win_Wintab					=	1 << 1,
 	///Disables hotkey handling on Windows.
 	win_DisableHotkeys			=	1 << 2,
+	///Enables rawinput for game controllers.
+	win_RawInputGC				=	1 << 3,
+	///Use XInput for game controllers.
+	win_XInput					=	1 << 4,
 	///Enables x11 input extensions.
 	x11_InputExtensions			=	1 << 0,
 }

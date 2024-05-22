@@ -136,7 +136,6 @@ public class RawGameController : GameController {
 }
 /**
  * Implements functionalities related to XInput game controller devices. (Windows)
- * Note: maybe implement polling through RawInput instead.
  */
 version (Windows) public class XInputDevice : GameController {
 	///Passed to XInputSetState.

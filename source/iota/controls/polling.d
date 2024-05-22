@@ -79,7 +79,8 @@ version (Windows) {
 		MSG msg;
 		BOOL bret = PeekMessageW(&msg, null, 0, 0, PM_REMOVE);
 		if (bret) {
-			output.timestamp = msg.time * 1000L;
+			version (iota_ostimestamp) output.timestamp = msg.time * 1000L;
+			else output.timestamp = getTimestamp();
 			output.handle = msg.hwnd;
 			auto message = msg.message & 0xFF_FF;
 			if (!(Keyboard.isMenuKeyDisabled() && (message == WM_SYSKEYDOWN || message == WM_SYSKEYUP)) || 
@@ -384,9 +385,9 @@ version (Windows) {
 							break;
 						default: //Must be RIM_TYPEHID
 							// BEGIN OF OPTIONAL DATA DUMP BLOCK DO NOT REMOVE!!! //
-							output.type = InputEventType.Debug_DataDump;
+							/* output.type = InputEventType.Debug_DataDump;
 							output.clipboard.data = &rawInput.data.hid.bRawData;
-							output.clipboard.length = rawInput.data.hid.dwSizeHid * rawInput.data.hid.dwCount;
+							output.clipboard.length = rawInput.data.hid.dwSizeHid * rawInput.data.hid.dwCount; */
 							//  END OF OPTIONAL DATA DUMP BLOCK DO NOT REMOVE!!!  //
 							break;
 					}
