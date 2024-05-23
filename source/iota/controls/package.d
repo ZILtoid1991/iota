@@ -43,6 +43,8 @@ public int initInput(uint config = 0, uint osConfig = 0) nothrow {
 		} */
 		if (osConfig & OSConfigFlags.win_RawInput) {
 			const DWORD flags = 0; //= 0x00002000 | RIDEV_NOHOTKEYS;
+			//const DWORD disableHotkeys = (osConfig & OSConfigFlags.win_DisableHotkeys) ? RIDEV_NOHOTKEYS : 0;
+			if (osConfig & OSConfigFlags.win_DisableHotkeys) Keyboard.setMenuKeyDisabled(true);
 			HWND handle = null;
 			RAWINPUTDEVICE[] rid;
 			rid ~= RAWINPUTDEVICE(0x0001, 0x0006, flags, handle);

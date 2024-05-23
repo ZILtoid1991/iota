@@ -56,7 +56,7 @@ public class OSWindow {
 	///Handle to the window. Used for both automatic reference counting and for arguments in the I/O system.
 	protected WindowH			windowHandle;
 	///Contains various statusflags of the window.
-	protected Status			statusFlags;
+	protected Status			status;
 	///Window renderer should be kept here to ensure safe destruction.
 	public FrameBufferRenderer	renderer;
 	public static InputEvent	lastInputEvent;
@@ -178,12 +178,15 @@ public class OSWindow {
 	 *   parent = Parent if exists, null otherwise.
 	 */
 	public this(io_str_t title, io_str_t name, int x, int y, int w, int h, ulong flags,
-			WindowBitmap icon = null, WindowMenu menu = null, OSWindow parent = null) {
+			WindowBitmap icon = null, OSWindow parent = null) {
 		version (Windows) {
 			registeredClass.cbSize = WNDCLASSEXW.sizeof;
 			registeredClass.style = CS_HREDRAW | CS_VREDRAW | CS_OWNDC;
 			registeredClass.hInstance = mainInst;
 			registeredClass.lpfnWndProc = &wndprocCallback;
+			registeredClass.hbrBackground = GetSysColorBrush(COLOR_3DFACE);
+			registeredClass.hCursor = LoadCursor(null, IDC_ARROW);
+			registeredClass.hIcon = LoadIcon(null, IDI_APPLICATION);
 			classname = toUTF16z(name);
 			registeredClass.lpszClassName = classname;
 			regClResult = RegisterClassExW(&registeredClass);
@@ -191,7 +194,7 @@ public class OSWindow {
 				auto errorCode = GetLastError();
 				throw new WindowCreationException("Failed to register window class!", errorCode);
 			}
-			DWORD dwStyle, dwExStyle;
+			DWORD dwStyle = WS_OVERLAPPEDWINDOW, dwExStyle;
 			if (flags & WindowStyleIDs.Border)
 				dwStyle |= WS_BORDER;
 			if (flags & WindowStyleIDs.Caption)
@@ -237,6 +240,12 @@ public class OSWindow {
 				auto errorCode = GetLastError();
 				throw new WindowCreationException("Failed to create window!", errorCode);
 			}
+			/* NONCLIENTMETRICSW ncm;
+			ncm.cbSize = NONCLIENTMETRICSW.sizeof;
+			SystemParametersInfoW(SPI_GETNONCLIENTMETRICS, NONCLIENTMETRICSW.sizeof, &ncm, 0);
+			HFONT hFont = CreateFontIndirectW(&ncm.lfMessageFont);
+			SendMessageW(windowHandle, WM_SETFONT, cast(WPARAM)hFont, TRUE); */
+
 			refCount ~= this;
 			SetLayeredWindowAttributes(windowHandle, 0, 0xFF, LWA_ALPHA);
 			ShowWindow(windowHandle, SW_RESTORE);
@@ -299,8 +308,8 @@ public class OSWindow {
 	///Note to end user: DO NOT USE! IT IS MADE PUBLIC DUE TO ANOTHER PACKAGE NEEDING IT!
 	///Returns the last window event code, then clears the variable that stored it.
 	public Status getWindowStatus() @nogc @safe pure nothrow {
-		Status result = statusFlags;
-		statusFlags = Status.init;
+		Status result = status;
+		status = Status.init;
 		return result;
 	}
 	/**
@@ -402,15 +411,15 @@ public class OSWindow {
 			case WM_DESTROY, WM_NCDESTROY:
 				return 0;
 			case WM_CLOSE:
-				statusFlags = Status.Quit;
+				status = Status.Quit;
 				lastInputEvent.handle = this.windowHandle;
 				lastInputEvent.type = InputEventType.WindowClose;
 				return 0;
 			case WM_QUIT:
-				statusFlags = Status.Quit;
+				status = Status.Quit;
 				goto default;
 			case WM_MOVE, WM_MOVING:
-				statusFlags = Status.Move;
+				status = Status.Move;
 				with (lastInputEvent) {
 					handle = this.windowHandle;
 					type = InputEventType.WindowMove;
@@ -421,7 +430,7 @@ public class OSWindow {
 				}
 				goto default;
 			case WM_SIZE, WM_SIZING:
-				statusFlags = Status.Resize;
+				status = Status.Resize;
 				with (lastInputEvent) {
 					handle = this.windowHandle;
 					type = InputEventType.WindowResize;
@@ -432,7 +441,7 @@ public class OSWindow {
 				}
 				goto default;
 			case WM_INPUTLANGCHANGEREQUEST, WM_INPUTLANGCHANGE:
-				statusFlags = Status.InputLangCh;
+				status = Status.InputLangCh;
 				inputLang = cast(uint)lParam;
 				with (lastInputEvent) {
 					handle = this.windowHandle;
@@ -443,6 +452,9 @@ public class OSWindow {
 				if (drawDeleg !is null)
 					drawDeleg(DrawParams(windowHandle, msg, wParam, lParam));
 				goto default;
+			case WM_SYSCHAR, WM_SYSDEADCHAR, WM_SYSKEYUP, WM_SYSKEYDOWN:
+
+				return 0;
 			/* case WM_NCCALCSIZE:			
 				if (wParam)
 					return 0x30;

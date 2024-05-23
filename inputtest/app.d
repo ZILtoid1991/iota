@@ -44,8 +44,9 @@ int main(string[] args) {
 		return 0;
 	}
 
-	OSWindow inputSurface = new OSWindow("Iota input test", "inputSurface", 100, 100, 640, 480, WindowStyleIDs.Default);
-	inputSurface.drawDeleg = &inputSurface.testDraw;
+	OSWindow inputSurface = new OSWindow("Iota input test", "inputSurface", 100, 100, 640, 480, WindowStyleIDs.Default | 
+			WindowStyleIDs.AppWindow | WindowStyleIDs.Caption);
+	//inputSurface.drawDeleg = &inputSurface.testDraw;
 	//inputSurface.maximizeWindow();
 	//Thread.sleep(msecs(10_000));
 	int errCode = initInput(options.configFlags, options.osconfigFlags);

@@ -83,7 +83,8 @@ version (Windows) {
 			else output.timestamp = getTimestamp();
 			output.handle = msg.hwnd;
 			auto message = msg.message & 0xFF_FF;
-			if (!(Keyboard.isMenuKeyDisabled() && (message == WM_SYSKEYDOWN || message == WM_SYSKEYUP)) || 
+			if (!(Keyboard.isMenuKeyDisabled() && (message == WM_SYSKEYDOWN || message == WM_SYSKEYUP || 
+					message == WM_SYSCHAR || message == WM_SYSDEADCHAR)) || 
 					!(Keyboard.isMetaKeyDisabled() && (message == WM_KEYDOWN || message == WM_KEYUP) && (msg.wParam == VK_LWIN 
 					|| msg.wParam == VK_RWIN)) ||
 					!(Keyboard.isMetaKeyCombDisabled() && (message == WM_KEYDOWN || message == WM_KEYUP) && 
@@ -255,20 +256,14 @@ version (Windows) {
 	}
 	///Polls inputs using the more modern RawInput API.
 	package int poll_win_RawInput(ref InputEvent output) nothrow @nogc {
-		/* foreach (ref InputEvent key; mouse_inputEventBuff) {
-			if (key.type != InputEventType.init) {
-				output = key;
-				key.type = InputEventType.init;
-				return 1;
-			}
-		} */
 		MSG msg;
 		BOOL bret = PeekMessageW(&msg, null, 0, 0, PM_REMOVE);
 		if (bret) {
 			output.timestamp = msg.time * 1000L;
 			output.handle = msg.hwnd;
 			auto message = msg.message & 0xFF_FF;
-			if (!(Keyboard.isMenuKeyDisabled() && (message == WM_SYSKEYDOWN || message == WM_SYSKEYUP)) || 
+			if (!(Keyboard.isMenuKeyDisabled() && (message == WM_SYSKEYDOWN || message == WM_SYSKEYUP || message == WM_SYSCHAR 
+					|| message == WM_SYSDEADCHAR)) || 
 					!(Keyboard.isMetaKeyDisabled() && (message == WM_KEYDOWN || message == WM_KEYUP) && (msg.wParam == VK_LWIN 
 					|| msg.wParam == VK_RWIN)) ||
 					!(Keyboard.isMetaKeyCombDisabled() && (message == WM_KEYDOWN || message == WM_KEYUP) && 
@@ -312,7 +307,6 @@ version (Windows) {
 					}
 					//output.textIn.isClipboard = false;
 					break;
-				
 				case WM_INPUT:		//Raw input
 					/* UINT hdrSize = RAWINPUT.sizeof;
 					ubyte[RAWINPUT.sizeof] hdr; */
@@ -381,7 +375,7 @@ version (Windows) {
 							if (output.source is null) output.source = keyb;
 							output.button.dir = cast(ubyte)((~inputData.Flags) & 1);
 							output.button.id = translatePS2MC(inputData.MakeCode, (inputData.Flags & 2) == 2);
-							output.button.aux = (cast(Keyboard)output.source).getModifiers();
+							output.button.aux = (cast(Keyboard)output.source).getModifiers();						
 							break;
 						default: //Must be RIM_TYPEHID
 							// BEGIN OF OPTIONAL DATA DUMP BLOCK DO NOT REMOVE!!! //
