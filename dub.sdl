@@ -10,7 +10,7 @@ dependency "bindbc-opengl" version="*"
 dependency "x11d" version="*"
 versions "GL_AllowDeprecated"
 libs "asound" "gl" "x11" platform="linux"
-libs "winmm" "gdi32" "user32" "opengl32" "xinput" "ole32" platform="windows"
+libs "winmm" "gdi32" "user32" "opengl32" "xinput" "ole32" "comctl32" platform="windows"
 //lflags "/subsystem:windows" "/entry:wmainCRTStartup" platform="windows" compiler="DMD"
 subPackage {
     name "audiotest"
@@ -30,4 +30,5 @@ subPackage {
     dependency "iota" version="*"
     dependency "darg" version="*"
     targetType "executable"
+    dflags "resources.obj" platform="windows"
 }

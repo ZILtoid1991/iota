@@ -4,7 +4,6 @@ import core.thread;
 import iota.controls;
 import iota.controls.keybscancodes;
 import iota.window;
-import iota.etc.osentry;
 
 import darg;
 
@@ -30,6 +29,7 @@ immutable usage = usageString!Options("IOTA input tester");
 immutable help = helpString!Options();
 
 int main(string[] args) {
+	initWindow_ext();
 	Options options;
 
 	try {

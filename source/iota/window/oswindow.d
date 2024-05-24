@@ -452,9 +452,9 @@ public class OSWindow {
 				if (drawDeleg !is null)
 					drawDeleg(DrawParams(windowHandle, msg, wParam, lParam));
 				goto default;
-			case WM_SYSCHAR, WM_SYSDEADCHAR, WM_SYSKEYUP, WM_SYSKEYDOWN:
+			/* case WM_SYSCHAR, WM_SYSDEADCHAR, WM_SYSKEYUP, WM_SYSKEYDOWN:
 
-				return 0;
+				return 0; */
 			/* case WM_NCCALCSIZE:			
 				if (wParam)
 					return 0x30;
