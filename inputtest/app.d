@@ -44,7 +44,7 @@ int main(string[] args) {
 		return 0;
 	}
 
-	OSWindow inputSurface = new OSWindow("Iota input test", "inputSurface", 100, 100, 640, 480, WindowStyleIDs.Default | 
+	OSWindow inputSurface = new OSWindow("Iota input test", "inputSurface", -1, -1, 640, 480, WindowStyleIDs.Default | 
 			WindowStyleIDs.AppWindow | WindowStyleIDs.Caption);
 	//inputSurface.drawDeleg = &inputSurface.testDraw;
 	//inputSurface.maximizeWindow();

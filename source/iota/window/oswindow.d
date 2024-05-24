@@ -4,6 +4,9 @@ version (Windows) {
 	import core.sys.windows.windows;
 	import core.sys.windows.wtypes;
 	import std.conv : to;
+	extern(Windows) HRESULT SetWindowTheme(HWND, wchar*, wchar*);
+	pragma(lib, "user32.lib");
+	pragma(lib, "uxtheme.lib");
 } else {
 	import x11.Xlib;
 	import x11.X;
@@ -181,7 +184,7 @@ public class OSWindow {
 			WindowBitmap icon = null, OSWindow parent = null) {
 		version (Windows) {
 			registeredClass.cbSize = WNDCLASSEXW.sizeof;
-			registeredClass.style = CS_HREDRAW | CS_VREDRAW | CS_OWNDC;
+			registeredClass.style = CS_HREDRAW | CS_VREDRAW | CS_OWNDC ;
 			registeredClass.hInstance = mainInst;
 			registeredClass.lpfnWndProc = &wndprocCallback;
 			registeredClass.hbrBackground = GetSysColorBrush(COLOR_3DFACE);
@@ -194,8 +197,8 @@ public class OSWindow {
 				auto errorCode = GetLastError();
 				throw new WindowCreationException("Failed to register window class!", errorCode);
 			}
-			DWORD dwStyle = WS_OVERLAPPEDWINDOW, dwExStyle;
-			if (flags & WindowStyleIDs.Border)
+			DWORD dwStyle = WS_OVERLAPPEDWINDOW | WS_VISIBLE, dwExStyle = WS_EX_APPWINDOW;
+			/*if (flags & WindowStyleIDs.Border)
 				dwStyle |= WS_BORDER;
 			if (flags & WindowStyleIDs.Caption)
 				dwStyle |= WS_CAPTION;
@@ -224,7 +227,7 @@ public class OSWindow {
 			if (flags & WindowStyleIDs.DragNDrop)
 				dwExStyle |= WS_EX_ACCEPTFILES;
 			if (flags & WindowStyleIDs.ContextHelp)
-				dwExStyle |= WS_EX_CONTEXTHELP;
+				dwExStyle |= WS_EX_CONTEXTHELP; */
 			
 			if (x <= 0) x = CW_USEDEFAULT;
 			if (y <= 0) y = CW_USEDEFAULT;
@@ -234,7 +237,9 @@ public class OSWindow {
 			HWND parentHndl = null;
 			if (parent !is null)
 				parentHndl = parent.getHandle();
-			windowHandle = CreateWindowExW(dwExStyle, classname, windowname, dwStyle, x, y, w, h, parentHndl, null, mainInst, 
+			/* windowHandle = CreateWindowExW(dwExStyle, classname, windowname, dwStyle, x, y, w, h, parentHndl, null, mainInst, 
+					null); */
+			windowHandle = CreateWindowW(classname, windowname, dwStyle, x, y, w, h, parentHndl, null, mainInst, 
 					null);
 			if (!windowHandle) {
 				auto errorCode = GetLastError();
@@ -251,7 +256,7 @@ public class OSWindow {
 			ShowWindow(windowHandle, SW_RESTORE);
 			UpdateWindow(windowHandle);
 		} else {
-			string nameUTF8 = toUTF8(name);
+			string nameUTF8 = toUTF8(title);
 			windowname = toStringz(nameUTF8);
 			Window pH = root;
 			if (parent !is null)
