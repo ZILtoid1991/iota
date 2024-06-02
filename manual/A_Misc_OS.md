@@ -10,4 +10,18 @@ The command to compile the resources are:
 windres resources.rc -o resources.obj
 ```
 
-Applications work without it, but will have some limitiations, e.g. an older style GUI.
+One can add it to an SDLang package as such:
+
+```s
+dflags "resources.obj" platform="windows"
+```
+
+For JSON packages, it works something like this:
+
+```json
+
+```
+
+Applications work without it, but will have some limitations, e.g. an older style GUI.
+
+(NOTE: even)

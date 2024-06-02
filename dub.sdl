@@ -30,5 +30,5 @@ subPackage {
     dependency "iota" version="*"
     dependency "darg" version="*"
     targetType "executable"
-    dflags "resources.obj" platform="windows"
+    dflags "resources.res" platform="windows"
 }

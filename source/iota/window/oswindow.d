@@ -3,10 +3,15 @@ module iota.window.oswindow;
 version (Windows) {
 	import core.sys.windows.windows;
 	import core.sys.windows.wtypes;
+	import core.sys.windows.commctrl;
 	import std.conv : to;
-	extern(Windows) HRESULT SetWindowTheme(HWND, wchar*, wchar*);
-	pragma(lib, "user32.lib");
-	pragma(lib, "uxtheme.lib");
+	/* enum STAP_ALLOW_NONCLIENT = 1<<0;
+	enum STAP_ALLOW_CONTROLS = 1<<1;
+	enum STAP_ALLOW_WEBCONTENT = 1<<2;
+	extern (Windows) nothrow @nogc {
+		void SetThemeAppProperties(DWORD dwFlags);
+	} */
+	
 } else {
 	import x11.Xlib;
 	import x11.X;
@@ -30,7 +35,7 @@ import iota.controls.types;
  */
 public class OSWindow {
 	///Defines Window status values, also used on Windows for event handling.
-	public enum Status {
+	public enum Status : ubyte {
 		init,
 		Quit,
 		Minimize,
@@ -58,8 +63,10 @@ public class OSWindow {
 	public static OSWindow[]	refCount;
 	///Handle to the window. Used for both automatic reference counting and for arguments in the I/O system.
 	protected WindowH			windowHandle;
-	///Contains various statusflags of the window.
+	///Contains various statuscodes of the window.
 	protected Status			status;
+	///Stores various flags related to the window.
+	protected ushort			flags;
 	///Window renderer should be kept here to ensure safe destruction.
 	public FrameBufferRenderer	renderer;
 	public static InputEvent	lastInputEvent;
@@ -97,7 +104,7 @@ public class OSWindow {
 		}
 		//protected static HINSTANCE	hInstance;
 		///Stores registered class info. Each window has its own registered class by default.
-		protected WNDCLASSEXW		registeredClass;
+		WNDCLASSEXW* registeredClass;
 		protected ATOM				regClResult;
 		protected LPCWSTR			classname, windowname;
 		protected HGLRC				glRenderingContext;
@@ -111,6 +118,11 @@ public class OSWindow {
 			//However, this way we can possibly eliminate the need for use of `WinMain` and might also piss off some
 			//people at Microsoft.
 			mainInst = GetModuleHandle(null);
+
+			INITCOMMONCONTROLSEX cctrl;
+			cctrl.dwICC = 0x0000_ffff;
+			assert(InitCommonControlsEx(&cctrl) == TRUE);
+			/* SetThemeAppProperties(0x7); */
 		}
 	} else {
 		public static Display* mainDisplay;
@@ -183,16 +195,19 @@ public class OSWindow {
 	public this(io_str_t title, io_str_t name, int x, int y, int w, int h, ulong flags,
 			WindowBitmap icon = null, OSWindow parent = null) {
 		version (Windows) {
-			registeredClass.cbSize = WNDCLASSEXW.sizeof;
-			registeredClass.style = CS_HREDRAW | CS_VREDRAW | CS_OWNDC ;
+			
+			classname = toUTF16z(name);
+			registeredClass = new WNDCLASSEXW(WNDCLASSEXW.sizeof, CS_HREDRAW | CS_VREDRAW | CS_OWNDC, 
+					&wndprocCallback, 0, 0, mainInst, LoadIcon(null, IDI_APPLICATION), LoadCursor(null, IDC_ARROW), 
+					GetSysColorBrush(COLOR_APPWORKSPACE), null, classname, null);
+			/* registeredClass.style = CS_HREDRAW | CS_VREDRAW | CS_OWNDC;
 			registeredClass.hInstance = mainInst;
 			registeredClass.lpfnWndProc = &wndprocCallback;
 			registeredClass.hbrBackground = GetSysColorBrush(COLOR_3DFACE);
 			registeredClass.hCursor = LoadCursor(null, IDC_ARROW);
 			registeredClass.hIcon = LoadIcon(null, IDI_APPLICATION);
-			classname = toUTF16z(name);
-			registeredClass.lpszClassName = classname;
-			regClResult = RegisterClassExW(&registeredClass);
+			registeredClass.lpszClassName = classname; */
+			regClResult = RegisterClassExW(registeredClass);
 			if (!regClResult) {
 				auto errorCode = GetLastError();
 				throw new WindowCreationException("Failed to register window class!", errorCode);
@@ -252,7 +267,7 @@ public class OSWindow {
 			SendMessageW(windowHandle, WM_SETFONT, cast(WPARAM)hFont, TRUE); */
 
 			refCount ~= this;
-			SetLayeredWindowAttributes(windowHandle, 0, 0xFF, LWA_ALPHA);
+			//SetLayeredWindowAttributes(windowHandle, 0, 0xFF, LWA_ALPHA);
 			ShowWindow(windowHandle, SW_RESTORE);
 			UpdateWindow(windowHandle);
 		} else {
@@ -281,7 +296,7 @@ public class OSWindow {
 		version (Windows) {
 			if (glRenderingContext) wglDeleteContext(glRenderingContext);
 			DestroyWindow(windowHandle);
-			UnregisterClassW(registeredClass.lpszClassName, mainInst);
+			UnregisterClassW(classname, mainInst);
 		} else {
 			if (ic) XDestroyIC(ic);
 			if (im) XCloseIM(im);
@@ -456,6 +471,9 @@ public class OSWindow {
 			case WM_PAINT:
 				if (drawDeleg !is null)
 					drawDeleg(DrawParams(windowHandle, msg, wParam, lParam));
+				goto default;
+			case WM_SYSCOMMAND:
+				if (wParam == SC_KEYMENU) return 0;
 				goto default;
 			/* case WM_SYSCHAR, WM_SYSDEADCHAR, WM_SYSKEYUP, WM_SYSKEYDOWN:
 

@@ -41,6 +41,14 @@ public enum WindowStyleIDs : uint {
 	AppWindow	= 1<<15,
 	
 }
+/** 
+ * Defines various window option flags that can be supplied during creating a new window.
+ */
+public enum WindowOptionFlags : ulong {
+	///Disables menu key behavior, without it the Alt key can cause the keyboard input to hang, which is especially a
+	///concern with applications without a menubar.
+	DisableMenuKey	=	1L<<32L,
+}
 /**
  * Implements a bitmap to be used with this library, mainly its windowing elements.
  */

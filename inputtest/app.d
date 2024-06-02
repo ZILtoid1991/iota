@@ -29,7 +29,7 @@ immutable usage = usageString!Options("IOTA input tester");
 immutable help = helpString!Options();
 
 int main(string[] args) {
-	initWindow_ext();
+	//initWindow_ext();
 	Options options;
 
 	try {

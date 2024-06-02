@@ -83,16 +83,16 @@ version (Windows) {
 			else output.timestamp = getTimestamp();
 			output.handle = msg.hwnd;
 			auto message = msg.message & 0xFF_FF;
-			if (!(Keyboard.isMenuKeyDisabled() && (message == WM_SYSKEYDOWN || message == WM_SYSKEYUP || 
+			/* if (!(Keyboard.isMenuKeyDisabled() && (message == WM_SYSKEYDOWN || message == WM_SYSKEYUP || 
 					message == WM_SYSCHAR || message == WM_SYSDEADCHAR)) || 
 					!(Keyboard.isMetaKeyDisabled() && (message == WM_KEYDOWN || message == WM_KEYUP) && (msg.wParam == VK_LWIN 
 					|| msg.wParam == VK_RWIN)) ||
 					!(Keyboard.isMetaKeyCombDisabled() && (message == WM_KEYDOWN || message == WM_KEYUP) && 
-					(keyb.getModifiers | KeyboardModifiers.Meta))) {
+					(keyb.getModifiers | KeyboardModifiers.Meta))) { */
 				//MSG msg0 = msg;
 				//TranslateMessage(&msg0);
-				DispatchMessageW(&msg);
-			}
+			DispatchMessageW(&msg);
+			/* } */
 			if (Keyboard.isTextInputEn()) {
 				TranslateMessage(&msg);     //This function only translates messages that are mapped to characters, but we still need to translate any keys to text command events
 				if ((msg.message & 0xFF_FF) == WM_KEYDOWN) {
@@ -262,14 +262,14 @@ version (Windows) {
 			output.timestamp = msg.time * 1000L;
 			output.handle = msg.hwnd;
 			auto message = msg.message & 0xFF_FF;
-			if (!(Keyboard.isMenuKeyDisabled() && (message == WM_SYSKEYDOWN || message == WM_SYSKEYUP || message == WM_SYSCHAR 
+			/* if (!(Keyboard.isMenuKeyDisabled() && (message == WM_SYSKEYDOWN || message == WM_SYSKEYUP || message == WM_SYSCHAR 
 					|| message == WM_SYSDEADCHAR)) || 
 					!(Keyboard.isMetaKeyDisabled() && (message == WM_KEYDOWN || message == WM_KEYUP) && (msg.wParam == VK_LWIN 
 					|| msg.wParam == VK_RWIN)) ||
 					!(Keyboard.isMetaKeyCombDisabled() && (message == WM_KEYDOWN || message == WM_KEYUP) && 
-					(keyb.getModifiers | KeyboardModifiers.Meta))) {
-				DispatchMessageW(&msg);
-			}
+					(keyb.getModifiers | KeyboardModifiers.Meta))) { */
+			DispatchMessageW(&msg);
+			/* } */
 			if (Keyboard.isTextInputEn()) {
 				TranslateMessage(&msg);     //This function only translates messages that are mapped to characters, but we still need to translate any keys to text command events
 				if ((msg.message & 0xFF_FF) == WM_KEYDOWN) {
