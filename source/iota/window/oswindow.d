@@ -469,8 +469,13 @@ public class OSWindow {
 				}
 				goto default;
 			case WM_PAINT:
-				if (drawDeleg !is null)
+				if (drawDeleg !is null) {
 					drawDeleg(DrawParams(windowHandle, msg, wParam, lParam));
+				} else {
+					PAINTSTRUCT ps;
+        			BeginPaint(windowHandle, &ps);
+        			EndPaint(windowHandle, &ps);
+				}
 				goto default;
 			case WM_SYSCOMMAND:
 				if (wParam == SC_KEYMENU) return 0;
