@@ -104,7 +104,7 @@ public class OSWindow {
 		}
 		//protected static HINSTANCE	hInstance;
 		///Stores registered class info. Each window has its own registered class by default.
-		WNDCLASSEXW* registeredClass;
+		WNDCLASSW* registeredClass;
 		protected ATOM				regClResult;
 		protected LPCWSTR			classname, windowname;
 		protected HGLRC				glRenderingContext;
@@ -197,9 +197,9 @@ public class OSWindow {
 		version (Windows) {
 			
 			classname = toUTF16z(name);
-			registeredClass = new WNDCLASSEXW(WNDCLASSEXW.sizeof, CS_HREDRAW | CS_VREDRAW | CS_OWNDC, 
-					&wndprocCallback, 0, 0, mainInst, LoadIcon(null, IDI_APPLICATION), LoadCursor(null, IDC_ARROW), 
-					GetSysColorBrush(COLOR_APPWORKSPACE), null, classname, null);
+			registeredClass = new WNDCLASSW(CS_HREDRAW | CS_VREDRAW | CS_OWNDC, &wndprocCallback, 0, 0, mainInst, 
+					LoadIcon(null, IDI_APPLICATION), LoadCursor(null, IDC_ARROW), 
+					GetSysColorBrush(COLOR_APPWORKSPACE), null, classname);
 			/* registeredClass.style = CS_HREDRAW | CS_VREDRAW | CS_OWNDC;
 			registeredClass.hInstance = mainInst;
 			registeredClass.lpfnWndProc = &wndprocCallback;
@@ -207,12 +207,12 @@ public class OSWindow {
 			registeredClass.hCursor = LoadCursor(null, IDC_ARROW);
 			registeredClass.hIcon = LoadIcon(null, IDI_APPLICATION);
 			registeredClass.lpszClassName = classname; */
-			regClResult = RegisterClassExW(registeredClass);
+			regClResult = RegisterClassW(registeredClass);
 			if (!regClResult) {
 				auto errorCode = GetLastError();
 				throw new WindowCreationException("Failed to register window class!", errorCode);
 			}
-			DWORD dwStyle = WS_OVERLAPPEDWINDOW | WS_VISIBLE, dwExStyle = WS_EX_APPWINDOW;
+			DWORD dwStyle = WS_OVERLAPPEDWINDOW | WS_VISIBLE/* , dwExStyle = WS_EX_APPWINDOW */;
 			/*if (flags & WindowStyleIDs.Border)
 				dwStyle |= WS_BORDER;
 			if (flags & WindowStyleIDs.Caption)
