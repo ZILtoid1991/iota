@@ -18,28 +18,9 @@ version (Windows) {
 	alias WindowH = Window;
 	//alias WindowH = void*;
 }
-/** 
- * Window style identifiers.
- * These can be ORed together.
- */
-public enum WindowStyleIDs : uint {
-	Border		= 1<<0,
-	Caption		= 1<<1,
-	Child		= 1<<2,
-	Parent		= 1<<3,
-	Disabled	= 1<<4,
-	Resizable	= 1<<5,
-	Minimized	= 1<<6,
-	Maximized	= 1<<7,
-	MinimizeBtn	= 1<<8,
-	MaximizeBtn	= 1<<9,
-	PopUp		= 1<<10,
-	Visible		= 1<<11,
-	Default		= 1<<12,
-	DragNDrop	= 1<<13,
-	ContextHelp	= 1<<14,
-	AppWindow	= 1<<15,
-	
+public enum WindowCfgFlags {
+	FixedSize			=	1 << 0,
+	IgnoreMenuKey		=	1 << 16,
 }
 /** 
  * Defines various window option flags that can be supplied during creating a new window.

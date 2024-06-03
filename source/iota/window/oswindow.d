@@ -66,7 +66,7 @@ public class OSWindow {
 	///Contains various statuscodes of the window.
 	protected Status			status;
 	///Stores various flags related to the window.
-	protected ushort			flags;
+	protected uint				flags;
 	///Window renderer should be kept here to ensure safe destruction.
 	public FrameBufferRenderer	renderer;
 	public static InputEvent	lastInputEvent;
@@ -83,14 +83,12 @@ public class OSWindow {
 			switch (msg) {
 				case WM_CREATE, WM_NCCREATE:
 					return DefWindowProcW(hWnd, msg, wParam, lParam);
-				/+case WM_NCCREATE:
-					DefWindowProcW(windowHandle, msg, wParam, lParam);+/
 				default:
 					foreach (OSWindow key; refCount) {
 						if (key.getHandle() == hWnd)
 							return key.wndCallback(msg, wParam, lParam);
 					}
-					return LRESULT.init;
+					return DefWindowProcW(hWnd, msg, wParam, lParam);
 			}
 		}
 		debug public void testDraw(DrawParams params) @system nothrow {
@@ -187,13 +185,14 @@ public class OSWindow {
 	 *   y = Y coordinate of the window.
 	 *   w = Width of the window.
 	 *   h = Height of the window.
-	 *   flags = Configuration flags. Bit 0-31: Window style flags, bit 32-47: Output surface configuration
+	 *   flags = Configuration flags.
 	 *   icon = The icon of the window, if any.
 	 *   menu = The menubar of the window, if any.
 	 *   parent = Parent if exists, null otherwise.
 	 */
-	public this(io_str_t title, io_str_t name, int x, int y, int w, int h, ulong flags,
+	public this(io_str_t title, io_str_t name, int x, int y, int w, int h, uint flags,
 			WindowBitmap icon = null, OSWindow parent = null) {
+		this.flags = flags;
 		version (Windows) {
 			
 			classname = toUTF16z(name);
@@ -433,7 +432,7 @@ public class OSWindow {
 				}
 				goto default;
 			case WM_SYSCOMMAND:
-				if (wParam == SC_KEYMENU) return 0;
+				if (wParam == SC_KEYMENU && (flags & WindowCfgFlags.IgnoreMenuKey)) return 0;
 				goto default;
 			default:
 				return DefWindowProcW(windowHandle, msg, wParam, lParam);

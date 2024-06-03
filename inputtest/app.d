@@ -72,7 +72,7 @@ int main(string[] args) {
 					hd.applyEffect(HapticDevice.Capabilities.RightMotor, 0, event.button.auxF);
 				}
 			}
-			writeln(event.toString());
+			//writeln(event.toString());
 		}
 		Thread.sleep(dur!"msecs"(10));
 	}

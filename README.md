@@ -10,8 +10,8 @@ Input-output (audio, controls, etc) library for D. Intended as a D language nati
 |Keyboard                  |Legacy: Works; Raw: Works           |X11: mostly works                   |
 |Mouse                     |Legacy: Works; Raw: Works           |X11: in progress                    |
 |Pen Tablet                |Not yet implemented                 |Not yet implemented                 |
-|Game controllers          |XInput : works                      |Not yet implemented                 |
-|Windowing                 |A bit buggy                         |X11: preliminary                    |
+|Game controllers          |XInput: works                       |Not yet implemented                 |
+|Windowing                 |Works                               |X11: preliminary                    |
 |OpenGL output             |In progress, not working yet        |In progress                         |
 
 MacOSX is not yet supported due to lack of hardware. Please consider contributing to this project!
@@ -48,7 +48,7 @@ Note: Must be deinitialized manually.
 
 ### Windows
 
-Keyboard and mouse works without much issues while using the legacy API. A known bug is that it sometimes generates an additional empty event if the Alt key is pressed (because some people thought it's a good idea to dedicate a whole modifier key for the menubar), this will be fixed in a later release, likely by optionally disabling it.
+Keyboard and mouse works without much issues while using the legacy API. A known bug is that it sometimes generates an additional empty event if the Alt key is pressed (because some people thought it's a good idea to dedicate a whole modifier key for the menubar), this can be mitigated by supplying the window a `WindowCfgFlags.IgnoreMenuKey`. Menubars are not implemented currently.
 
 XInput is implemented and works.
 
@@ -66,7 +66,7 @@ I/O without extensions now works, XInput2 support will be added once I find or s
 
 ### Windows
 
-Got most of the non-basic stuff working, but the titlebar does not display a name, while the rest of the window is in an older GUI style no matter what. I've exhausted every option I could.
+Got most of the non-basic stuff working. Bug related to window styles fixed.
 
 ### Linux
 
