@@ -66,7 +66,7 @@ I/O without extensions now works, XInput2 support will be added once I find or s
 
 ### Windows
 
-Got most of the non-basic stuff working. If you find anything else not working as should, then please tell me!
+Got most of the non-basic stuff working, but the titlebar does not display a name, while the rest of the window is in an older GUI style no matter what. I've exhausted every option I could.
 
 ### Linux
 
