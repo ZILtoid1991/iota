@@ -220,12 +220,7 @@ public class OSWindow {
 				auto errorCode = GetLastError();
 				throw new WindowCreationException("Failed to create window!", errorCode);
 			}
-			/* NONCLIENTMETRICSW ncm;
-			ncm.cbSize = NONCLIENTMETRICSW.sizeof;
-			SystemParametersInfoW(SPI_GETNONCLIENTMETRICS, NONCLIENTMETRICSW.sizeof, &ncm, 0);
-			HFONT hFont = CreateFontIndirectW(&ncm.lfMessageFont);
-			SendMessageW(windowHandle, WM_SETFONT, cast(WPARAM)hFont, TRUE); */
-
+			
 			refCount ~= this;
 			//SetLayeredWindowAttributes(windowHandle, 0, 0xFF, LWA_ALPHA);
 			ShowWindow(windowHandle, SW_RESTORE);
@@ -440,14 +435,6 @@ public class OSWindow {
 			case WM_SYSCOMMAND:
 				if (wParam == SC_KEYMENU) return 0;
 				goto default;
-			/* case WM_SYSCHAR, WM_SYSDEADCHAR, WM_SYSKEYUP, WM_SYSKEYDOWN:
-
-				return 0; */
-			/* case WM_NCCALCSIZE:			
-				if (wParam)
-					return 0x30;
-				else
-					return 0; */
 			default:
 				return DefWindowProcW(windowHandle, msg, wParam, lParam);
 		}

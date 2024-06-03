@@ -31,19 +31,8 @@ public int initInput(uint config = 0, uint osConfig = 0) nothrow {
 	sys = new System(config, osConfig);
 	devList ~= sys;
 	version (Windows) {
-		/* if (config & ConfigFlags.gc_Enable) {
-			import iota.controls.backend.windows;
-			XInputEnable(256);
-			for (int i ; i < 4 ; i++) {
-				XInputDevice x = new XInputDevice(i, (config & ConfigFlags.gc_TriggerMode) != 0);
-				if (!x.isInvalidated) {
-					devList ~= x;
-				}
-			}
-		} */
 		if (osConfig & OSConfigFlags.win_RawInput) {
-			const DWORD flags = 0; //= 0x00002000 | RIDEV_NOHOTKEYS;
-			//const DWORD disableHotkeys = (osConfig & OSConfigFlags.win_DisableHotkeys) ? RIDEV_NOHOTKEYS : 0;
+			const DWORD flags = 0;
 			if (osConfig & OSConfigFlags.win_DisableHotkeys) Keyboard.setMenuKeyDisabled(true);
 			HWND handle = null;
 			RAWINPUTDEVICE[] rid;
