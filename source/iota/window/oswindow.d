@@ -104,7 +104,7 @@ public class OSWindow {
 		}
 		//protected static HINSTANCE	hInstance;
 		///Stores registered class info. Each window has its own registered class by default.
-		WNDCLASSW* registeredClass;
+		WNDCLASSW registeredClass;
 		protected ATOM				regClResult;
 		protected LPCWSTR			classname, windowname;
 		protected HGLRC				glRenderingContext;
@@ -197,53 +197,16 @@ public class OSWindow {
 		version (Windows) {
 			
 			classname = toUTF16z(name);
-			registeredClass = new WNDCLASSW(CS_HREDRAW | CS_VREDRAW | CS_OWNDC, &wndprocCallback, 0, 0, mainInst, 
+			registeredClass = WNDCLASSW(CS_HREDRAW | CS_VREDRAW | CS_OWNDC, &wndprocCallback, 0, 0, mainInst, 
 					LoadIcon(null, IDI_APPLICATION), LoadCursor(null, IDC_ARROW), 
-					GetSysColorBrush(COLOR_APPWORKSPACE), null, classname);
-			/* registeredClass.style = CS_HREDRAW | CS_VREDRAW | CS_OWNDC;
-			registeredClass.hInstance = mainInst;
-			registeredClass.lpfnWndProc = &wndprocCallback;
-			registeredClass.hbrBackground = GetSysColorBrush(COLOR_3DFACE);
-			registeredClass.hCursor = LoadCursor(null, IDC_ARROW);
-			registeredClass.hIcon = LoadIcon(null, IDI_APPLICATION);
-			registeredClass.lpszClassName = classname; */
-			regClResult = RegisterClassW(registeredClass);
+					GetSysColorBrush(COLOR_3DFACE), null, classname);
+			regClResult = RegisterClassW(&registeredClass);
 			if (!regClResult) {
 				auto errorCode = GetLastError();
 				throw new WindowCreationException("Failed to register window class!", errorCode);
 			}
-			DWORD dwStyle = WS_OVERLAPPEDWINDOW | WS_VISIBLE/* , dwExStyle = WS_EX_APPWINDOW */;
-			/*if (flags & WindowStyleIDs.Border)
-				dwStyle |= WS_BORDER;
-			if (flags & WindowStyleIDs.Caption)
-				dwStyle |= WS_CAPTION;
-			if (flags & WindowStyleIDs.Child)
-				dwStyle |= WS_CHILD;
-			if (flags & WindowStyleIDs.Disabled)
-				dwStyle |= WS_DISABLED;
-			if (flags & WindowStyleIDs.Resizable)
-				dwStyle |= WS_THICKFRAME;
-			if (flags & WindowStyleIDs.Maximized)
-				dwStyle |= WS_MAXIMIZE;
-			if (flags & WindowStyleIDs.Minimized)
-				dwStyle |= WS_MINIMIZE;
-			if (flags & WindowStyleIDs.MaximizeBtn)
-				dwStyle |= WS_MAXIMIZEBOX | WS_SYSMENU;
-			if (flags & WindowStyleIDs.MinimizeBtn)
-				dwStyle |= WS_MINIMIZEBOX | WS_SYSMENU;
-			if (flags & WindowStyleIDs.PopUp)
-				dwStyle |= WS_POPUPWINDOW;
-			if (flags & WindowStyleIDs.Visible)
-				dwStyle |= WS_VISIBLE;
-			if (flags & WindowStyleIDs.Default)
-				dwStyle |= WS_TILEDWINDOW | WS_VISIBLE;
-			if (flags & WindowStyleIDs.AppWindow)
-				dwExStyle |= WS_EX_APPWINDOW;
-			if (flags & WindowStyleIDs.DragNDrop)
-				dwExStyle |= WS_EX_ACCEPTFILES;
-			if (flags & WindowStyleIDs.ContextHelp)
-				dwExStyle |= WS_EX_CONTEXTHELP; */
-			
+			DWORD dwStyle = WS_OVERLAPPEDWINDOW | WS_VISIBLE;
+						
 			if (x <= 0) x = CW_USEDEFAULT;
 			if (y <= 0) y = CW_USEDEFAULT;
 			if (w <= 0) w = CW_USEDEFAULT;
@@ -252,10 +215,7 @@ public class OSWindow {
 			HWND parentHndl = null;
 			if (parent !is null)
 				parentHndl = parent.getHandle();
-			/* windowHandle = CreateWindowExW(dwExStyle, classname, windowname, dwStyle, x, y, w, h, parentHndl, null, mainInst, 
-					null); */
-			windowHandle = CreateWindowW(classname, windowname, dwStyle, x, y, w, h, parentHndl, null, mainInst, 
-					null);
+			windowHandle = CreateWindowW(classname, windowname, dwStyle, x, y, w, h, parentHndl, null, mainInst, null);
 			if (!windowHandle) {
 				auto errorCode = GetLastError();
 				throw new WindowCreationException("Failed to create window!", errorCode);
