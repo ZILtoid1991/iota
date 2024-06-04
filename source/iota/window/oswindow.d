@@ -27,6 +27,7 @@ import std.algorithm.mutation : remove;
 import std.utf : toUTF16z, toUTF8;
 import std.string : toStringz;
 import iota.controls.types;
+import bindbc.opengl;
 //import collections.treemap;
 
 /** 
@@ -106,6 +107,7 @@ public class OSWindow {
 		protected ATOM				regClResult;
 		protected LPCWSTR			classname, windowname;
 		protected HGLRC				glRenderingContext;
+		protected HDC				windowDeviceContext;
 		///hInstance is stored here, which is needed for window creation, etc.
 		///NOTE: This is Windows exclusive, and won't be accessable under other OSes.
 		public static HINSTANCE		mainInst;
@@ -119,7 +121,9 @@ public class OSWindow {
 
 			INITCOMMONCONTROLSEX cctrl;
 			cctrl.dwICC = 0x0000_ffff;
-			assert(InitCommonControlsEx(&cctrl) == TRUE);
+			InitCommonControlsEx(&cctrl);
+			/* debug assert(InitCommonControlsEx(&cctrl) == TRUE, GetLastError().to!string());
+			else assert(InitCommonControlsEx(&cctrl) == TRUE); */
 			/* SetThemeAppProperties(0x7); */
 		}
 	} else {
@@ -346,7 +350,7 @@ public class OSWindow {
 	public void* getOpenGLHandle() @nogc nothrow {
 		version (Windows) {
 			if (glRenderingContext) return glRenderingContext;
-			HDC windowDeviceContext = GetDC(windowHandle);
+			windowDeviceContext = GetDC(windowHandle);
 			PIXELFORMATDESCRIPTOR pfd = PIXELFORMATDESCRIPTOR(cast(WORD)PIXELFORMATDESCRIPTOR.sizeof, 1, 
 					PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER, PFD_TYPE_RGBA, 32, 
 					0,0,0,0,0,0,
@@ -362,6 +366,12 @@ public class OSWindow {
 		} else {
 			return null;
 		}
+	}
+	public void gl_swapBuffers() @nogc nothrow {
+		version (Windows) SwapBuffers(windowDeviceContext);
+	}
+	public void gl_makeCurrent() @nogc nothrow {
+		version (Windows) wglMakeCurrent(windowDeviceContext, glRenderingContext);
 	}
 	/**
 	 * Returns the current input language code. (Linux UNIMPLEMENTED)

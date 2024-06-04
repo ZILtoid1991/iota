@@ -32,3 +32,10 @@ subPackage {
     targetType "executable"
     dflags "resources.res" platform="windows"
 }
+subPackage {
+    name "gltest"
+    sourcePaths "gltest/"
+    dependency "iota" version="*"
+    targetType "executable"
+    dflags "resources.res" platform="windows"
+}
