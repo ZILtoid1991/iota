@@ -560,7 +560,7 @@ version (Windows) {
 				output.mouseCE.y = xe.xbutton.y;
 				mouse.lastPosition = [xe.xbutton.x, xe.xbutton.y];
 				return 1;
-			case MotionNotify:
+			case MotionNotify, EnterNotify, LeaveNotify:
 				output.timestamp = xe.xmotion.time * 1000L;
 				output.handle = xe.xmotion.window;
 				output.source = mouse;

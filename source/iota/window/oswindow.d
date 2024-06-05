@@ -16,6 +16,8 @@ version (Windows) {
 	import x11.Xlib;
 	import x11.X;
 	import x11.Xresource;
+	import x11.Xutil;
+	import iota.window.backend_x11;
 	//import deimos.X11.Xlib;
 	//import deimos.X11.X;
 }
@@ -129,16 +131,24 @@ public class OSWindow {
 	} else {
 		public static Display* mainDisplay;
 		public static Window root;
+		protected static XVisualInfo* vInfo;
+		protected static GLint[] attrList = [GLX_RGBA, GLX_DEPTH_SIZE, 24, GLX_DOUBLEBUFFER, None];
+		protected static Colormap cmap;
 		public XIM im;
 		public XIC ic;
 		protected immutable(char)* windowname;
 		protected XSetWindowAttributes attr;
+		protected GLXDrawable glxDr;
+		protected GLXContext glxContext;
 		/**
 		 * Initializes X11.
 		 */
 		shared static this() {
 			mainDisplay = XOpenDisplay(null);
-			root = XRootWindow(mainDisplay, DefaultScreen(mainDisplay));
+			const defScr = DefaultScreen(mainDisplay);
+			root = XRootWindow(mainDisplay, defScr);
+			vInfo = glXChooseVisual(mainDisplay, defScr, attrList.ptr);
+			cmap = XCreateColormap(dpy, root, vInfo.visual, AllocNone);
 			//XSelectInput();
 			//im = XOpenIM(mainDisplay, null, null, null);
 			/* assert(im !is null, "Input method couldn't be opened!");
@@ -146,7 +156,7 @@ public class OSWindow {
 		}
 		///Automatic cleanup.
 		shared static ~this() {
-			/* XDestroyIC(ic); */
+			//XDestroyIC(ic);
 			//XCloseIM(im);
 			XDestroyWindow(mainDisplay, root);
 			XCloseDisplay(mainDisplay);
@@ -231,14 +241,15 @@ public class OSWindow {
 		} else {
 			string nameUTF8 = toUTF8(title);
 			windowname = toStringz(nameUTF8);
+			XSetWindowAttributes swa;
 			Window pH = root;
 			if (parent !is null)
 				pH = parent.windowHandle;
 			const int scr = DefaultScreen(mainDisplay);
-			/* windowHandle = XCreateWindow(mainDisplay, pH, x, y, w, h, 15, CopyFromParent, 
-			((flags & WindowStyleIDs.Visible) ? InputOutput : InputOnly), cast(Visual*)CopyFromParent, 0, &attr); */
-			windowHandle = XCreateSimpleWindow(mainDisplay, pH, x, y, w, h, 1,
-					BlackPixel(mainDisplay, scr), WhitePixel(mainDisplay, scr));
+			windowHandle = XCreateWindow(mainDisplay, pH, x, y, w, h, 15, CopyFromParent, InputOutput, 
+					vInfo.visual, CWColorMap | CWEventMask, &attr);
+			/* windowHandle = XCreateSimpleWindow(mainDisplay, pH, x, y, w, h, 1,
+					BlackPixel(mainDisplay, scr), WhitePixel(mainDisplay, scr)); */
 			XStoreName(mainDisplay, windowHandle, cast(char*)windowname);
 			XSelectInput(mainDisplay, windowHandle, 0x01_ff_ff_ff);
 			im = XOpenIM(mainDisplay, null, null, null);
@@ -256,6 +267,10 @@ public class OSWindow {
 			DestroyWindow(windowHandle);
 			UnregisterClassW(classname, mainInst);
 		} else {
+			if (glxContext) {
+				glXMakeCurrent(mainDisplay, None, null);
+				glXDestroyContext(mainDisplay, glxContext);
+			}
 			if (ic) XDestroyIC(ic);
 			if (im) XCloseIM(im);
 			XDestroyWindow(mainDisplay, windowHandle);
@@ -369,9 +384,11 @@ public class OSWindow {
 	}
 	public void gl_swapBuffers() @nogc nothrow {
 		version (Windows) SwapBuffers(windowDeviceContext);
+		else glXSwapBuffers(mainDisplay, glxDr);
 	}
 	public void gl_makeCurrent() @nogc nothrow {
 		version (Windows) wglMakeCurrent(windowDeviceContext, glRenderingContext);
+		else glXMakeCurrent(mainDisplay, glxDr, glxContext);
 	}
 	/**
 	 * Returns the current input language code. (Linux UNIMPLEMENTED)
