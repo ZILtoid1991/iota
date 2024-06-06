@@ -51,7 +51,7 @@ int main(string[] args) {
 	//Thread.sleep(msecs(10_000));
 	int errCode = initInput(options.configFlags, options.osconfigFlags);
 	if (errCode) {
-		writeln("Input initialization error! Code: ", errCode, " OSCode: ", GetLastError());
+		writeln("Input initialization error! Code: ", errCode, /* " OSCode: ", GetLastError() */);
 		return 1;
 	}
 	writeln(devList);
@@ -72,7 +72,7 @@ int main(string[] args) {
 					hd.applyEffect(HapticDevice.Capabilities.RightMotor, 0, event.button.auxF);
 				}
 			}
-			//writeln(event.toString());
+			writeln(event.toString());
 		}
 		Thread.sleep(dur!"msecs"(10));
 	}

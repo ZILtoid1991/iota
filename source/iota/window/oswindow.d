@@ -148,11 +148,18 @@ public class OSWindow {
 			const defScr = DefaultScreen(mainDisplay);
 			root = XRootWindow(mainDisplay, defScr);
 			vInfo = glXChooseVisual(mainDisplay, defScr, attrList.ptr);
-			cmap = XCreateColormap(dpy, root, vInfo.visual, AllocNone);
-			//XSelectInput();
-			//im = XOpenIM(mainDisplay, null, null, null);
-			/* assert(im !is null, "Input method couldn't be opened!");
-			ic = XCreateIC(im); */
+			cmap = XCreateColormap(mainDisplay, root, vInfo.visual, AllocNone);
+			int xi_opCode, event, error;
+			if (XQueryExtension(mainDisplay, "XInputExtension", &xi_opCode, &event, &error)) {
+				import x11.extensions.XI;
+				import x11.extensions.XInput;
+				import x11.extensions.XI2;
+				import x11.extensions.XInput2;
+				int major = 2 , minor = 0;
+				if (XIQueryVersion(mainDisplay, major, minor) == Success) {
+					
+				}
+			}
 		}
 		///Automatic cleanup.
 		shared static ~this() {
@@ -242,16 +249,18 @@ public class OSWindow {
 			string nameUTF8 = toUTF8(title);
 			windowname = toStringz(nameUTF8);
 			XSetWindowAttributes swa;
+			swa.colormap = cmap;
+			swa.event_mask = 0x01_ff_ff_ff;
 			Window pH = root;
 			if (parent !is null)
 				pH = parent.windowHandle;
 			const int scr = DefaultScreen(mainDisplay);
-			windowHandle = XCreateWindow(mainDisplay, pH, x, y, w, h, 15, CopyFromParent, InputOutput, 
-					vInfo.visual, CWColorMap | CWEventMask, &attr);
+			windowHandle = XCreateWindow(mainDisplay, pH, x, y, w, h, 15, vInfo.depth, InputOutput, 
+					vInfo.visual, CWColormap | CWEventMask, &swa);
 			/* windowHandle = XCreateSimpleWindow(mainDisplay, pH, x, y, w, h, 1,
 					BlackPixel(mainDisplay, scr), WhitePixel(mainDisplay, scr)); */
 			XStoreName(mainDisplay, windowHandle, cast(char*)windowname);
-			XSelectInput(mainDisplay, windowHandle, 0x01_ff_ff_ff);
+			//XSelectInput(mainDisplay, windowHandle, 0x01_ff_ff_ff);
 			im = XOpenIM(mainDisplay, null, null, null);
 			ic = XCreateIC(im, XNInputStyle, XIMPreeditNothing | XIMStatusNothing, XNClientWindow, windowHandle, null);
 			XMapWindow(mainDisplay, windowHandle);
