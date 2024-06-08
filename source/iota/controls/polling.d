@@ -521,6 +521,10 @@ version (Windows) {
 	import x11.X;
 	import x11.Xlib;
 	import x11.Xresource;
+	import x11.extensions.XI;
+	import x11.extensions.XI2;
+	import x11.extensions.XInput;
+	import x11.extensions.XInput2;
 	//import x11.Xlocale;
 	
 	version (iota_use_utf8) {
@@ -531,13 +535,35 @@ version (Windows) {
 		package int chrCntr;
 		package dchar[32] chrOut;
 	}
+	package int[5] mousePosTracker;	//rootX; rootY; winX; winY; mask
+	package int[5] mousePosTracker0;//Previous mouse position
+	package WindowH trackedWindow;	//To track the mouse pointer without xinput2
+	package WindowH rootReturn;		//Root return window for tracking
+	package WindowH	childReturn;	//Child return window for tracking
 	shared static this() {
 		
 	}
+	///X11 input handling, no input extensions, only used when xinput2 is not available
 	package int poll_x11_RegularIO(ref InputEvent output) nothrow @nogc {
+		if (trackedWindow) {
+			if (XQueryPointer(OSWindow.mainDisplay, trackedWindow, &rootReturn, &childReturn, &mousePosTracker[0], 
+					&mousePosTracker[1], &mousePosTracker[2], &mousePosTracker[3], cast(uint*)&mousePosTracker[4]) == 0) {
+				if (mousePosTracker != mousePosTracker0) {
+					output.type = InputEventType.MouseMove;
+					output.handle = childReturn ? childReturn : rootReturn;
+					output.source = mouse;
+					output.mouseME.x = mousePosTracker[2];
+					output.mouseME.y = mousePosTracker[3];
+					output.mouseME.xD = mousePosTracker[2] - mousePosTracker0[2];
+					output.mouseME.yD = mousePosTracker[3] - mousePosTracker0[3];
+					mousePosTracker0 = mousePosTracker;
+					return 1;
+				}
+			}
+		}
 		tryAgain:
 		XEvent xe;
-		XNextEvent(OSWindow.mainDisplay, &xe); 
+		XNextEvent(OSWindow.mainDisplay, &xe);
 		switch (xe.type) {
 			case MappingNotify:
 				XRefreshKeyboardMapping(&xe.xmapping);
@@ -545,10 +571,51 @@ version (Windows) {
 			case ButtonPress, ButtonRelease:		//Note: Under X11, scrollwheel events are also mapped here.
 				output.timestamp = xe.xbutton.time * 1000L;
 				output.handle = xe.xbutton.window;
-				output.type = InputEventType.MouseClick;
 				output.source = mouse;
-				output.handle = xe.xbutton.window;
-				output.mouseCE.button = cast(ushort)xe.xbutton.button;
+				trackedWindow = xe.xbutton.window;
+				switch (xe.xbutton.button) {
+					case 1:
+						output.mouseCE.button = MouseButtons.Left;
+						break;
+					case 2:
+						output.mouseCE.button = MouseButtons.Middle;
+						break;
+					case 3:
+						output.mouseCE.button = MouseButtons.Right;
+						break;
+					case 4, 5, 6, 7:				//Mousescroll events
+						if (xe.type != ButtonPress) goto tryAgain;
+						output.type = InputEventType.MouseScroll;
+						output.mouseSE.x = xe.xbutton.x;
+						output.mouseSE.y = xe.xbutton.y;
+						switch (xe.xbutton.button) {
+							case 4:
+								output.mouseSE.yS = -127;
+								break;
+							case 5:
+								output.mouseSE.yS = 127;
+								break;
+							case 6:
+								output.mouseSE.xS = -31;
+								break;
+							case 7:
+								output.mouseSE.xS = 31;
+								break;
+							default:
+								break;
+						}
+						return 1;
+					case 8:
+						output.mouseCE.button = MouseButtons.Prev;
+						break;
+					case 9:
+						output.mouseCE.button = MouseButtons.Next;
+						break;
+					default:
+						output.mouseCE.button = cast(ushort)xe.xbutton.button;
+						break;
+				}
+				output.type = InputEventType.MouseClick;
 				if (xe.type == ButtonPress) {
 					output.mouseCE.dir = 0;
 					mouse.lastButtonState |= 1<<(output.mouseCE.button - 1);
@@ -560,16 +627,17 @@ version (Windows) {
 				output.mouseCE.y = xe.xbutton.y;
 				mouse.lastPosition = [xe.xbutton.x, xe.xbutton.y];
 				return 1;
-			case MotionNotify, EnterNotify, LeaveNotify:
+			case MotionNotify, LeaveNotify:
 				output.timestamp = xe.xmotion.time * 1000L;
 				output.handle = xe.xmotion.window;
+				trackedWindow = xe.xmotion.window;
 				output.source = mouse;
 				output.type = InputEventType.MouseMove;
 				output.mouseME.x = xe.xmotion.x;
 				output.mouseME.y = xe.xmotion.y;
 				output.mouseME.xD = xe.xmotion.x - mouse.lastPosition[0];
 				output.mouseME.yD = xe.xmotion.y - mouse.lastPosition[1];
-				output.mouseME.buttons = (xe.xmotion.state & 0x1f_00)>>8;
+				output.mouseME.buttons = (((xe.xmotion.state & 0x1f_00)>>8)&0x07) | (((xe.xmotion.state & 0x1f_00)>>12)&0x18);
 				mouse.lastPosition = [xe.xmotion.x, xe.xmotion.y];
 				return 1;
 			case KeyPress, KeyRelease:
@@ -612,6 +680,7 @@ version (Windows) {
 					width = xe.xconfigure.width;
 					height = xe.xconfigure.height;
 				}
+				//XMapWindow(OSWindow.mainDisplay, xe.xconfigure.event);
 				return 1;
 			case LASTEvent:
 				output.type = InputEventType.init;
@@ -620,7 +689,8 @@ version (Windows) {
 			default:
 				return 0;
 		}
-		
-		
+	}
+	package int poll_x11_xInputExt(ref InputEvent output) nothrow @nogc {
+		return 0;
 	}
 }

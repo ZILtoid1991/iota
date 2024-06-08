@@ -18,6 +18,10 @@ version (Windows) {
 	import x11.Xresource;
 	import x11.Xutil;
 	import iota.window.backend_x11;
+	import x11.extensions.XI;
+	import x11.extensions.XI2;
+	import x11.extensions.XInput;
+	import x11.extensions.XInput2;
 	//import deimos.X11.Xlib;
 	//import deimos.X11.X;
 }
@@ -134,11 +138,12 @@ public class OSWindow {
 		protected static XVisualInfo* vInfo;
 		protected static GLint[] attrList = [GLX_RGBA, GLX_DEPTH_SIZE, 24, GLX_DOUBLEBUFFER, None];
 		protected static Colormap cmap;
+		public static const bool xinputAvail;
 		public XIM im;
 		public XIC ic;
 		protected immutable(char)* windowname;
 		protected XSetWindowAttributes attr;
-		protected GLXDrawable glxDr;
+		//protected GLXDrawable glxDr;
 		protected GLXContext glxContext;
 		/**
 		 * Initializes X11.
@@ -150,14 +155,15 @@ public class OSWindow {
 			vInfo = glXChooseVisual(mainDisplay, defScr, attrList.ptr);
 			cmap = XCreateColormap(mainDisplay, root, vInfo.visual, AllocNone);
 			int xi_opCode, event, error;
-			if (XQueryExtension(mainDisplay, "XInputExtension", &xi_opCode, &event, &error)) {
+			immutable(char)* extName = "XInputExtension".ptr;
+			if (XQueryExtension(mainDisplay, cast(char*)extName, &xi_opCode, &event, &error)) {
 				import x11.extensions.XI;
 				import x11.extensions.XInput;
 				import x11.extensions.XI2;
 				import x11.extensions.XInput2;
 				int major = 2 , minor = 0;
-				if (XIQueryVersion(mainDisplay, major, minor) == Success) {
-					
+				if (XIQueryVersion(mainDisplay, &major, &minor) == 0) {
+					xinputAvail = true;
 				}
 			}
 		}
@@ -388,16 +394,19 @@ public class OSWindow {
 			wglMakeCurrent(windowDeviceContext, glRenderingContext);
 			return glRenderingContext;
 		} else {
-			return null;
+			if (glxContext) return glxContext;
+			glxContext = glXCreateContext(mainDisplay, vInfo, null, GL_TRUE);
+			glXMakeCurrent(mainDisplay, windowHandle, glxContext);
+			return glxContext;
 		}
 	}
 	public void gl_swapBuffers() @nogc nothrow {
 		version (Windows) SwapBuffers(windowDeviceContext);
-		else glXSwapBuffers(mainDisplay, glxDr);
+		else glXSwapBuffers(mainDisplay, windowHandle);
 	}
 	public void gl_makeCurrent() @nogc nothrow {
 		version (Windows) wglMakeCurrent(windowDeviceContext, glRenderingContext);
-		else glXMakeCurrent(mainDisplay, glxDr, glxContext);
+		else glXMakeCurrent(mainDisplay, windowHandle, glxContext);
 	}
 	/**
 	 * Returns the current input language code. (Linux UNIMPLEMENTED)
