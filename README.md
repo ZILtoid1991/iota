@@ -8,11 +8,11 @@ Input-output (audio, controls, etc) library for D. Intended as a D language nati
 |Audio                     |Preliminary, output stream works    |ALSA: janky, pipewire: coming soon  |
 |MIDI                      |Input+Output, with some caveat      |Input tested, output should also work|
 |Keyboard                  |Legacy: Works; Raw: Works           |X11: mostly works                   |
-|Mouse                     |Legacy: Works; Raw: Works           |X11: in progress                    |
+|Mouse                     |Legacy: Works; Raw: Works           |X11: working                        |
 |Pen Tablet                |Not yet implemented                 |Not yet implemented                 |
-|Game controllers          |XInput: works                       |Not yet implemented                 |
-|Windowing                 |Works                               |X11: preliminary                    |
-|OpenGL output             |In progress, not working yet        |In progress                         |
+|Game controllers          |XInput: working                     |Not yet implemented                 |
+|Windowing                 |Working                             |X11: preliminary                    |
+|OpenGL output             |Working                             |Working (resize glitchy)            |
 
 MacOSX is not yet supported due to lack of hardware. Please consider contributing to this project!
 
@@ -70,7 +70,13 @@ Got most of the non-basic stuff working. Bug related to window styles fixed.
 
 ### Linux
 
-Linux is using X11 for its windowing and I/O.
+Linux is using X11 for its windowing and I/O. Has two known bugs:
+* When the window is closed, X11 replies with `X connection to :0.0 broken (explicit kill or server shutdown).`
+* Resizing is glitched.
+
+## OpenGL
+
+It works for what I've tested it, Windows parts might have their own unique challenges later on, Linux currently has issues with resizing.
 
 # Examples
 
