@@ -120,6 +120,7 @@ int main(string[] args) {
 			if (event.type == InputEventType.ApplExit || event.type == InputEventType.WindowClose) {
 				isRunning = false;
 			} else if (event.type == InputEventType.WindowResize) {
+				glOutput.gl_makeCurrent();
 				glViewport(0, 0, event.window.width, event.window.height);
 			} else if (event.type != InputEventType.init) {
 
