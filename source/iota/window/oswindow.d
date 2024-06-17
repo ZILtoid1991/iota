@@ -256,7 +256,7 @@ public class OSWindow {
 			windowname = toStringz(nameUTF8);
 			XSetWindowAttributes swa;
 			swa.colormap = cmap;
-			swa.event_mask = 0x01_ff_ff_ff;
+			swa.event_mask = 0x01_ff_ff_ff & ~ResizeRedirectMask;
 			Window pH = root;
 			if (parent !is null)
 				pH = parent.windowHandle;

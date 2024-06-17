@@ -680,7 +680,6 @@ version (Windows) {
 					width = xe.xconfigure.width;
 					height = xe.xconfigure.height;
 				}
-				//XMapWindow(OSWindow.mainDisplay, xe.xconfigure.event);
 				return 1;
 			case LASTEvent:
 				output.type = InputEventType.init;
