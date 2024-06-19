@@ -11,8 +11,8 @@ Input-output (audio, controls, etc) library for D. Intended as a D language nati
 |Mouse                     |Legacy: Works; Raw: Works           |X11: working                        |
 |Pen Tablet                |Not yet implemented                 |Not yet implemented                 |
 |Game controllers          |XInput: working                     |Not yet implemented                 |
-|Windowing                 |Working                             |X11: preliminary                    |
-|OpenGL output             |Working                             |Working (resize glitchy)            |
+|Windowing                 |Working                             |X11: Working                        |
+|OpenGL output             |Working                             |Working                             |
 
 MacOSX is not yet supported due to lack of hardware. Please consider contributing to this project!
 
@@ -70,13 +70,12 @@ Got most of the non-basic stuff working. Bug related to window styles fixed.
 
 ### Linux
 
-Linux is using X11 for its windowing and I/O. Has two known bugs:
+Linux is using X11 for its windowing and I/O. Has one known bug:
 * When the window is closed, X11 replies with `X connection to :0.0 broken (explicit kill or server shutdown).`
-* Resizing is glitched.
 
 ## OpenGL
 
-It works for what I've tested it, Windows parts might have their own unique challenges later on, Linux currently has issues with resizing.
+It works for what I've tested it, Windows parts might have their own unique challenges later on.
 
 # Examples
 

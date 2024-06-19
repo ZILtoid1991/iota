@@ -1,3 +1,12 @@
+# 0.3.0-beta.2
+
+* Resizing fixed for OpenGL under Linux.
+
+# 0.3.0-beta
+
+* Basic OpenGL support.
+* Fixed windowing issue of having an old-style GUI display.
+
 # 0.3.0-alpha2
 
 * Linux MIDI support added.
