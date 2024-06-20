@@ -1,6 +1,7 @@
 module iota.window.types;
 
 import std.typecons : BitFlags;
+import std.conv : to;
 
 version (Windows) {
 	import core.sys.windows.windows;
@@ -18,9 +19,10 @@ version (Windows) {
 	alias WindowH = Window;
 	//alias WindowH = void*;
 }
+///Defines window configuration flags.
 public enum WindowCfgFlags {
-	FixedSize			=	1 << 0,
-	IgnoreMenuKey		=	1 << 16,
+	FixedSize			=	1 << 0,	///Creates a non-resizable window.
+	IgnoreMenuKey		=	1 << 16,///Makes the window to ignore "menu" (Alt, F11) key under Windows.
 }
 /** 
  * Defines various window option flags that can be supplied during creating a new window.
@@ -86,22 +88,29 @@ public class WindowBitmap {
 		return result;
 	}
 }
-
-public class WindowMenu {
-	
+///Display mode accessing shorthands.
+public enum DisplayMode {
+	FullscreenHighest	=	-1,///Sets the highest possible resolution for fullscreen.
+	FullscreenDesktop	=	-2,///Sets desktop for fullscreen mode.
+	Windowed			=	-3,///Sets the window back to windowed mode.
 }
-
+///Defines various properties of screen modes.
 public enum ScreenModeFlags : ushort {
 	FullScreen		=	1<<0,
 	Interlaced		=	1<<1,
-	AdaptiveSync	=	1<<2,
-	HDR				=	1<<3,
+	AdaptiveSync	=	1<<2,///Synchronization is tied to software refresh (G-Sync, freesync, etc.)
+	HDR				=	1<<3,///High Dynamic Range is supported.
 }
-
+/**
+ * Defines potential display modes with in-depth parameters.
+ */
 public struct ScreenMode {
-	uint width;
-	uint height;
+	int width;
+	int height;
 	float refreshRate;
 	ushort bitDepth;
 	BitFlags!ScreenModeFlags flags;
+	string toString() @safe const {
+		return width.to!string ~ "x" ~ height.to!string ~ "@" ~ refreshRate.to!string ~ "Hz";
+	}
 }
