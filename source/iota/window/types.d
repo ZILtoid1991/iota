@@ -1,6 +1,7 @@
 module iota.window.types;
 
 import std.typecons : BitFlags;
+import std.bitmanip : bitfields;
 import std.conv : to;
 
 version (Windows) {
@@ -32,66 +33,64 @@ public enum WindowOptionFlags : ulong {
 	///concern with applications without a menubar.
 	DisableMenuKey	=	1L<<32L,
 }
+public struct ColorFormat {
+	enum ChannelType : ubyte {
+		None		=	0x00,
+		Red			=	0x01,
+		Green		=	0x02,
+		Blue		=	0x03,
+		Alpha		=	0x04,
+		Cyan		=	0x05,
+		Yellow		=	0x06,
+		Magenta		=	0x07,
+		blacK		=	0x08,
+		ColorIndex	=	0x09,
+		X			=	0x0A,
+		Y			=	0x0B,
+		Z			=	0x0C,
+		Greyscale	=	0x0D,
+	}
+	ubyte[8]	chBits;
+	ubyte[8]	chType;
+	static ColorFormat defaultRGBA32() @nogc @safe nothrow {
+		return ColorFormat([8,8,8,8,0,0,0,0], 
+			[ChannelType.Red, ChannelType.Green, ChannelType.Blue, ChannelType.Alpha, 0, 0, 0, 0]);
+	}
+	int getTotalBits() @nogc @safe pure nothrow const {
+		return chBits[0] + chBits[1] + chBits[2] + chBits[3] + chBits[4] + chBits[5] + chBits[6] + chBits[7];
+	}
+}
 /**
- * Implements a bitmap to be used with this library, mainly its windowing elements.
+ * Implements a bitmap to be used with this library, mainly its windowing elements (cursors, etc.).
  */
 public class WindowBitmap {
-	public enum ChannelType : ubyte {
-		None		=	0x00,
-		Red			=	0x10,
-		Green		=	0x20,
-		Blue		=	0x30,
-		Alpha		=	0x40,
-		Grey		=	0x50,
-		Index		=	0x60,
-		Cyan		=	0x70,
-		Yellow		=	0x80,
-		Magenta		=	0x90,
-		Black		=	0xA0,
-		X			=	0xB0,
-		Y			=	0xC0,
-		Z			=	0xD0,
-	}
 	uint		width;		///Width of the bitmap.
 	uint		height;		///Height of the bitmap.
-	size_t		pitch;		///Size of a single scanline in bytes.. 
-	///Defines bitmap channels.
-	///lower nibble 0-2 = 2^n bits for that channel
-	///lower nibble 3 = floating-pont number
-	///upper nibble = channel type identifier
-	ubyte[8]	channels;
+	size_t		pitch;		///Size of a single scanline in bytes.
+	ColorFormat format;		///
 	///Stores the pixeldata of the bitmap.
 	///Byte order should match system defaults to avoid conversions.
 	ubyte[]		pixels;
-	public this(uint width, uint height, ubyte[8] channels, ubyte[] pixels) @nogc @safe pure nothrow {
+	public this(uint width, uint height, ubyte[] pixels, ColorFormat format = ColorFormat.defaultRGBA32) 
+			@nogc @safe pure nothrow {
 		this.width = width;
 		this.height = height;
-		this.channels = channels;
 		this.pixels = pixels;
+		this.format = format;
 		pitch = (width * getTotalBits) / 8;
 		pitch += (width * getTotalBits) % 8 ? 1 : 0;
 	}
-	/**
-	 * Returns the number of bits associated with the given channel number.
-	 */
-	public int getChannelBits(int chNum) @nogc @safe pure nothrow const {
-		return 1<<(channels[chNum] & 0x07);
+	int getTotalBits() @nogc @safe pure nothrow {
+		return format.getTotalBits;
 	}
-	/**
-	 * Returns the total number of bits used by this bitmap.
-	 */
-	public int getTotalBits() @nogc @safe pure nothrow const {
-		int result;
-		for (int i ; i < channels.length ; i++) {
-			result += getChannelBits(i);
-		}
-		return result;
-	}
+}
+public enum StandardCursors {
+	init,
 }
 ///Display mode accessing shorthands.
 public enum DisplayMode {
 	FullscreenHighest	=	-1,///Sets the highest possible resolution for fullscreen.
-	FullscreenDesktop	=	-2,///Sets desktop for fullscreen mode.
+	FullscreenDesktop	=	-2,///Use current desktop resolution for fullscreen.
 	Windowed			=	-3,///Sets the window back to windowed mode.
 }
 ///Defines various properties of screen modes.
@@ -100,15 +99,20 @@ public enum ScreenModeFlags : ushort {
 	Interlaced		=	1<<1,
 	AdaptiveSync	=	1<<2,///Synchronization is tied to software refresh (G-Sync, freesync, etc.)
 	HDR				=	1<<3,///High Dynamic Range is supported.
+	Rotate90		=	1<<4,///Screen is rotated by 90 degrees (both for 270).
+	Rotate180		=	1<<5,///Screen is rotated by 180 degrees (both for 270).
 }
 /**
  * Defines potential display modes with in-depth parameters.
  */
 public struct ScreenMode {
+	string deviceName;
 	int width;
 	int height;
+	int offsetH;				///Horizontal offset of screen in multiscreen setups
+	int offsetV;				///Vertical offset of screen in multiscreen setups
 	float refreshRate;
-	ushort bitDepth;
+	ushort bitDepth = 32;
 	BitFlags!ScreenModeFlags flags;
 	string toString() @safe const {
 		return width.to!string ~ "x" ~ height.to!string ~ "@" ~ refreshRate.to!string ~ "Hz";
