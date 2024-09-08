@@ -33,6 +33,7 @@ import bindbc.opengl;
 int main(string[] args) {
 	try {
 		bool isRunning = true;
+		bool isFullscreen;
 		GLfloat[9] testVertex = [
 			-1.0, -1.0, 0.0,
 			1.0, -1.0, 0.0,
@@ -122,9 +123,20 @@ int main(string[] args) {
 			} else if (event.type == InputEventType.WindowResize) {
 				//glOutput.gl_makeCurrent();
 				glViewport(0, 0, event.window.width, event.window.height);
-			} else if (event.type != InputEventType.init) {
-
-				//writeln(event.toString());
+			} else if (event.type == InputEventType.Keyboard && event.button.dir == 1) {
+				
+				switch (event.button.id) {
+				case ScanCode.F11:
+					int result;
+					if (isFullscreen) result = glOutput.setScreenMode(0, DisplayMode.Windowed);
+					else result = glOutput.setScreenMode(0, DisplayMode.FullscreenDesktop);
+					isFullscreen = !isFullscreen;
+					writeln(result);
+					break;
+				default:
+					break;
+				}
+				
 			}
 			Thread.sleep(dur!"msecs"(10));
 			//Input event polling part end

@@ -4,6 +4,7 @@ version (Windows) {
 	import core.sys.windows.windows;
 	import core.sys.windows.wtypes;
 	import core.sys.windows.commctrl;
+	import core.sys.windows.wingdi;
 	import std.conv : to;
 	/* enum STAP_ALLOW_NONCLIENT = 1<<0;
 	enum STAP_ALLOW_CONTROLS = 1<<1;
@@ -114,11 +115,13 @@ public class OSWindow {
 		protected LPCWSTR			classname, windowname;
 		protected HGLRC				glRenderingContext;
 		protected HDC				windowDeviceContext;
-		///hInstance is stored here, which is needed for window creation, etc.
-		///NOTE: This is Windows exclusive, and won't be accessable under other OSes.
+		///hInstance is stored here, which is needed for window creation, etc. (WINDOWS ONLY)
 		public static HINSTANCE		mainInst;
 		///The current input language code (Windows).
 		package static uint			inputLang;
+		///All supported device modes. First dimension: device, second dimension: mode
+		package static DEVMODEA[][]	screenModes;
+		//package static DISPLAY_DEVICEA[] dispDevices;
 		shared static this() {
 			//NOTE: This is not the proper way of doing stuff like this.
 			//However, this way we can possibly eliminate the need for use of `WinMain` and might also piss off some
@@ -131,6 +134,29 @@ public class OSWindow {
 			/* debug assert(InitCommonControlsEx(&cctrl) == TRUE, GetLastError().to!string());
 			else assert(InitCommonControlsEx(&cctrl) == TRUE); */
 			/* SetThemeAppProperties(0x7); */
+
+			//const ULONG drvModesSize = DrvGet
+			DISPLAY_DEVICEA[] dispDevices;
+			DWORD counter;
+			BOOL deviceResult;
+			do {
+				DISPLAY_DEVICEA currDevice = void;
+				currDevice.cb = DISPLAY_DEVICEA.sizeof;
+				deviceResult = EnumDisplayDevicesA(null, counter, &currDevice, 0x0001);
+				if (deviceResult) dispDevices ~= currDevice;
+				counter++;
+			} while (deviceResult);
+			screenModes.length = counter;
+			for (size_t i ; i < dispDevices.length ; i++) {
+				counter = 0;
+				do {
+					DEVMODEA currMode = void;
+					currMode.dmSize = DEVMODEA.sizeof;
+					deviceResult = EnumDisplaySettingsExA(dispDevices[i].DeviceName.ptr, counter, &currMode, 0x0004);
+					if (deviceResult) screenModes[i] ~= currMode;
+					counter++;
+				} while (deviceResult);
+			}
 		}
 	} else {
 		public static Display* mainDisplay;
@@ -272,7 +298,7 @@ public class OSWindow {
 			XMapWindow(mainDisplay, windowHandle);
 		}
 	}
-	protected this(WindowH hndl) {
+	protected this(WindowH hndl) @nogc nothrow {
 		windowHandle = hndl;
 	}
 
@@ -323,7 +349,7 @@ public class OSWindow {
 	/**
 	 * Manually maximizes the window from code.
 	 */
-	public void maximizeWindow() {
+	public void maximizeWindow() @nogc nothrow {
 		version (Windows) {
 			ShowWindow(windowHandle, SW_MAXIMIZE);
 		}
@@ -331,7 +357,7 @@ public class OSWindow {
 	/**
 	 * Manually minimizes the window from code.
 	 */
-	public void minimizeWindow() {
+	public void minimizeWindow() @nogc nothrow {
 		version (Windows) {
 			ShowWindow(windowHandle, SW_MINIMIZE);
 		}
@@ -369,9 +395,71 @@ public class OSWindow {
 		}
 	}
 	/**
-	 * Sets the window to full screen using the supplied video mode number. (UNIMPLEMENTED)
+	 * Sets the window to the given screen mode.
+	 * If `display` is not -1, then it selects a specific display, otherwise it uses the default one.
+	 * `mode` can be either the index of a screen mode, or a value defined by `DisplayMode`
+	 * Returns: 0 on success
 	 */
-	public void setWindowToFullscreen(int mode) {
+	public int setScreenMode(int display, int mode) @nogc nothrow {
+		version (Windows) {
+			LONG errorcode;
+			switch (mode) {
+			case DisplayMode.Windowed:
+				/* LPCSTR devicename = null;
+				if (display >= 0) devicename = cast(LPCSTR)screenModes[display][0].dmDeviceName.ptr;
+				errorcode = ChangeDisplaySettingsExA(devicename, null, null, 0, null); */
+				SetWindowLongA(windowHandle, GWL_EXSTYLE, WS_EX_APPWINDOW);
+				SetWindowLongA(windowHandle, GWL_STYLE, WS_VISIBLE);
+				SetWindowPos(windowHandle, HWND_TOPMOST, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, 
+						SWP_SHOWWINDOW);
+				errorcode = ChangeDisplaySettingsA(null, 0);
+				ShowWindow(windowHandle, SW_NORMAL);
+				break;
+			case DisplayMode.FullscreenDesktop:
+				/* LPCSTR devicename = null;
+				if (display >= 0) devicename = cast(LPCSTR)screenModes[display][0].dmDeviceName.ptr;
+				errorcode = ChangeDisplaySettingsExA(devicename, null, null, CDS_FULLSCREEN, null); */
+				DEVMODEA currDesktopSetting;
+				EnumDisplaySettingsA(null, ENUM_CURRENT_SETTINGS, &currDesktopSetting);
+				SetWindowLongA(windowHandle, GWL_EXSTYLE, WS_EX_APPWINDOW | WS_EX_TOPMOST);
+				SetWindowLongA(windowHandle, GWL_STYLE, WS_POPUP | WS_VISIBLE);
+				SetWindowPos(windowHandle, HWND_TOPMOST, 0, 0, currDesktopSetting.dmPelsWidth, currDesktopSetting.dmPelsHeight, 
+						SWP_SHOWWINDOW);
+				errorcode = ChangeDisplaySettingsA(&currDesktopSetting, CDS_FULLSCREEN);
+				ShowWindow(windowHandle, SW_MAXIMIZE);
+				break;
+			default:
+				if (display <= -1) return 1;
+				if (display >= screenModes.length) return 2;
+				if (mode >= screenModes[display].length) return 3;
+				DEVMODEA devicemode = screenModes[display][mode];
+				SetWindowLongA(windowHandle, GWL_EXSTYLE, WS_EX_APPWINDOW | WS_EX_TOPMOST);
+				SetWindowLongA(windowHandle, GWL_STYLE, WS_POPUP | WS_VISIBLE);
+				SetWindowPos(windowHandle, HWND_TOPMOST, 0, 0, devicemode.dmPelsWidth, devicemode.dmPelsHeight, SWP_SHOWWINDOW);
+				errorcode = ChangeDisplaySettingsA(&devicemode, CDS_FULLSCREEN);
+				ShowWindow(windowHandle, SW_MAXIMIZE);
+				break;
+			}
+			return cast(int)errorcode;
+		} 
+	}
+	public ScreenMode setScreenMode(ScreenMode mode) @nogc nothrow {
+		import std.math;
+		LONG errorcode;
+		DEVMODEA currDesktopSetting;
+		EnumDisplaySettingsA(null, ENUM_CURRENT_SETTINGS, &currDesktopSetting);
+		currDesktopSetting.dmPelsWidth = mode.width;
+		currDesktopSetting.dmPelsHeight = mode.height;
+		currDesktopSetting.dmDisplayFrequency = cast(DWORD)nearbyint(mode.refreshRate);
+		SetWindowLongA(windowHandle, GWL_EXSTYLE, WS_EX_APPWINDOW | WS_EX_TOPMOST);
+		SetWindowLongA(windowHandle, GWL_STYLE, WS_POPUP | WS_VISIBLE);
+		SetWindowPos(windowHandle, HWND_TOPMOST, 0, 0, currDesktopSetting.dmPelsWidth, currDesktopSetting.dmPelsHeight, 
+				SWP_SHOWWINDOW);
+		errorcode = ChangeDisplaySettingsA(&currDesktopSetting, CDS_FULLSCREEN);
+		ShowWindow(windowHandle, SW_MAXIMIZE);
+		return ScreenMode.init;
+	}
+	public void setCursor(StandardCursors cursor) {
 
 	}
 	/**
