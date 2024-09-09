@@ -75,6 +75,7 @@ public class OSWindow {
 	protected Status			status;
 	///Stores various flags related to the window.
 	protected uint				flags;
+	protected int[4]			prevVals;
 	///Window renderer should be kept here to ensure safe destruction.
 	public FrameBufferRenderer	renderer;
 	public static InputEvent	lastInputEvent;
@@ -408,10 +409,9 @@ public class OSWindow {
 				/* LPCSTR devicename = null;
 				if (display >= 0) devicename = cast(LPCSTR)screenModes[display][0].dmDeviceName.ptr;
 				errorcode = ChangeDisplaySettingsExA(devicename, null, null, 0, null); */
-				SetWindowLongA(windowHandle, GWL_EXSTYLE, WS_EX_APPWINDOW);
-				SetWindowLongA(windowHandle, GWL_STYLE, WS_VISIBLE);
-				SetWindowPos(windowHandle, HWND_TOPMOST, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, 
-						SWP_SHOWWINDOW);
+				SetWindowLongA(windowHandle, GWL_EXSTYLE, 0);
+				SetWindowLongA(windowHandle, GWL_STYLE, WS_OVERLAPPEDWINDOW | WS_VISIBLE);
+				SetWindowPos(windowHandle, HWND_TOPMOST, prevVals[0], prevVals[1], prevVals[2], prevVals[3], SWP_SHOWWINDOW);
 				errorcode = ChangeDisplaySettingsA(null, 0);
 				ShowWindow(windowHandle, SW_NORMAL);
 				break;
@@ -419,6 +419,7 @@ public class OSWindow {
 				/* LPCSTR devicename = null;
 				if (display >= 0) devicename = cast(LPCSTR)screenModes[display][0].dmDeviceName.ptr;
 				errorcode = ChangeDisplaySettingsExA(devicename, null, null, CDS_FULLSCREEN, null); */
+				prevVals = getWindowPosition();
 				DEVMODEA currDesktopSetting;
 				EnumDisplaySettingsA(null, ENUM_CURRENT_SETTINGS, &currDesktopSetting);
 				SetWindowLongA(windowHandle, GWL_EXSTYLE, WS_EX_APPWINDOW | WS_EX_TOPMOST);
@@ -429,6 +430,7 @@ public class OSWindow {
 				ShowWindow(windowHandle, SW_MAXIMIZE);
 				break;
 			default:
+				prevVals = getWindowPosition();
 				if (display <= -1) return 1;
 				if (display >= screenModes.length) return 2;
 				if (mode >= screenModes[display].length) return 3;
@@ -441,7 +443,25 @@ public class OSWindow {
 				break;
 			}
 			return cast(int)errorcode;
-		} 
+		} else {
+			switch (mode) {
+			case DisplayMode.Windowed:
+				Atom wm_state   = XInternAtom (mainDisplay, "_NET_WM_STATE", true );
+				Atom wm_fullscreen = XInternAtom (mainDisplay, "_NET_WM_STATE_FULLSCREEN", true );
+				XChangeProperty(mainDisplay, windowHandle, wm_state, XA_ATOM, 32,
+                PropModeReplace, cast(ubyte*)&wm_fullscreen, 1);
+				break;
+			case DisplayMode.FullscreenDesktop:
+				Atom wm_state   = XInternAtom (mainDisplay, "_NET_WM_STATE", true );
+				Atom wm_fullscreen = XInternAtom (mainDisplay, "_NET_WM_STATE_FULLSCREEN", true );
+				XChangeProperty(mainDisplay, windowHandle, wm_state, XA_ATOM, 32,
+                PropModeReplace, cast(ubyte*)&wm_fullscreen, 1);
+				break;
+			default:
+				return 5;
+			}
+			return 0;
+		}
 	}
 	public ScreenMode setScreenMode(ScreenMode mode) @nogc nothrow {
 		import std.math;
