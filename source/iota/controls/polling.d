@@ -617,10 +617,10 @@ version (Windows) {
 				}
 				output.type = InputEventType.MouseClick;
 				if (xe.type == ButtonPress) {
-					output.mouseCE.dir = 0;
+					output.mouseCE.dir = 1;
 					mouse.lastButtonState |= 1<<(output.mouseCE.button - 1);
 				} else {
-					output.mouseCE.dir = 1;
+					output.mouseCE.dir = 0;
 					mouse.lastButtonState &= ~(1<<(output.mouseCE.button - 1));
 				}
 				output.mouseCE.x = xe.xbutton.x;
@@ -667,7 +667,7 @@ version (Windows) {
 					output.button.id = translateKeyCode(xe.xkey.keycode);
 					keyb.setModifiers(xe.xkey.state);
 					output.button.aux = keyb.getModifiers();
-					
+					output.button.dir = xe.type == KeyPress ? 1 : 0;
 				}
 				return 1;
 			case ConfigureNotify:

@@ -18,6 +18,7 @@ version (Windows) {
 	import x11.X;
 	import x11.Xresource;
 	import x11.Xutil;
+	import x11.Xatom;
 	import iota.window.backend_x11;
 	import x11.extensions.XI;
 	import x11.extensions.XI2;
@@ -172,6 +173,13 @@ public class OSWindow {
 		protected XSetWindowAttributes attr;
 		//protected GLXDrawable glxDr;
 		protected GLXContext glxContext;
+		struct Hints {
+			uint flags;
+			uint functions;
+			uint decorations;
+			int inputMode;
+			uint status;
+		}
 		/**
 		 * Initializes X11.
 		 */
@@ -446,16 +454,28 @@ public class OSWindow {
 		} else {
 			switch (mode) {
 			case DisplayMode.Windowed:
-				Atom wm_state   = XInternAtom (mainDisplay, "_NET_WM_STATE", true );
-				Atom wm_fullscreen = XInternAtom (mainDisplay, "_NET_WM_STATE_FULLSCREEN", true );
-				XChangeProperty(mainDisplay, windowHandle, wm_state, XA_ATOM, 32,
-                PropModeReplace, cast(ubyte*)&wm_fullscreen, 1);
+				Atom wm_fullscreen = XInternAtom (mainDisplay, "_NET_WM_STATE_FULLSCREEN", False);
+				XEvent ev;
+				ev.type = ClientMessage;
+				ev.xclient.window = windowHandle;
+				ev.xclient.message_type = XInternAtom (mainDisplay, "_NET_WM_STATE", True);
+				ev.xclient.format = 32;
+				ev.xclient.data.l[0] = display;
+				ev.xclient.data.l[1] = wm_fullscreen;
+				ev.xclient.data.l[2] = wm_fullscreen;
+				XSendEvent(mainDisplay, root, False, ClientMessage, &ev);
 				break;
 			case DisplayMode.FullscreenDesktop:
-				Atom wm_state   = XInternAtom (mainDisplay, "_NET_WM_STATE", true );
-				Atom wm_fullscreen = XInternAtom (mainDisplay, "_NET_WM_STATE_FULLSCREEN", true );
-				XChangeProperty(mainDisplay, windowHandle, wm_state, XA_ATOM, 32,
-                PropModeReplace, cast(ubyte*)&wm_fullscreen, 1);
+				Atom wm_fullscreen = XInternAtom (mainDisplay, "_NET_WM_STATE_FULLSCREEN", True);
+				XEvent ev;
+				ev.type = ClientMessage;
+				ev.xclient.window = windowHandle;
+				ev.xclient.message_type = XInternAtom (mainDisplay, "_NET_WM_STATE", True);
+				ev.xclient.format = 32;
+				ev.xclient.data.l[0] = display;
+				ev.xclient.data.l[1] = wm_fullscreen;
+				ev.xclient.data.l[2] = wm_fullscreen;
+				XSendEvent(mainDisplay, root, False, ClientMessage, &ev);
 				break;
 			default:
 				return 5;
@@ -465,18 +485,20 @@ public class OSWindow {
 	}
 	public ScreenMode setScreenMode(ScreenMode mode) @nogc nothrow {
 		import std.math;
-		LONG errorcode;
-		DEVMODEA currDesktopSetting;
-		EnumDisplaySettingsA(null, ENUM_CURRENT_SETTINGS, &currDesktopSetting);
-		currDesktopSetting.dmPelsWidth = mode.width;
-		currDesktopSetting.dmPelsHeight = mode.height;
-		currDesktopSetting.dmDisplayFrequency = cast(DWORD)nearbyint(mode.refreshRate);
-		SetWindowLongA(windowHandle, GWL_EXSTYLE, WS_EX_APPWINDOW | WS_EX_TOPMOST);
-		SetWindowLongA(windowHandle, GWL_STYLE, WS_POPUP | WS_VISIBLE);
-		SetWindowPos(windowHandle, HWND_TOPMOST, 0, 0, currDesktopSetting.dmPelsWidth, currDesktopSetting.dmPelsHeight, 
-				SWP_SHOWWINDOW);
-		errorcode = ChangeDisplaySettingsA(&currDesktopSetting, CDS_FULLSCREEN);
-		ShowWindow(windowHandle, SW_MAXIMIZE);
+		version (Windows) {
+			LONG errorcode;
+			DEVMODEA currDesktopSetting;
+			EnumDisplaySettingsA(null, ENUM_CURRENT_SETTINGS, &currDesktopSetting);
+			currDesktopSetting.dmPelsWidth = mode.width;
+			currDesktopSetting.dmPelsHeight = mode.height;
+			currDesktopSetting.dmDisplayFrequency = cast(DWORD)nearbyint(mode.refreshRate);
+			SetWindowLongA(windowHandle, GWL_EXSTYLE, WS_EX_APPWINDOW | WS_EX_TOPMOST);
+			SetWindowLongA(windowHandle, GWL_STYLE, WS_POPUP | WS_VISIBLE);
+			SetWindowPos(windowHandle, HWND_TOPMOST, 0, 0, currDesktopSetting.dmPelsWidth, currDesktopSetting.dmPelsHeight, 
+					SWP_SHOWWINDOW);
+			errorcode = ChangeDisplaySettingsA(&currDesktopSetting, CDS_FULLSCREEN);
+			ShowWindow(windowHandle, SW_MAXIMIZE);
+		}
 		return ScreenMode.init;
 	}
 	public void setCursor(StandardCursors cursor) {
