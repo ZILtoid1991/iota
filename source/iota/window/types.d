@@ -33,6 +33,7 @@ public enum WindowOptionFlags : ulong {
 	///concern with applications without a menubar.
 	DisableMenuKey	=	1L<<32L,
 }
+/// Describes the color format of a bitmap image 
 public struct ColorFormat {
 	enum ChannelType : ubyte {
 		None		=	0x00,
@@ -49,13 +50,16 @@ public struct ColorFormat {
 		Y			=	0x0B,
 		Z			=	0x0C,
 		Greyscale	=	0x0D,
+		flag_FP		=	0x80,	///Bit set if channel is floating point
 	}
-	ubyte[8]	chBits;
-	ubyte[8]	chType;
+	ubyte[8]	chBits;			///Stores the number of bits for each color channel.
+	ubyte[8]	chType;			///Stores the channel type information. Zero if channel not used or is padding bits
+	///Returns the default RGBA32 color format for the given system.
 	static ColorFormat defaultRGBA32() @nogc @safe nothrow {
 		return ColorFormat([8,8,8,8,0,0,0,0], 
 			[ChannelType.Red, ChannelType.Green, ChannelType.Blue, ChannelType.Alpha, 0, 0, 0, 0]);
 	}
+	///Returns the total number of bits.
 	int getTotalBits() @nogc @safe pure nothrow const {
 		return chBits[0] + chBits[1] + chBits[2] + chBits[3] + chBits[4] + chBits[5] + chBits[6] + chBits[7];
 	}
@@ -67,7 +71,7 @@ public class WindowBitmap {
 	uint		width;		///Width of the bitmap.
 	uint		height;		///Height of the bitmap.
 	size_t		pitch;		///Size of a single scanline in bytes.
-	ColorFormat format;		///
+	ColorFormat format;		///Stores color format information for this bitmap.
 	///Stores the pixeldata of the bitmap.
 	///Byte order should match system defaults to avoid conversions.
 	ubyte[]		pixels;
@@ -80,12 +84,31 @@ public class WindowBitmap {
 		pitch = (width * getTotalBits) / 8;
 		pitch += (width * getTotalBits) % 8 ? 1 : 0;
 	}
+	///Returns the total number of bits.
 	int getTotalBits() @nogc @safe pure nothrow {
 		return format.getTotalBits;
 	}
 }
+///Defines standard cursors that can be chosen by the user.
+///Please note some of them might be exclusive to certain OSes and/or desktop environments.
 public enum StandardCursors {
 	init,
+	Arrow,
+	TextSelect,
+	Busy,
+	PrecisionSelect,
+	AltSelect,
+	ResizeNESW,
+	ResizeNWSE,
+	ResizeNS,
+	ResizeWE,
+	Move,
+	Forbidden,
+	Hand,
+	WaitArrow,
+	HelpSelect,
+	LocationSelect,
+	PersonSelect,
 }
 ///Display mode accessing shorthands.
 public enum DisplayMode {
