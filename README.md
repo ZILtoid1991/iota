@@ -12,10 +12,12 @@ Input-output (audio, controls, etc) library for D. Intended as a D language nati
 |Pen Tablet                |Not yet implemented                 |Not yet implemented                 |
 |Game controllers          |XInput: working                     |Not yet implemented                 |
 |Windowing                 |Working                             |X11: Working                        |
-|Fullscreen window support |Working (video modes untested)      |Does not work                       |
+|Fullscreen window support |Working (video modes untested)      |X11: Enter only                     |
 |OpenGL output             |Working                             |Working                             |
 
 MacOSX is not yet supported due to lack of hardware. Please consider contributing to this project!
+
+Wayland is not supported yet as XWayland provides sufficient compatibility.
 
 ## Audio
 
@@ -67,12 +69,15 @@ I/O without extensions now works, XInput2 support will be added once I find or s
 
 ### Windows
 
-Got most of the non-basic stuff working. Bug related to window styles fixed.
+Got most of the basic stuff working. Bug related to window styles fixed.
+
+Fullscreen is working, video modes are untested as of now.
 
 ### Linux
 
-Linux is using X11 for its windowing and I/O. Has one known bug:
-* When the window is closed, X11 replies with `X connection to :0.0 broken (explicit kill or server shutdown).`
+Linux is using X11 for its windowing and I/O. Has these known bugs:
+* When the window is closed, X11 replies with `X connection to :0.0 broken (explicit kill or server shutdown).`. Could be a race condition related to the destructor.
+* Cannot exit from fullscreen due to a lack of documentation for it.
 
 ## OpenGL
 
