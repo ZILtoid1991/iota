@@ -552,7 +552,60 @@ public class OSWindow {
 		return ScreenMode.init;
 	}
 	public void setCursor(StandardCursors cursor) {
-
+		version (Windows) {
+			HCURSOR winCursor;
+			final switch (cursor) with (StandardCursors) {
+			case Arrow:
+				winCursor = LoadCursorW(mainInst, IDC_ARROW);
+				break;
+			case TextSelect:
+				winCursor = LoadCursorW(mainInst, IDC_IBEAM);
+				break;
+			case Busy:
+				winCursor = LoadCursorW(mainInst, IDC_WAIT);
+				break;
+			case PrecisionSelect:
+				winCursor = LoadCursorW(mainInst, IDC_CROSS);
+				break;
+			case AltSelect:
+				winCursor = LoadCursorW(mainInst, IDC_UPARROW);
+				break;
+			case ResizeNESW:
+				winCursor = LoadCursorW(mainInst, IDC_SIZENESW);
+				break;
+			case ResizeNWSE:
+				winCursor = LoadCursorW(mainInst, IDC_SIZENWSE);
+				break;
+			case ResizeNS:
+				winCursor = LoadCursorW(mainInst, IDC_SIZENS);
+				break;
+			case ResizeWE:
+				winCursor = LoadCursorW(mainInst, IDC_SIZEWE);
+				break;
+			case Move:
+				winCursor = LoadCursorW(mainInst, IDC_SIZEALL);
+				break;
+			case Forbidden:
+				winCursor = LoadCursorW(mainInst, IDC_NO);
+				break;
+			case Hand:
+				winCursor = LoadCursorW(mainInst, IDC_HAND);
+				break;
+			case WaitArrow:
+				winCursor = LoadCursorW(mainInst, IDC_APPSTARTING);
+				break;
+			case HelpSelect:
+				winCursor = LoadCursorW(mainInst, IDC_HELP);
+				break;
+			case LocationSelect:
+				winCursor = LoadCursorW(mainInst, MAKEINTRESOURCE_T!(32_671));
+				break;
+			case PersonSelect:
+				winCursor = LoadCursorW(mainInst, MAKEINTRESOURCE_T!(32_672));
+				break;
+			}
+			SetCursor(winCursor);
+		}
 	}
 	/**
 	 * Creates, then returns the OpenGL handle associated with the window.

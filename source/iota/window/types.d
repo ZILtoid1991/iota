@@ -92,7 +92,7 @@ public class WindowBitmap {
 ///Defines standard cursors that can be chosen by the user.
 ///Please note some of them might be exclusive to certain OSes and/or desktop environments.
 public enum StandardCursors {
-	init,
+	//init,
 	Arrow,
 	TextSelect,
 	Busy,
