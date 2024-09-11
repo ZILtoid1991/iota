@@ -24,6 +24,7 @@ version (Windows) {
 	import x11.extensions.XI2;
 	import x11.extensions.XInput;
 	import x11.extensions.XInput2;
+	import x11.cursorfont;
 	//import deimos.X11.Xlib;
 	//import deimos.X11.X;
 }
@@ -407,7 +408,8 @@ public class OSWindow {
 	 * Sets the window to the given screen mode.
 	 * If `display` is not -1, then it selects a specific display, otherwise it uses the default one.
 	 * `mode` can be either the index of a screen mode, or a value defined by `DisplayMode`
-	 * Returns: 0 on success
+	 * Returns: 0 on success, or a specific error code on error.
+	 * To Do: Get some info on how one exits the fullscreen mode on x11.
 	 */
 	public int setScreenMode(int display, int mode) @nogc nothrow {
 		version (Windows) {
@@ -458,15 +460,25 @@ public class OSWindow {
         	uint x11_AllowedActionsCount, x11_StateCount;
 			switch (mode) {
 			case DisplayMode.Windowed:
-				hint = Hints(0x03, 0x1E, 0x6E);
+				return 4;
+				/* XDeleteProperty(mainDisplay, windowHandle, XInternAtom(mainDisplay, "_NET_WM_ACTION_FULLSCREEN", True));
+				XDeleteProperty(mainDisplay, windowHandle, XInternAtom(mainDisplay, "_NET_WM_ACTION_ABOVE", True));
+				XDeleteProperty(mainDisplay, windowHandle, XInternAtom(mainDisplay, "_NET_WM_STATE_FULLSCREEN", True));
+				XDeleteProperty(mainDisplay, windowHandle, XInternAtom(mainDisplay, "_NET_WM_STATE_ABOVE", True));
 
-				x11_AllowedActions[x11_AllowedActionsCount++] = XInternAtom(mainDisplay, "_NET_WM_ACTION_MOVE", True);
-				x11_AllowedActions[x11_AllowedActionsCount++] = XInternAtom(mainDisplay, "_NET_WM_ACTION_RESIZE", True);
-				x11_AllowedActions[x11_AllowedActionsCount++] = XInternAtom(mainDisplay, "_NET_WM_ACTION_CLOSE", True);
-				x11_AllowedActions[x11_AllowedActionsCount++] = XInternAtom(mainDisplay, "_NET_WM_ACTION_MINIMIZE", True);
-				x11_AllowedActions[x11_AllowedActionsCount++] = XInternAtom(mainDisplay, "_NET_WM_ACTION_MAXIMIZE_HORZ", True);
-				x11_AllowedActions[x11_AllowedActionsCount++] = XInternAtom(mainDisplay, "_NET_WM_ACTION_MAXIMIZE_VERT", True);
+				XEvent ev;
+				ev.type = ClientMessage;
+				ev.xclient.window = windowHandle;
+				ev.xclient.message_type = XInternAtom (mainDisplay, "_NET_WM_STATE", True);
+				ev.xclient.format = 32;
+				ev.xclient.data.l[0] = 1;
+				ev.xclient.data.l[1] = XInternAtom(mainDisplay, "_NET_WM_STATE_FULLSCREEN", True);
+				ev.xclient.data.l[2] = 0;
+
+				XMapWindow(mainDisplay, windowHandle);
+				XSendEvent(mainDisplay, root, False, SubstructureRedirectMask | SubstructureNotifyMask, &ev);
 				
+				XFlush(mainDisplay); */
 				break;
 			case DisplayMode.FullscreenDesktop:
 				prevVals = getWindowPosition();
@@ -489,31 +501,26 @@ public class OSWindow {
 
 				XSetWMNormalHints(mainDisplay, windowHandle, &sizeHints);
 				
-				
-				break;
-			default:
-				return 5;
-			}
-			Atom motifWindowHintsAtom = XInternAtom(mainDisplay, "_MOTIF_WM_HINTS", True);
-			if (motifWindowHintsAtom != None) {
-				XChangeProperty(mainDisplay, windowHandle, motifWindowHintsAtom, motifWindowHintsAtom, 32, PropModeReplace, 
-						cast(ubyte*)&hint, 5);
-			}
-			Atom xaAtom = XInternAtom(mainDisplay, "XA_ATOM", True);
-			if (xaAtom != None) {
-				Atom allowedActionsAtom = XInternAtom(mainDisplay, "_NET_WM_ALLOWED_ACTIONS", True);
-				if (allowedActionsAtom != None) {
-					XChangeProperty(mainDisplay, windowHandle, allowedActionsAtom, xaAtom, 32, PropModeReplace, 
-							cast(ubyte*)x11_AllowedActions.ptr, x11_AllowedActionsCount);
+				Atom motifWindowHintsAtom = XInternAtom(mainDisplay, "_MOTIF_WM_HINTS", True);
+				if (motifWindowHintsAtom != None) {
+					XChangeProperty(mainDisplay, windowHandle, motifWindowHintsAtom, motifWindowHintsAtom, 32, PropModeReplace, 
+							cast(ubyte*)&hint, 5);
 				}
+				Atom xaAtom = XInternAtom(mainDisplay, "XA_ATOM", True);
+				if (xaAtom != None) {
+					Atom allowedActionsAtom = XInternAtom(mainDisplay, "_NET_WM_ALLOWED_ACTIONS", True);
+					if (allowedActionsAtom != None) {
+						XChangeProperty(mainDisplay, windowHandle, allowedActionsAtom, xaAtom, 32, PropModeReplace, 
+								cast(ubyte*)x11_AllowedActions.ptr, x11_AllowedActionsCount);
+					}
 
-				Atom stateAtom = XInternAtom(mainDisplay, "_NET_WM_ALLOWED_ACTIONS", True);
-				if (stateAtom != None) {
-					XChangeProperty(mainDisplay, windowHandle, stateAtom, xaAtom, 32, PropModeReplace, 
-							cast(ubyte*)x11_AllowedActions.ptr, x11_AllowedActionsCount);
+					Atom stateAtom = XInternAtom(mainDisplay, "_NET_WM_STATE", True);
+					if (stateAtom != None) {
+						XChangeProperty(mainDisplay, windowHandle, stateAtom, xaAtom, 32, PropModeReplace, cast(ubyte*)x11_State.ptr, 
+								x11_StateCount);
+					}
 				}
-			}
-			if (mode != DisplayMode.Windowed) {
+				
 				XEvent ev;
 				ev.type = ClientMessage;
 				ev.xclient.window = windowHandle;
@@ -525,11 +532,13 @@ public class OSWindow {
 
 				XMapWindow(mainDisplay, windowHandle);
 				XSendEvent(mainDisplay, root, False, SubstructureRedirectMask | SubstructureNotifyMask, &ev);
-			} else {
-				XMapWindow(mainDisplay, windowHandle);
-				XMoveResizeWindow(mainDisplay, windowHandle, prevVals[0], prevVals[1], prevVals[2], prevVals[3]);
+				
+				XFlush(mainDisplay);
+				break;
+			default:
+				return 5;
 			}
-			XFlush(mainDisplay);
+			
 			return 0;
 		}
 	}
@@ -605,6 +614,59 @@ public class OSWindow {
 				break;
 			}
 			SetCursor(winCursor);
+		} else {
+			Cursor x11_cursor;
+			final switch (cursor) with (StandardCursors) {
+			case Arrow:
+				x11_cursor = XCreateFontCursor(mainDisplay, XC_left_ptr);
+				break;
+			case TextSelect:
+				x11_cursor = XCreateFontCursor(mainDisplay, XC_xterm);
+				break;
+			case Busy:
+				x11_cursor = XCreateFontCursor(mainDisplay, XC_clock);
+				break;
+			case PrecisionSelect:
+				x11_cursor = XCreateFontCursor(mainDisplay, XC_crosshair);
+				break;
+			case AltSelect:
+				x11_cursor = XCreateFontCursor(mainDisplay, XC_center_ptr);
+				break;
+			case ResizeNESW:
+				x11_cursor = XCreateFontCursor(mainDisplay, XC_sizing);
+				break;
+			case ResizeNWSE:
+				x11_cursor = XCreateFontCursor(mainDisplay, XC_sizing);
+				break;
+			case ResizeNS:
+				x11_cursor = XCreateFontCursor(mainDisplay, XC_sb_v_double_arrow);
+				break;
+			case ResizeWE:
+				x11_cursor = XCreateFontCursor(mainDisplay, XC_sb_h_double_arrow);
+				break;
+			case Move:
+				x11_cursor = XCreateFontCursor(mainDisplay, XC_fleur);
+				break;
+			case Forbidden:
+				x11_cursor = XCreateFontCursor(mainDisplay, XC_X_cursor);
+				break;
+			case Hand:
+				x11_cursor = XCreateFontCursor(mainDisplay, XC_hand2 );
+				break;
+			case WaitArrow:
+				x11_cursor = XCreateFontCursor(mainDisplay, XC_watch);
+				break;
+			case HelpSelect:
+				x11_cursor = XCreateFontCursor(mainDisplay, XC_question_arrow);
+				break;
+			case LocationSelect:
+				x11_cursor = XCreateFontCursor(mainDisplay, XC_arrow);
+				break;
+			case PersonSelect:
+				x11_cursor = XCreateFontCursor(mainDisplay, XC_man);
+				break;
+			}
+			XDefineCursor(mainDisplay, windowHandle, x11_cursor);
 		}
 	}
 	/**
