@@ -455,30 +455,38 @@ public class OSWindow {
 			return cast(int)errorcode;
 		} else {
 			Atom windowType = XInternAtom (mainDisplay, "_NET_WM_WINDOW_TYPE_NORMAL", True);
+			XEvent ev;
 			Hints hint;
 			Atom[10] x11_AllowedActions, x11_State;
         	uint x11_AllowedActionsCount, x11_StateCount;
 			switch (mode) {
 			case DisplayMode.Windowed:
-				return 4;
-				/* XDeleteProperty(mainDisplay, windowHandle, XInternAtom(mainDisplay, "_NET_WM_ACTION_FULLSCREEN", True));
+				
+				hint = Hints(0x03, 0x01, 0x01, 0, 0);
+
+				XDeleteProperty(mainDisplay, windowHandle, XInternAtom(mainDisplay, "_NET_WM_ACTION_FULLSCREEN", True));
 				XDeleteProperty(mainDisplay, windowHandle, XInternAtom(mainDisplay, "_NET_WM_ACTION_ABOVE", True));
 				XDeleteProperty(mainDisplay, windowHandle, XInternAtom(mainDisplay, "_NET_WM_STATE_FULLSCREEN", True));
 				XDeleteProperty(mainDisplay, windowHandle, XInternAtom(mainDisplay, "_NET_WM_STATE_ABOVE", True));
 
-				XEvent ev;
+				x11_AllowedActions[x11_AllowedActionsCount++] = XInternAtom(mainDisplay, "_NET_WM_ACTION_MOVE", True);
+                x11_AllowedActions[x11_AllowedActionsCount++] = XInternAtom(mainDisplay, "_NET_WM_ACTION_RESIZE", True);
+                x11_AllowedActions[x11_AllowedActionsCount++] = XInternAtom(mainDisplay, "_NET_WM_ACTION_CLOSE", True);
+                x11_AllowedActions[x11_AllowedActionsCount++] = XInternAtom(mainDisplay, "_NET_WM_ACTION_MINIMIZE", 
+						True);
+                x11_AllowedActions[x11_AllowedActionsCount++] = XInternAtom(mainDisplay, "_NET_WM_ACTION_MAXIMIZE_HORZ", 
+						True);
+                x11_AllowedActions[x11_AllowedActionsCount++] = XInternAtom(mainDisplay, "_NET_WM_ACTION_MAXIMIZE_VERT", 
+						True);
+
 				ev.type = ClientMessage;
 				ev.xclient.window = windowHandle;
 				ev.xclient.message_type = XInternAtom (mainDisplay, "_NET_WM_STATE", True);
 				ev.xclient.format = 32;
-				ev.xclient.data.l[0] = 1;
+				ev.xclient.data.l[0] = 0;
 				ev.xclient.data.l[1] = XInternAtom(mainDisplay, "_NET_WM_STATE_FULLSCREEN", True);
 				ev.xclient.data.l[2] = 0;
 
-				XMapWindow(mainDisplay, windowHandle);
-				XSendEvent(mainDisplay, root, False, SubstructureRedirectMask | SubstructureNotifyMask, &ev);
-				
-				XFlush(mainDisplay); */
 				break;
 			case DisplayMode.FullscreenDesktop:
 				prevVals = getWindowPosition();
@@ -501,27 +509,9 @@ public class OSWindow {
 
 				XSetWMNormalHints(mainDisplay, windowHandle, &sizeHints);
 				
-				Atom motifWindowHintsAtom = XInternAtom(mainDisplay, "_MOTIF_WM_HINTS", True);
-				if (motifWindowHintsAtom != None) {
-					XChangeProperty(mainDisplay, windowHandle, motifWindowHintsAtom, motifWindowHintsAtom, 32, PropModeReplace, 
-							cast(ubyte*)&hint, 5);
-				}
-				Atom xaAtom = XInternAtom(mainDisplay, "XA_ATOM", True);
-				if (xaAtom != None) {
-					Atom allowedActionsAtom = XInternAtom(mainDisplay, "_NET_WM_ALLOWED_ACTIONS", True);
-					if (allowedActionsAtom != None) {
-						XChangeProperty(mainDisplay, windowHandle, allowedActionsAtom, xaAtom, 32, PropModeReplace, 
-								cast(ubyte*)x11_AllowedActions.ptr, x11_AllowedActionsCount);
-					}
-
-					Atom stateAtom = XInternAtom(mainDisplay, "_NET_WM_STATE", True);
-					if (stateAtom != None) {
-						XChangeProperty(mainDisplay, windowHandle, stateAtom, xaAtom, 32, PropModeReplace, cast(ubyte*)x11_State.ptr, 
-								x11_StateCount);
-					}
-				}
 				
-				XEvent ev;
+				
+				
 				ev.type = ClientMessage;
 				ev.xclient.window = windowHandle;
 				ev.xclient.message_type = XInternAtom (mainDisplay, "_NET_WM_STATE", True);
@@ -530,15 +520,34 @@ public class OSWindow {
 				ev.xclient.data.l[1] = XInternAtom(mainDisplay, "_NET_WM_STATE_FULLSCREEN", True);
 				ev.xclient.data.l[2] = 0;
 
-				XMapWindow(mainDisplay, windowHandle);
-				XSendEvent(mainDisplay, root, False, SubstructureRedirectMask | SubstructureNotifyMask, &ev);
 				
-				XFlush(mainDisplay);
 				break;
 			default:
 				return 5;
 			}
-			
+			Atom motifWindowHintsAtom = XInternAtom(mainDisplay, "_MOTIF_WM_HINTS", True);
+			if (motifWindowHintsAtom != None) {
+				XChangeProperty(mainDisplay, windowHandle, motifWindowHintsAtom, motifWindowHintsAtom, 32, PropModeReplace, 
+						cast(ubyte*)&hint, 5);
+			}
+			Atom xaAtom = XInternAtom(mainDisplay, "XA_ATOM", True);
+			if (xaAtom != None) {
+				Atom allowedActionsAtom = XInternAtom(mainDisplay, "_NET_WM_ALLOWED_ACTIONS", True);
+				if (allowedActionsAtom != None) {
+					XChangeProperty(mainDisplay, windowHandle, allowedActionsAtom, xaAtom, 32, PropModeReplace, 
+							cast(ubyte*)x11_AllowedActions.ptr, x11_AllowedActionsCount);
+				}
+
+				Atom stateAtom = XInternAtom(mainDisplay, "_NET_WM_STATE", True);
+				if (stateAtom != None) {
+					XChangeProperty(mainDisplay, windowHandle, stateAtom, xaAtom, 32, PropModeReplace, cast(ubyte*)x11_State.ptr, 
+							x11_StateCount);
+				}
+			}
+			XMapWindow(mainDisplay, windowHandle);
+			XSendEvent(mainDisplay, root, False, SubstructureRedirectMask | SubstructureNotifyMask, &ev);
+				
+			XFlush(mainDisplay);
 			return 0;
 		}
 	}
