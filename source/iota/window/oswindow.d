@@ -569,7 +569,7 @@ public class OSWindow {
 		}
 		return ScreenMode.init;
 	}
-	public void setCursor(StandardCursors cursor) {
+	public void setCursor(StandardCursors cursor) @nogc nothrow {
 		version (Windows) {
 			HCURSOR winCursor;
 			final switch (cursor) with (StandardCursors) {
@@ -588,16 +588,16 @@ public class OSWindow {
 			case AltSelect:
 				winCursor = LoadCursorW(mainInst, IDC_UPARROW);
 				break;
-			case ResizeNESW:
+			case ResizeTopRight, ResizeBottomLeft:
 				winCursor = LoadCursorW(mainInst, IDC_SIZENESW);
 				break;
-			case ResizeNWSE:
+			case ResizeTopLeft, ResizeBottomRight:
 				winCursor = LoadCursorW(mainInst, IDC_SIZENWSE);
 				break;
-			case ResizeNS:
+			case ResizeTop, ResizeBottom:
 				winCursor = LoadCursorW(mainInst, IDC_SIZENS);
 				break;
-			case ResizeWE:
+			case ResizeLeft, ResizeRight:
 				winCursor = LoadCursorW(mainInst, IDC_SIZEWE);
 				break;
 			case Move:
@@ -633,7 +633,7 @@ public class OSWindow {
 				x11_cursor = XCreateFontCursor(mainDisplay, XC_xterm);
 				break;
 			case Busy:
-				x11_cursor = XCreateFontCursor(mainDisplay, XC_clock);
+				x11_cursor = XCreateFontCursor(mainDisplay, XC_watch);
 				break;
 			case PrecisionSelect:
 				x11_cursor = XCreateFontCursor(mainDisplay, XC_crosshair);
@@ -641,17 +641,29 @@ public class OSWindow {
 			case AltSelect:
 				x11_cursor = XCreateFontCursor(mainDisplay, XC_center_ptr);
 				break;
-			case ResizeNESW:
-				x11_cursor = XCreateFontCursor(mainDisplay, XC_sizing);
+			case ResizeTopLeft:
+				x11_cursor = XCreateFontCursor(mainDisplay, XC_top_left_corner);
 				break;
-			case ResizeNWSE:
-				x11_cursor = XCreateFontCursor(mainDisplay, XC_sizing);
+			case ResizeTopRight:
+				x11_cursor = XCreateFontCursor(mainDisplay, XC_top_right_corner);
 				break;
-			case ResizeNS:
-				x11_cursor = XCreateFontCursor(mainDisplay, XC_sb_v_double_arrow);
+			case ResizeBottomLeft:
+				x11_cursor = XCreateFontCursor(mainDisplay, XC_bottom_left_corner);
 				break;
-			case ResizeWE:
-				x11_cursor = XCreateFontCursor(mainDisplay, XC_sb_h_double_arrow);
+			case ResizeBottomRight:
+				x11_cursor = XCreateFontCursor(mainDisplay, XC_bottom_right_corner);
+				break;
+			case ResizeLeft:
+				x11_cursor = XCreateFontCursor(mainDisplay, XC_left_side);
+				break;
+			case ResizeRight:
+				x11_cursor = XCreateFontCursor(mainDisplay, XC_right_side);
+				break;
+			case ResizeTop:
+				x11_cursor = XCreateFontCursor(mainDisplay, XC_top_side);
+				break;
+			case ResizeBottom:
+				x11_cursor = XCreateFontCursor(mainDisplay, XC_bottom_side);
 				break;
 			case Move:
 				x11_cursor = XCreateFontCursor(mainDisplay, XC_fleur);
@@ -663,7 +675,7 @@ public class OSWindow {
 				x11_cursor = XCreateFontCursor(mainDisplay, XC_hand2 );
 				break;
 			case WaitArrow:
-				x11_cursor = XCreateFontCursor(mainDisplay, XC_watch);
+				x11_cursor = XCreateFontCursor(mainDisplay, XC_clock);
 				break;
 			case HelpSelect:
 				x11_cursor = XCreateFontCursor(mainDisplay, XC_question_arrow);

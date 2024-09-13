@@ -71,6 +71,70 @@ int main(string[] args) {
 					HapticDevice hd = cast(HapticDevice)event.source;
 					hd.applyEffect(HapticDevice.Capabilities.RightMotor, 0, event.button.auxF);
 				}
+			} else if (event.type == InputEventType.Keyboard) {
+				switch (event.button.id) {
+				case ScanCode.A:
+					inputSurface.setCursor(StandardCursors.Arrow);
+					break;
+				case ScanCode.B:
+					inputSurface.setCursor(StandardCursors.TextSelect);
+					break;
+				case ScanCode.C:
+					inputSurface.setCursor(StandardCursors.Busy);
+					break;
+				case ScanCode.D:
+					inputSurface.setCursor(StandardCursors.PrecisionSelect);
+					break;
+				case ScanCode.E:
+					inputSurface.setCursor(StandardCursors.AltSelect);
+					break;
+				case ScanCode.F:
+					inputSurface.setCursor(StandardCursors.ResizeTopLeft);
+					break;
+				case ScanCode.G:
+					inputSurface.setCursor(StandardCursors.ResizeTopRight);
+					break;
+				case ScanCode.H:
+					inputSurface.setCursor(StandardCursors.ResizeBottomLeft);
+					break;
+				case ScanCode.I:
+					inputSurface.setCursor(StandardCursors.ResizeBottomRight);
+					break;
+				case ScanCode.J:
+					inputSurface.setCursor(StandardCursors.ResizeLeft);
+					break;
+				case ScanCode.K:
+					inputSurface.setCursor(StandardCursors.ResizeRight);
+					break;
+				case ScanCode.L:
+					inputSurface.setCursor(StandardCursors.ResizeTop);
+					break;
+				case ScanCode.M:
+					inputSurface.setCursor(StandardCursors.ResizeBottom);
+					break;
+				case ScanCode.N:
+					inputSurface.setCursor(StandardCursors.Move);
+					break;
+				case ScanCode.O:
+					inputSurface.setCursor(StandardCursors.Forbidden);
+					break;
+				case ScanCode.P:
+					inputSurface.setCursor(StandardCursors.Hand);
+					break;
+				case ScanCode.Q:
+					inputSurface.setCursor(StandardCursors.WaitArrow);
+					break;
+				case ScanCode.R:
+					inputSurface.setCursor(StandardCursors.HelpSelect);
+					break;
+				case ScanCode.S:
+					inputSurface.setCursor(StandardCursors.LocationSelect);
+					break;
+				case ScanCode.T:
+					inputSurface.setCursor(StandardCursors.PersonSelect);
+					break;
+				default: break;
+				}
 			}
 			writeln(event.toString());
 		}
