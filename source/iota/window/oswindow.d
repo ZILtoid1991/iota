@@ -75,6 +75,7 @@ public class OSWindow {
 	protected WindowH			windowHandle;
 	///Contains various statuscodes of the window.
 	protected Status			status;
+	protected bool				customCursor;
 	///Stores various flags related to the window.
 	protected uint				flags;
 	protected int[4]			prevVals;
@@ -118,6 +119,7 @@ public class OSWindow {
 		protected LPCWSTR			classname, windowname;
 		protected HGLRC				glRenderingContext;
 		protected HDC				windowDeviceContext;
+		protected HCURSOR			winCursor;
 		///hInstance is stored here, which is needed for window creation, etc. (WINDOWS ONLY)
 		public static HINSTANCE		mainInst;
 		///The current input language code (Windows).
@@ -571,7 +573,8 @@ public class OSWindow {
 	}
 	public void setCursor(StandardCursors cursor) @nogc nothrow {
 		version (Windows) {
-			HCURSOR winCursor;
+			if (cursor == StandardCursors.Arrow) customCursor = false;
+			else customCursor = true;
 			final switch (cursor) with (StandardCursors) {
 			case Arrow:
 				winCursor = LoadCursorW(mainInst, IDC_ARROW);
@@ -773,6 +776,12 @@ public class OSWindow {
 					window.y = 0;
 					window.width = LOWORD(lParam);
 					window.height = HIWORD(lParam);
+				}
+				goto default;
+			case WM_SETCURSOR:
+				if (customCursor && LOWORD(lParam) == HTCLIENT) {
+					//SetCursor(winCursor);
+					return TRUE;
 				}
 				goto default;
 			case WM_INPUTLANGCHANGEREQUEST, WM_INPUTLANGCHANGE:

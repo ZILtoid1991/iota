@@ -9,7 +9,7 @@ Input-output (audio, controls, etc) library for D. Intended as a D language nati
 |MIDI                      |Input+Output, with some caveat      |Input tested, output should also work|
 |Keyboard                  |Legacy: Works; Raw: Works           |X11: mostly works                   |
 |Mouse                     |Legacy: Works; Raw: Works           |X11: working                        |
-|Mouse cursors             |Work                                |Work                                |
+|Mouse cursors             |Does not work for some reason       |Working                             |
 |Pen Tablet                |Not yet implemented                 |Not yet implemented                 |
 |Game controllers          |XInput: working                     |Not yet implemented                 |
 |Windowing                 |Working                             |X11: Working                        |
