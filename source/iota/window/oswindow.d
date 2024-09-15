@@ -75,7 +75,6 @@ public class OSWindow {
 	protected WindowH			windowHandle;
 	///Contains various statuscodes of the window.
 	protected Status			status;
-	protected bool				customCursor;
 	///Stores various flags related to the window.
 	protected uint				flags;
 	protected int[4]			prevVals;
@@ -262,8 +261,7 @@ public class OSWindow {
 			
 			classname = toUTF16z(name);
 			registeredClass = WNDCLASSW(CS_HREDRAW | CS_VREDRAW | CS_OWNDC, &wndprocCallback, 0, 0, mainInst, 
-					LoadIcon(null, IDI_APPLICATION), LoadCursor(null, IDC_ARROW), 
-					GetSysColorBrush(COLOR_3DFACE), null, classname);
+					LoadIcon(null, IDI_APPLICATION), null, GetSysColorBrush(COLOR_3DFACE), null, classname);
 			regClResult = RegisterClassW(&registeredClass);
 			if (!regClResult) {
 				auto errorCode = GetLastError();
@@ -573,59 +571,59 @@ public class OSWindow {
 	}
 	public void setCursor(StandardCursors cursor) @nogc nothrow {
 		version (Windows) {
-			if (cursor == StandardCursors.Arrow) customCursor = false;
-			else customCursor = true;
 			final switch (cursor) with (StandardCursors) {
 			case Arrow:
-				winCursor = LoadCursorW(mainInst, IDC_ARROW);
+				winCursor = LoadCursorW(NULL, IDC_ARROW);
 				break;
 			case TextSelect:
-				winCursor = LoadCursorW(mainInst, IDC_IBEAM);
+				winCursor = LoadCursorW(NULL, IDC_IBEAM);
 				break;
 			case Busy:
-				winCursor = LoadCursorW(mainInst, IDC_WAIT);
+				winCursor = LoadCursorW(NULL, IDC_WAIT);
 				break;
 			case PrecisionSelect:
-				winCursor = LoadCursorW(mainInst, IDC_CROSS);
+				winCursor = LoadCursorW(NULL, IDC_CROSS);
 				break;
 			case AltSelect:
-				winCursor = LoadCursorW(mainInst, IDC_UPARROW);
+				winCursor = LoadCursorW(NULL, IDC_UPARROW);
 				break;
 			case ResizeTopRight, ResizeBottomLeft:
-				winCursor = LoadCursorW(mainInst, IDC_SIZENESW);
+				winCursor = LoadCursorW(NULL, IDC_SIZENESW);
 				break;
 			case ResizeTopLeft, ResizeBottomRight:
-				winCursor = LoadCursorW(mainInst, IDC_SIZENWSE);
+				winCursor = LoadCursorW(NULL, IDC_SIZENWSE);
 				break;
 			case ResizeTop, ResizeBottom:
-				winCursor = LoadCursorW(mainInst, IDC_SIZENS);
+				winCursor = LoadCursorW(NULL, IDC_SIZENS);
 				break;
 			case ResizeLeft, ResizeRight:
-				winCursor = LoadCursorW(mainInst, IDC_SIZEWE);
+				winCursor = LoadCursorW(NULL, IDC_SIZEWE);
 				break;
 			case Move:
-				winCursor = LoadCursorW(mainInst, IDC_SIZEALL);
+				winCursor = LoadCursorW(NULL, IDC_SIZEALL);
 				break;
 			case Forbidden:
-				winCursor = LoadCursorW(mainInst, IDC_NO);
+				winCursor = LoadCursorW(NULL, IDC_NO);
 				break;
 			case Hand:
-				winCursor = LoadCursorW(mainInst, IDC_HAND);
+				winCursor = LoadCursorW(NULL, IDC_HAND);
 				break;
 			case WaitArrow:
-				winCursor = LoadCursorW(mainInst, IDC_APPSTARTING);
+				winCursor = LoadCursorW(NULL, IDC_APPSTARTING);
 				break;
 			case HelpSelect:
-				winCursor = LoadCursorW(mainInst, IDC_HELP);
+				winCursor = LoadCursorW(NULL, IDC_HELP);
 				break;
 			case LocationSelect:
-				winCursor = LoadCursorW(mainInst, MAKEINTRESOURCE_T!(32_671));
+				winCursor = LoadCursorW(NULL, MAKEINTRESOURCE_T!(32_671));
 				break;
 			case PersonSelect:
-				winCursor = LoadCursorW(mainInst, MAKEINTRESOURCE_T!(32_672));
+				winCursor = LoadCursorW(NULL, MAKEINTRESOURCE_T!(32_672));
 				break;
 			}
-			SetCursor(winCursor);
+			/* SetCursor(winCursor);
+			SetClassLongW(windowHandle, GCL_HCURSOR, cast(DWORD)winCursor);
+			ShowCursor(TRUE); */
 		} else {
 			Cursor x11_cursor;
 			final switch (cursor) with (StandardCursors) {
@@ -779,17 +777,19 @@ public class OSWindow {
 				}
 				goto default;
 			case WM_SETCURSOR:
-				if (customCursor && LOWORD(lParam) == HTCLIENT) {
-					//SetCursor(winCursor);
+				if (LOWORD(lParam) == HTCLIENT && winCursor != NULL) {
+					SetCursor(winCursor);
 					return TRUE;
 				}
+				//return FALSE;
 				goto default;
 			case WM_INPUTLANGCHANGEREQUEST, WM_INPUTLANGCHANGE:
 				status = Status.InputLangCh;
 				inputLang = cast(uint)lParam;
 				with (lastInputEvent) {
 					handle = this.windowHandle;
-					type = InputEventType.WindowMove;
+					type = InputEventType.InputLangChange;
+					rawData[0] = inputLang;
 				}
 				goto default;
 			case WM_PAINT:
