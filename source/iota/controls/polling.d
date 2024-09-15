@@ -482,7 +482,6 @@ version (Windows) {
 	import x11.extensions.XI2;
 	import x11.extensions.XInput;
 	import x11.extensions.XInput2;
-	//import x11.Xlocale;
 	
 	version (iota_use_utf8) {
 		package char[32] chrBuf;
@@ -603,21 +602,16 @@ version (Windows) {
 				output.source = keyb;
 				//keyb.updateKeybMods(keyb, xe.xkey.keycode);
 				if (keyb.isTextInputEn) {
-					KeySym ks;
-					Status status;
-					OSWindow w = OSWindow.byRef(xe.xkey.window);
-					//XFilterEvent(&xe, xe.xkey.window);
+					
 					output.type = InputEventType.TextInput;
-					version (iota_use_utf8) {
-						Xutf8LookupString(w.ic, cast(XKeyPressedEvent*)&xe, chrBuf.ptr, chrCntr, &ks, &status);
-						output.textIn = TextInputEvent(chrBuf, chrCntr);
-					} else {
-						XwcLookupString(w.ic, cast(XKeyPressedEvent*)&xe, chrBuf.ptr, chrCntr, &ks, &status);
-						for (int i ; i < chrCntr ; i++) {
-							chrOut[i] = chrBuf[i];
-						}
-						output.textIn = TextInputEvent(chrOut.ptr, chrCntr);
+					char* strOut = chrBuf.ptr;
+					chrCntr = 0;
+					while (strOut[chrCntr] && chrCntr < chrBuf.length) {
+						chrOut[chrCntr] = strOut[chrCntr];
+						chrCntr++;
 					}
+					output.textIn = TextInputEvent(chrOut.ptr, chrCntr, false);
+					//XFree(strOut);
 				} else {
 					output.type = InputEventType.Keyboard;
 					output.button.auxF = float.nan;
