@@ -83,16 +83,9 @@ version (Windows) {
 			else output.timestamp = getTimestamp();
 			output.handle = msg.hwnd;
 			auto message = msg.message & 0xFF_FF;
-			/* if (!(Keyboard.isMenuKeyDisabled() && (message == WM_SYSKEYDOWN || message == WM_SYSKEYUP || 
-					message == WM_SYSCHAR || message == WM_SYSDEADCHAR)) || 
-					!(Keyboard.isMetaKeyDisabled() && (message == WM_KEYDOWN || message == WM_KEYUP) && (msg.wParam == VK_LWIN 
-					|| msg.wParam == VK_RWIN)) ||
-					!(Keyboard.isMetaKeyCombDisabled() && (message == WM_KEYDOWN || message == WM_KEYUP) && 
-					(keyb.getModifiers | KeyboardModifiers.Meta))) { */
-				//MSG msg0 = msg;
-				//TranslateMessage(&msg0);
+			
 			DispatchMessageW(&msg);
-			/* } */
+			
 			if (Keyboard.isTextInputEn()) {
 				TranslateMessage(&msg);     //This function only translates messages that are mapped to characters, but we still need to translate any keys to text command events
 				if ((msg.message & 0xFF_FF) == WM_KEYDOWN) {
@@ -110,13 +103,10 @@ version (Windows) {
 					output.source = keyb;
 					version (iota_use_utf8) {
 						lastChar[0] = cast(char)(msg.wParam);
-						//output.textIn.text[0] = lastChar[0];
 					} else {
 						lastChar = cast(dchar)(msg.wParam);
-						//output.textIn.text[0] = lastChar;
 					}
-					output.textIn = TextInputEvent(&lastChar, 1);
-					//output.textIn.isClipboard = false;
+					output.textIn = TextInputEvent(&lastChar, 1, false);
 					break;
 				case WM_UNICHAR, WM_DEADCHAR, WM_SYSDEADCHAR:
 					output.type = InputEventType.TextInput;
@@ -125,10 +115,9 @@ version (Windows) {
 						lastChar = encodeUTF8Char(cast(dchar)(msg.wParam));
 					} else {
 						lastChar = cast(dchar)(msg.wParam);
-						output.textIn = TextInputEvent(&lastChar, 1);
-						//output.textIn.text[0] = lastChar;
+						output.textIn = TextInputEvent(&lastChar, 1, 
+								(msg.message & 0xFF_FF) == WM_DEADCHAR || (msg.message & 0xFF_FF) == WM_SYSDEADCHAR);
 					}
-					//output.textIn.isClipboard = false;
 					break;
 				case WM_KEYDOWN, WM_KEYUP, WM_SYSKEYDOWN, WM_SYSKEYUP:
 					output.type = InputEventType.Keyboard;
@@ -153,8 +142,6 @@ version (Windows) {
 					output.mouseSE.y = GET_Y_LPARAM(msg.lParam);
 					mouse.lastPosition[0] = output.mouseSE.x;
 					mouse.lastPosition[1] = output.mouseSE.y;
-					//lastMousePos[0] = output.mouseSE.x;
-					//lastMousePos[1] = output.mouseSE.y;
 					break;
 				case WM_MOUSEMOVE:
 					output.type = InputEventType.MouseMove;
@@ -245,11 +232,7 @@ version (Windows) {
 					break;
 			}
 		} else {	//No more events for this window, move onto the next if any
-			/* winCount++;
-			if (winCount < OSWindow.refCount.length)
-				goto tryAgain;	//Not the nicest solution, could have been done with recursive calls, but that would have had stack allocation.
-			else	//All windows have tested for events, reset window counter, then return with 0 (finished)
-				winCount = 0; */
+			
 			return 0;
 		}
 		return 1;
@@ -262,14 +245,7 @@ version (Windows) {
 			output.timestamp = msg.time * 1000L;
 			output.handle = msg.hwnd;
 			auto message = msg.message & 0xFF_FF;
-			/* if (!(Keyboard.isMenuKeyDisabled() && (message == WM_SYSKEYDOWN || message == WM_SYSKEYUP || message == WM_SYSCHAR 
-					|| message == WM_SYSDEADCHAR)) || 
-					!(Keyboard.isMetaKeyDisabled() && (message == WM_KEYDOWN || message == WM_KEYUP) && (msg.wParam == VK_LWIN 
-					|| msg.wParam == VK_RWIN)) ||
-					!(Keyboard.isMetaKeyCombDisabled() && (message == WM_KEYDOWN || message == WM_KEYUP) && 
-					(keyb.getModifiers | KeyboardModifiers.Meta))) { */
 			DispatchMessageW(&msg);
-			/* } */
 			if (Keyboard.isTextInputEn()) {
 				TranslateMessage(&msg);     //This function only translates messages that are mapped to characters, but we still need to translate any keys to text command events
 				if ((msg.message & 0xFF_FF) == WM_KEYDOWN) {
@@ -287,13 +263,10 @@ version (Windows) {
 					output.source = keyb;
 					version (iota_use_utf8) {
 						lastChar[0] = cast(char)(msg.wParam);
-						//output.textIn.text[0] = lastChar[0];
 					} else {
 						lastChar = cast(dchar)(msg.wParam);
-						//output.textIn.text[0] = lastChar;
 					}
 					output.textIn = TextInputEvent(&lastChar, 1);
-					//output.textIn.isClipboard = false;
 					break;
 				case WM_UNICHAR, WM_DEADCHAR, WM_SYSDEADCHAR:
 					output.type = InputEventType.TextInput;
@@ -303,19 +276,12 @@ version (Windows) {
 					} else {
 						lastChar = cast(dchar)(msg.wParam);
 						output.textIn = TextInputEvent(&lastChar, 1);
-						//output.textIn.text[0] = lastChar;
 					}
-					//output.textIn.isClipboard = false;
 					break;
 				case WM_INPUT:		//Raw input
-					/* UINT hdrSize = RAWINPUT.sizeof;
-					ubyte[RAWINPUT.sizeof] hdr; */
 					UINT dwSize = 1024;
-					//ubyte[256] lpb;
-					/* GetRawInputData(cast(HRAWINPUT)msg.lParam, RID_INPUT, hdr.ptr, &hdrSize, RAWINPUTHEADER.sizeof); */
 					GetRawInputData(cast(HRAWINPUT)msg.lParam, RID_INPUT, rawInputBuf.ptr, &dwSize, RAWINPUTHEADER.sizeof);
 					RAWINPUT* rawInput = cast(RAWINPUT*)rawInputBuf.ptr;
-					/* RAWINPUT* riHeader = cast(RAWINPUT*)hdr.ptr; */
 					switch (rawInput.header.dwType) {
 						case RIM_TYPEMOUSE:
 							Mouse device = cast(Mouse)getDevByHandle(rawInput.header.hDevice);
@@ -361,11 +327,6 @@ version (Windows) {
 								else if (amount <= byte.min) amount = byte.min;
 								output.mouseHP.vScroll = cast(byte)amount;
 							}
-							//}
-							/* if (eventBuff.length) {
-								output = eventBuff[0];
-								eventBuff = eventBuff[1..$];
-							} */
 							break;
 						case RIM_TYPEKEYBOARD:
 							RAWKEYBOARD inputData = rawInput.data.keyboard;
@@ -508,11 +469,7 @@ version (Windows) {
 					break;
 			}
 		} else {	//No more events for this window, move onto the next if any
-			/* winCount++;
-			if (winCount < OSWindow.refCount.length)
-				goto tryAgain;	//Not the nicest solution, could have been done with recursive calls, but that would have had stack allocation.
-			else	//All windows have tested for events, reset window counter, then return with 0 (finished)
-				winCount = 0; */
+			
 			return 0;
 		}
 		return 1;
