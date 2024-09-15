@@ -302,9 +302,9 @@ public struct TextInputEvent {
 	private io_chr_t* _text;
 	///The amount of characters on the buffer.
 	private size_t _length;
-	
+	bool		isDeadChar;
 	string toString() @safe pure const {
-		return "Text: \"" ~ to!string(text[0.._length]); 
+		return "Text: \"" ~ to!string(text[0.._length]) ~ "\" ; isDeadChar: " ~ to!string(isDeadChar); 
 	}
 	io_str_t text() @nogc @trusted pure nothrow const {
 		io_str_t helperFunc() @nogc @system pure nothrow const {
@@ -458,6 +458,7 @@ public struct InputEvent {
 		PenEvent			pen;
 		WindowEvent			window;
 		ClipboardEvent		clipboard;
+		uint[5]				rawData;
 	}
 	string toString() {
 		string result = "Source: " ~ (source is null ? "null" : "{" ~ source.toString ~ "}") ~ " ; Window handle: " ~ 
