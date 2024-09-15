@@ -23,6 +23,10 @@ struct Options {
 	@Option("rumbletest", "r")
 	@Help("Enables rumble test for XInput devices.")
 	int rumbletest;
+
+	@Option("textinputtest", "t")
+	@Help("Enables text input for testing.")
+	int textinputtest;
 }
 
 immutable usage = usageString!Options("IOTA input tester");
@@ -56,6 +60,7 @@ int main(string[] args) {
 	}
 	writeln(devList);
 	bool isRunning = true;
+	keyb.setTextInput(options.textinputtest == 1);
 	while (isRunning) {
 		InputEvent event;
 		poll(event);
