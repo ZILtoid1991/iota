@@ -482,13 +482,12 @@ version (Windows) {
 	import x11.extensions.XI2;
 	import x11.extensions.XInput;
 	import x11.extensions.XInput2;
+	import core.stdc.inttypes : wchar_t;
 	
+	package int chrCntr;
 	version (iota_use_utf8) {
-		package char[32] chrBuf;
-		package int chrCntr;
+		package char[32] chrOut;
 	} else {
-		package wchar[32] chrBuf;
-		package int chrCntr;
 		package dchar[32] chrOut;
 	}
 	package int[5] mousePosTracker;	//rootX; rootY; winX; winY; mask
@@ -602,15 +601,21 @@ version (Windows) {
 				output.source = keyb;
 				//keyb.updateKeybMods(keyb, xe.xkey.keycode);
 				if (keyb.isTextInputEn) {
-					
+					if (xe.type == KeyPress) {
 					output.type = InputEventType.TextInput;
-					char* strOut = chrBuf.ptr;
+					wchar_t[33] chrTemp;
+					OSWindow window = OSWindow.byRef(output.handle);
+					KeySym ks = XKeycodeToKeysym(OSWindow.mainDisplay, cast(ubyte)xe.xkey.keycode, xe.xkey.state);
+					Status status;
+					/* const int result = XwcLookupString(window.ic, &xe.xkey, cast(wchar*)chrTemp.ptr, 
+							cast(int)chrTemp.length, &ks, &status); */
 					chrCntr = 0;
-					while (strOut[chrCntr] && chrCntr < chrBuf.length) {
-						chrOut[chrCntr] = strOut[chrCntr];
+					while (chrTemp[chrCntr] && chrCntr < chrOut.length) {
+						chrOut[chrCntr] = chrTemp[chrCntr];
 						chrCntr++;
 					}
 					output.textIn = TextInputEvent(chrOut.ptr, chrCntr, false);
+					}
 					//XFree(strOut);
 				} else {
 					output.type = InputEventType.Keyboard;
