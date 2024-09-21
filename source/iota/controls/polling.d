@@ -7,6 +7,7 @@ public import iota.controls.system;
 import iota.window.oswindow;
 import iota.controls.keybscancodes;
 import iota.controls.gamectrl;
+import core.stdc.string;
 
 /** 
  * Polls all input devices, and returns the found events in a given order.
@@ -14,7 +15,7 @@ import iota.controls.gamectrl;
  *   output = The input event that was found. 
  * Returns: 1 if an event has been polled, 0 if no events left. Other values are error codes.
  */
-public int poll(ref InputEvent output) nothrow {
+public int poll(ref InputEvent output) nothrow @trusted {
 	int status = mainPollingFun(output);
 	if (status) return status;
 	version (Windows) {
@@ -476,7 +477,9 @@ version (Windows) {
 	}
 } else {
 	import x11.X;
+
 	import x11.Xlib;
+	import x11.Xutil;
 	import x11.Xresource;
 	import x11.extensions.XI;
 	import x11.extensions.XI2;
@@ -485,11 +488,8 @@ version (Windows) {
 	import core.stdc.inttypes : wchar_t;
 	
 	package int chrCntr;
-	version (iota_use_utf8) {
-		package char[32] chrOut;
-	} else {
-		package dchar[32] chrOut;
-	}
+	package char[32] chrOut;
+	
 	package int[5] mousePosTracker;	//rootX; rootY; winX; winY; mask
 	package int[5] mousePosTracker0;//Previous mouse position
 	package WindowH trackedWindow;	//To track the mouse pointer without xinput2
@@ -499,7 +499,7 @@ version (Windows) {
 		
 	}
 	///X11 input handling, no input extensions, only used when xinput2 is not available
-	package int poll_x11_RegularIO(ref InputEvent output) nothrow @nogc {
+	package int poll_x11_RegularIO(ref InputEvent output) nothrow @nogc @system {
 		if (trackedWindow) {
 			if (XQueryPointer(OSWindow.mainDisplay, trackedWindow, &rootReturn, &childReturn, &mousePosTracker[0], 
 					&mousePosTracker[1], &mousePosTracker[2], &mousePosTracker[3], cast(uint*)&mousePosTracker[4]) == 0) {
@@ -599,29 +599,51 @@ version (Windows) {
 				output.timestamp = xe.xkey.time * 1000L;
 				output.handle = xe.xkey.window;
 				output.source = keyb;
+				keyb.setModifiers(xe.xkey.state);
 				//keyb.updateKeybMods(keyb, xe.xkey.keycode);
+				const uint buttonID = translateKeyCode(xe.xkey.keycode);
 				if (keyb.isTextInputEn) {
-					if (xe.type == KeyPress) {
-					output.type = InputEventType.TextInput;
-					wchar_t[33] chrTemp;
-					OSWindow window = OSWindow.byRef(output.handle);
-					KeySym ks = XKeycodeToKeysym(OSWindow.mainDisplay, cast(ubyte)xe.xkey.keycode, xe.xkey.state);
-					Status status;
-					/* const int result = XwcLookupString(window.ic, &xe.xkey, cast(wchar*)chrTemp.ptr, 
-							cast(int)chrTemp.length, &ks, &status); */
+					import x11.keysym;
+					
+					memset(chrOut.ptr, 0, chrOut.length);
 					chrCntr = 0;
-					while (chrTemp[chrCntr] && chrCntr < chrOut.length) {
-						chrOut[chrCntr] = chrTemp[chrCntr];
+					OSWindow window = OSWindow.byRef(output.handle);
+					debug assert(window);
+					KeySym ks;// = XKeycodeToKeysym(OSWindow.mainDisplay, cast(ubyte)xe.xkey.keycode, xe.xkey.state);
+					int count = XLookupString(&xe.xkey, chrOut.ptr, 1, &ks, null);
+						
+					keyb.processTextCommandEvent(output, buttonID, 1);
+					if (output.type != InputEventType.init) {
+						if (xe.type == KeyPress) return 1;//Event is text command key
+						else goto tryAgain;
+					}
+					output.type = InputEventType.TextInput;
+					XIC inputContext = window.ic;
+					if (count && inputContext !is null) {
+						Status status;
+						count = Xutf8LookupString(inputContext, &xe.xkey, chrOut.ptr, 4, &ks, &status);
+					}
+					
+					while (chrOut[chrCntr] && chrCntr + 1 < chrOut.length) {
 						chrCntr++;
 					}
-					output.textIn = TextInputEvent(chrOut.ptr, chrCntr, false);
+					if (!chrCntr) {
+						output.type = InputEventType.Keyboard;
+						output.button.auxF = float.nan;
+						output.button.id = buttonID;
+						output.button.aux = keyb.getModifiers();
+						output.button.dir = xe.type == KeyPress ? 1 : 0;
+					} else if (xe.type != KeyPress) {
+						goto tryAgain;
+					} else {
+						output.textIn = TextInputEvent(chrOut.ptr, chrCntr, false);
 					}
+					
 					//XFree(strOut);
 				} else {
 					output.type = InputEventType.Keyboard;
 					output.button.auxF = float.nan;
-					output.button.id = translateKeyCode(xe.xkey.keycode);
-					keyb.setModifiers(xe.xkey.state);
+					output.button.id = buttonID;
 					output.button.aux = keyb.getModifiers();
 					output.button.dir = xe.type == KeyPress ? 1 : 0;
 				}

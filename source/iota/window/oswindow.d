@@ -254,7 +254,7 @@ public class OSWindow {
 	 *   menu = The menubar of the window, if any.
 	 *   parent = Parent if exists, null otherwise.
 	 */
-	public this(io_str_t title, io_str_t name, int x, int y, int w, int h, uint flags,
+	public this(string title, string name, int x, int y, int w, int h, uint flags,
 			WindowBitmap icon = null, OSWindow parent = null) {
 		this.flags = flags;
 		version (Windows) {
@@ -303,6 +303,7 @@ public class OSWindow {
 					BlackPixel(mainDisplay, scr), WhitePixel(mainDisplay, scr)); */
 			XStoreName(mainDisplay, windowHandle, cast(char*)windowname);
 			//XSelectInput(mainDisplay, windowHandle, 0x01_ff_ff_ff);
+			refCount ~= this;
 			im = XOpenIM(mainDisplay, null, null, null);
 			ic = XCreateIC(im, XNInputStyle, XIMPreeditNothing | XIMStatusNothing, XNClientWindow, windowHandle, null);
 			XMapWindow(mainDisplay, windowHandle);

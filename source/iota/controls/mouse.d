@@ -39,7 +39,7 @@ public class Mouse : InputDevice {
 	package uint		lastButtonState;
 	version (Windows) {
 		//package uint	winButtonState;
-		package this(io_str_t _name, ubyte _devNum, HANDLE devHandle) nothrow {
+		package this(string _name, ubyte _devNum, HANDLE devHandle) nothrow {
 			this._name = _name;
 			this._devNum = _devNum;
 			this.hDevice = devHandle;
@@ -48,7 +48,7 @@ public class Mouse : InputDevice {
 		}
 	} else {
 		package XDevice*	devHandle;
-		package this(io_str_t _name, ubyte _devNum, XID devID) nothrow {
+		package this(string _name, ubyte _devNum, XID devID) nothrow {
 			this._name = _name;
 			this._devNum = _devNum;
 			//this.devHandle = XOpenDevice(OSWindow.mainDisplay, devID);

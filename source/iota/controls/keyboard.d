@@ -54,7 +54,7 @@ public class Keyboard : InputDevice {
 		DisableMetaKeyComb=	1<<12,	///Disables meta key shortcut passthrough to OS
 	}
 	version (Windows) {
-		package this(io_str_t _name, ubyte _devNum, HANDLE devHandle) nothrow {
+		package this(string _name, ubyte _devNum, HANDLE devHandle) nothrow {
 			this._name = _name;
 			this._devNum = _devNum;
 			this.hDevice = devHandle;
@@ -64,7 +64,7 @@ public class Keyboard : InputDevice {
 	} else {
 		package XDevice*	devHandle;
 		package uint		modifierTracker;
-		package this(io_str_t _name, ubyte _devNum, XID devID) {
+		package this(string _name, ubyte _devNum, XID devID) {
 			this._name = _name;
 			this._devNum = _devNum;
 			//this.devHandle = XOpenDevice(OSWindow.mainDisplay, devID);
@@ -261,12 +261,12 @@ public class Keyboard : InputDevice {
 					else
 						ie.textCmd.type = TextCommandType.NewPara;
 					break;
-				default:
+				/* default:
 					ie.type = InputEventType.init;
 					break;
 			}
 		} else {	//up
-			switch (code) {
+			switch (code) { */
 				case ScanCode.INSERT:
 					ie.textCmd.type = TextCommandType.Insert;
 					break;

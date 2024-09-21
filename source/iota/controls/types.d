@@ -161,7 +161,7 @@ public abstract class InputDevice {
 	protected InputDeviceType	_type;		/// Defines the type of the input device
 	protected ubyte				_devNum;	/// Defines the number of the input device within the group of same types
 	protected ubyte				_battP;		/// Current percentage of the battery
-	protected io_str_t			_name;		/// The name of the device if there's any
+	protected string			_name;		/// The name of the device if there's any
 	/// Status flags of the device.
 	/// Bits 0-7 are common, 8-15 are special to each device/interface type.
 	/// Note: flags related to indicators/etc should be kept separately.
@@ -227,7 +227,7 @@ public abstract class InputDevice {
 		else
 			return ubyte.max;
 	}
-	public io_str_t name() @nogc @safe pure nothrow const @property {
+	public string name() @nogc @safe pure nothrow const @property {
 		return _name;
 	}
 	public override string toString() @safe const {
@@ -299,17 +299,18 @@ public struct ButtonEvent {
  */
 public struct TextInputEvent {
 	///Pointer to the character buffer.
-	private io_chr_t* _text;
+	private char* _text;
 	///The amount of characters on the buffer.
 	private size_t _length;
 	bool		isDeadChar;
 	string toString() @safe pure const {
-		return "Text: \"" ~ to!string(text[0.._length]) ~ "\" ; isDeadChar: " ~ to!string(isDeadChar); 
+		return "Text: \"" ~ text ~ "\" ; isDeadChar: " ~ to!string(isDeadChar); 
 	}
-	io_str_t text() @nogc @trusted pure nothrow const {
-		io_str_t helperFunc() @nogc @system pure nothrow const {
-			return cast(dstring)_text[0.._length];
+	string text() @nogc @trusted pure nothrow const {
+		string helperFunc() @nogc @system pure nothrow const {
+			return cast(string)_text[0.._length];
 		}
+		if (!_text) return null;
 		return helperFunc();
 	}
 	size_t length() @nogc @safe pure nothrow const {

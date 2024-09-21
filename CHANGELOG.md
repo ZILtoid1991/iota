@@ -1,3 +1,10 @@
+# 0.3.0
+
+* Added cursor support.
+* Added fullscreen and preliminary video mode (Windows only) support.
+* Dropped UTF-32 support and making UTF-8 the default.
+* Fixed issues with wrong keycodes on Linux.
+
 # 0.3.0-beta.2
 
 * Resizing fixed for OpenGL under Linux.
