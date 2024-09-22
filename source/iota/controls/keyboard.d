@@ -189,14 +189,14 @@ public class Keyboard : InputDevice {
 				result |= KeyboardModifiers.Alt;
 			if (modifierTracker & Mod4Mask)
 				result |= KeyboardModifiers.Meta;
-			if (modifierTracker & Mod5Mask)
+			if (modifierTracker & Mod3Mask)
 				result |= KeyboardModifiers.Aux;
 			if (!isIgnoringLockLights()) {
 				if (modifierTracker & LockMask)
 					result |= KeyboardModifiers.CapsLock;
 				if (modifierTracker & Mod2Mask)
 					result |= KeyboardModifiers.NumLock;
-				if (modifierTracker & Mod3Mask)
+				if (modifierTracker & Mod5Mask)
 					result |= KeyboardModifiers.ScrollLock;
 			}
 		}
