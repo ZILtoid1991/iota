@@ -84,22 +84,14 @@ public int initInput(uint config = 0, uint osConfig = 0) nothrow {
 					case RIM_TYPEMOUSE:
 						//debug writeln("Mouse: ", data[0..nameRes]);
 						Mouse m;
-						version (iota_use_utf8) {
-							m = new Mouse(toUTF8(data[0..nameRes]), mNum++, dev.hDevice);
-						} else {
-							m = new Mouse(toUTF32(data[0..nameRes]), mNum++, dev.hDevice);
-						}
+						m = new Mouse(toUTF8(data[0..nameRes]), mNum++, dev.hDevice);
 						devList ~= m;
 						mouse = m;
 						break;
 					case RIM_TYPEKEYBOARD:
 						//debug writeln("Keyboard: ", data[0..nameRes]);
 						Keyboard k;
-						version (iota_use_utf8) {
-							k = new Keyboard(toUTF8(data[0..nameRes]), kbNum++, dev.hDevice);
-						} else {
-							k = new Keyboard(toUTF32(data[0..nameRes]), kbNum++, dev.hDevice);
-						}
+						k = new Keyboard(toUTF8(data[0..nameRes]), kbNum++, dev.hDevice);
 						devList ~= k;
 						keyb = k;
 						break;
