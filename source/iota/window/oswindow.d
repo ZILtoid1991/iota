@@ -251,11 +251,10 @@ public class OSWindow {
 	 *   h = Height of the window.
 	 *   flags = Configuration flags.
 	 *   icon = The icon of the window, if any.
-	 *   menu = The menubar of the window, if any.
 	 *   parent = Parent if exists, null otherwise.
 	 */
 	public this(string title, string name, int x, int y, int w, int h, uint flags,
-			WindowBitmap icon = null, OSWindow parent = null) {
+			WindowBitmap icon = null, OSWindow parent = null) @trusted {
 		this.flags = flags;
 		version (Windows) {
 			
@@ -360,7 +359,7 @@ public class OSWindow {
 	/**
 	 * Manually maximizes the window from code.
 	 */
-	public void maximizeWindow() @nogc nothrow {
+	public void maximizeWindow() @nogc nothrow @trusted {
 		version (Windows) {
 			ShowWindow(windowHandle, SW_MAXIMIZE);
 		}
@@ -368,7 +367,7 @@ public class OSWindow {
 	/**
 	 * Manually minimizes the window from code.
 	 */
-	public void minimizeWindow() @nogc nothrow {
+	public void minimizeWindow() @nogc nothrow @trusted {
 		version (Windows) {
 			ShowWindow(windowHandle, SW_MINIMIZE);
 		}
@@ -381,7 +380,7 @@ public class OSWindow {
 	 *   w = Width of the active area of the window.
 	 *   h = Height of the active area of the window.
 	 */
-	public void moveWindow(int x, int y, int w, int h) @nogc nothrow {
+	public void moveWindow(int x, int y, int w, int h) @nogc nothrow @trusted {
 		version (Windows) {
 			MoveWindow(windowHandle, x, y, w, h, TRUE);
 		} else {
@@ -393,7 +392,7 @@ public class OSWindow {
 	 * of the window, and the last two elements are the size of the active area of the
 	 * window.
 	 */
-	public int[4] getWindowPosition() @nogc nothrow {
+	public int[4] getWindowPosition() @nogc nothrow @trusted {
 		version (Windows) {
 			RECT windowSize;
 			GetWindowRect(windowHandle, &windowSize);
@@ -412,7 +411,7 @@ public class OSWindow {
 	 * Returns: 0 on success, or a specific error code on error.
 	 * To Do: Get some info on how one exits the fullscreen mode on x11.
 	 */
-	public int setScreenMode(int display, int mode) @nogc nothrow {
+	public int setScreenMode(int display, int mode) @nogc nothrow @system {
 		version (Windows) {
 			LONG errorcode;
 			switch (mode) {
@@ -552,7 +551,7 @@ public class OSWindow {
 			return 0;
 		}
 	}
-	public ScreenMode setScreenMode(ScreenMode mode) @nogc nothrow {
+	public ScreenMode setScreenMode(ScreenMode mode) @nogc nothrow @system {
 		import std.math;
 		version (Windows) {
 			LONG errorcode;
@@ -570,7 +569,7 @@ public class OSWindow {
 		}
 		return ScreenMode.init;
 	}
-	public void setCursor(StandardCursors cursor) @nogc nothrow {
+	public void setCursor(StandardCursors cursor) @nogc nothrow @trusted {
 		version (Windows) {
 			final switch (cursor) with (StandardCursors) {
 			case Arrow:
@@ -695,7 +694,7 @@ public class OSWindow {
 	/**
 	 * Creates, then returns the OpenGL handle associated with the window.
 	 */
-	public void* getOpenGLHandle() @nogc nothrow {
+	public void* getOpenGLHandle() @nogc nothrow @trusted {
 		version (Windows) {
 			if (glRenderingContext) return glRenderingContext;
 			windowDeviceContext = GetDC(windowHandle);
@@ -718,11 +717,11 @@ public class OSWindow {
 			return glxContext;
 		}
 	}
-	public void gl_swapBuffers() @nogc nothrow {
+	public void gl_swapBuffers() @nogc nothrow @trusted {
 		version (Windows) SwapBuffers(windowDeviceContext);
 		else glXSwapBuffers(mainDisplay, windowHandle);
 	}
-	public void gl_makeCurrent() @nogc nothrow {
+	public void gl_makeCurrent() @nogc nothrow @trusted {
 		version (Windows) wglMakeCurrent(windowDeviceContext, glRenderingContext);
 		else glXMakeCurrent(mainDisplay, windowHandle, glxContext);
 	}
