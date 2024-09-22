@@ -5,6 +5,7 @@ public import iota.controls.keyboard;
 public import iota.controls.mouse;
 public import iota.controls.system;
 import iota.window.oswindow;
+import iota.etc.charcode;
 import iota.controls.keybscancodes;
 import iota.controls.gamectrl;
 import core.stdc.string;
@@ -24,7 +25,7 @@ public int poll(ref InputEvent output) nothrow @trusted {
 	}
 	return 0;
 }
-package nothrow int function(ref InputEvent) mainPollingFun;
+package @system @nogc nothrow int function(ref InputEvent) mainPollingFun;
 Keyboard keyb;          ///Main keyboard, or the only keyboard on APIs not supporting differentiating between keyboards.
 Mouse mouse;            ///Main mouse, or the only mouse on APIs not supporting differentiating between mice.
 System sys;				///System device, originator of system events.
@@ -33,8 +34,7 @@ InputDevice[] devList;	///List of input devices.
 version (Windows) {
 	import core.sys.windows.windows;
 	import core.sys.windows.wtypes;
-	version (iota_use_utf8) package char[4] lastChar;
-	else package dchar lastChar;
+	package char[4] lastChar;
 	package int winCount;
 	package ubyte[1024] rawInputBuf;				///RawInput data buffer
 	package int GET_X_LPARAM(LPARAM lParam) @nogc nothrow pure {
@@ -77,6 +77,7 @@ version (Windows) {
 	}
 	///Polls event using legacy API under Windows (no RawInput)
 	package int poll_win_LegacyIO(ref InputEvent output) nothrow @nogc {
+		/* tryAgain: */
 		MSG msg;
 		BOOL bret = PeekMessageW(&msg, null, 0, 0, PM_REMOVE);
 		if (bret) {
@@ -92,34 +93,30 @@ version (Windows) {
 				if ((msg.message & 0xFF_FF) == WM_KEYDOWN) {
 					keyb.processTextCommandEvent(output, translateSC(cast(uint)msg.wParam, cast(uint)msg.lParam), 1);
 					if (output.type == InputEventType.TextCommand) return 1;
-				} else if ((msg.message & 0xFF_FF) == WM_KEYUP) {
-					keyb.processTextCommandEvent(output, translateSC(cast(uint)msg.wParam, cast(uint)msg.lParam), 0);
-					if (output.type == InputEventType.TextCommand) return 1;
-				}
+				} /* else if ((msg.message & 0xFF_FF) == WM_KEYUP) {
+					goto tryAgain;
+				}  */
 			}
 		
 			switch (msg.message & 0xFF_FF) {
-				case WM_CHAR, WM_SYSCHAR:
+				case WM_CHAR, WM_SYSCHAR, WM_UNICHAR, WM_DEADCHAR, WM_SYSDEADCHAR:
 					output.type = InputEventType.TextInput;
 					output.source = keyb;
-					version (iota_use_utf8) {
-						lastChar[0] = cast(char)(msg.wParam);
-					} else {
-						lastChar = cast(dchar)(msg.wParam);
+					lastChar = encodeUTF8Char(cast(dchar)(msg.wParam));
+					int charLength;
+					for ( ; charLength <= 3 ; charLength++) {
+						if (lastChar[charLength] == 0) break;
 					}
-					output.textIn = TextInputEvent(&lastChar, 1, false);
+					output.textIn = TextInputEvent(lastChar.ptr, charLength, 
+							(msg.message & 0xFF_FF) == WM_DEADCHAR || (msg.message & 0xFF_FF) == WM_SYSDEADCHAR);
 					break;
-				case WM_UNICHAR, WM_DEADCHAR, WM_SYSDEADCHAR:
+				/* case WM_UNICHAR, WM_DEADCHAR, WM_SYSDEADCHAR:
 					output.type = InputEventType.TextInput;
 					output.source = keyb;
-					version (iota_use_utf8) {
-						lastChar = encodeUTF8Char(cast(dchar)(msg.wParam));
-					} else {
-						lastChar = cast(dchar)(msg.wParam);
-						output.textIn = TextInputEvent(&lastChar, 1, 
-								(msg.message & 0xFF_FF) == WM_DEADCHAR || (msg.message & 0xFF_FF) == WM_SYSDEADCHAR);
-					}
-					break;
+					lastChar = encodeUTF8Char(cast(dchar)(msg.wParam));
+					output.textIn = TextInputEvent(&lastChar, 1, 
+							(msg.message & 0xFF_FF) == WM_DEADCHAR || (msg.message & 0xFF_FF) == WM_SYSDEADCHAR);
+					break; */
 				case WM_KEYDOWN, WM_KEYUP, WM_SYSKEYDOWN, WM_SYSKEYUP:
 					output.type = InputEventType.Keyboard;
 					output.source = keyb;
@@ -240,6 +237,7 @@ version (Windows) {
 	}
 	///Polls inputs using the more modern RawInput API.
 	package int poll_win_RawInput(ref InputEvent output) nothrow @nogc {
+		/* tryAgain: */
 		MSG msg;
 		BOOL bret = PeekMessageW(&msg, null, 0, 0, PM_REMOVE);
 		if (bret) {
@@ -252,32 +250,22 @@ version (Windows) {
 				if ((msg.message & 0xFF_FF) == WM_KEYDOWN) {
 					keyb.processTextCommandEvent(output, translateSC(cast(uint)msg.wParam, cast(uint)msg.lParam), 1);
 					if (output.type == InputEventType.TextCommand) return 1;
-				} else if ((msg.message & 0xFF_FF) == WM_KEYUP) {
-					keyb.processTextCommandEvent(output, translateSC(cast(uint)msg.wParam, cast(uint)msg.lParam), 0);
-					if (output.type == InputEventType.TextCommand) return 1;
-				}
+				} /* else if ((msg.message & 0xFF_FF) == WM_KEYUP) {
+					goto tryAgain;
+				}  */
 			}
 		
 			switch (msg.message & 0xFF_FF) {
-				case WM_CHAR, WM_SYSCHAR:
+				case WM_CHAR, WM_SYSCHAR, WM_UNICHAR, WM_DEADCHAR, WM_SYSDEADCHAR:
 					output.type = InputEventType.TextInput;
 					output.source = keyb;
-					version (iota_use_utf8) {
-						lastChar[0] = cast(char)(msg.wParam);
-					} else {
-						lastChar = cast(dchar)(msg.wParam);
+					lastChar = encodeUTF8Char(cast(dchar)(msg.wParam));
+					int charLength;
+					for ( ; charLength <= 3 ; charLength++) {
+						if (lastChar[charLength] == 0) break;
 					}
-					output.textIn = TextInputEvent(&lastChar, 1);
-					break;
-				case WM_UNICHAR, WM_DEADCHAR, WM_SYSDEADCHAR:
-					output.type = InputEventType.TextInput;
-					output.source = keyb;
-					version (iota_use_utf8) {
-						lastChar = encodeUTF8Char(cast(dchar)(msg.wParam));
-					} else {
-						lastChar = cast(dchar)(msg.wParam);
-						output.textIn = TextInputEvent(&lastChar, 1);
-					}
+					output.textIn = TextInputEvent(lastChar.ptr, charLength, 
+							(msg.message & 0xFF_FF) == WM_DEADCHAR || (msg.message & 0xFF_FF) == WM_SYSDEADCHAR);
 					break;
 				case WM_INPUT:		//Raw input
 					UINT dwSize = 1024;

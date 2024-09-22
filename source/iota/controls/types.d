@@ -325,6 +325,10 @@ public struct TextCommandEvent {
 	int			amount;		///Amount of the event + direction, if applicable.
 	uint		flags;		///Extra flags for text edit events, i.e. modifiers.
 	uint		buttonID;	///Used if the source is a keyboard
+	string toString() @safe pure const {
+		return "type: " ~ to!string(type) ~ " ; amount: " ~ to!string(amount) ~ " ; flags: " ~ to!string(flags) ~ 
+				" ; buttonID: " ~ to!string(buttonID);
+	}
 }
 /**
  * Defines an axis event.
@@ -493,6 +497,9 @@ public struct InputEvent {
 				break;
 			case InputEventType.Clipboard, InputEventType.Debug_DataDump:
 				result ~= clipboard.toString();
+				break;
+			case InputEventType.TextCommand:
+				result ~= textCmd.toString();
 				break;
 			default:
 				break;
