@@ -477,7 +477,7 @@ version (Windows) {
 	
 	package int chrCntr;
 	package char[32] chrOut;
-	
+	package InputEvent textInputCmd;
 	package int[5] mousePosTracker;	//rootX; rootY; winX; winY; mask
 	package int[5] mousePosTracker0;//Previous mouse position
 	package WindowH trackedWindow;	//To track the mouse pointer without xinput2
@@ -503,6 +503,11 @@ version (Windows) {
 					return 1;
 				}
 			}
+		}
+		if (textInputCmd.type != InputEventType.init) {
+			output = textInputCmd;
+			textInputCmd.type = InputEventType.init;
+			return 1;
 		}
 		tryAgain:
 		XEvent xe;
@@ -590,7 +595,7 @@ version (Windows) {
 				keyb.setModifiers(xe.xkey.state);
 				//keyb.updateKeybMods(keyb, xe.xkey.keycode);
 				const uint buttonID = translateKeyCode(xe.xkey.keycode);
-				if (keyb.isTextInputEn) {
+				if (keyb.isTextInputEn && xe.type == KeyPress) {
 					import x11.keysym;
 					
 					memset(chrOut.ptr, 0, chrOut.length);
@@ -599,42 +604,35 @@ version (Windows) {
 					debug assert(window);
 					KeySym ks;// = XKeycodeToKeysym(OSWindow.mainDisplay, cast(ubyte)xe.xkey.keycode, xe.xkey.state);
 					int count = XLookupString(&xe.xkey, chrOut.ptr, 1, &ks, null);
-						
+					
 					keyb.processTextCommandEvent(output, buttonID, 1);
 					if (output.type != InputEventType.init) {
-						if (xe.type == KeyPress) return 1;//Event is text command key
-						else goto tryAgain;
-					}
-					output.type = InputEventType.TextInput;
-					XIC inputContext = window.ic;
-					if (count && inputContext !is null) {
-						Status status;
-						count = Xutf8LookupString(inputContext, &xe.xkey, chrOut.ptr, 4, &ks, &status);
-					}
-					
-					while (chrOut[chrCntr] && chrCntr + 1 < chrOut.length) {
-						chrCntr++;
-					}
-					if (!chrCntr) {
-						output.type = InputEventType.Keyboard;
-						output.button.auxF = float.nan;
-						output.button.id = buttonID;
-						output.button.aux = keyb.getModifiers();
-						output.button.dir = xe.type == KeyPress ? 1 : 0;
-					} else if (xe.type != KeyPress) {
-						goto tryAgain;
+						textInputCmd = output;
 					} else {
-						output.textIn = TextInputEvent(chrOut.ptr, chrCntr, false);
+						//output.type = InputEventType.TextInput;
+						XIC inputContext = window.ic;
+						if (count && inputContext !is null) {
+							Status status;
+							count = Xutf8LookupString(inputContext, &xe.xkey, chrOut.ptr, 4, &ks, &status);
+						}
+					
+						while (chrOut[chrCntr] && chrCntr + 1 < chrOut.length) {
+							chrCntr++;
+						}
+						if (chrCntr) {
+							textInputCmd = output;
+							textInputCmd.type = InputEventType.TextInput;
+							textInputCmd.textIn = TextInputEvent(chrOut.ptr, chrCntr, false);
+						}
 					}
 					
 					//XFree(strOut);
-				} else {
-					output.type = InputEventType.Keyboard;
-					output.button.auxF = float.nan;
-					output.button.id = buttonID;
-					output.button.aux = keyb.getModifiers();
-					output.button.dir = xe.type == KeyPress ? 1 : 0;
 				}
+				output.type = InputEventType.Keyboard;
+				output.button.auxF = float.nan;
+				output.button.id = buttonID;
+				output.button.aux = keyb.getModifiers();
+				output.button.dir = xe.type == KeyPress ? 1 : 0;
 				return 1;
 			case ConfigureNotify:
 				output.timestamp = 0;
