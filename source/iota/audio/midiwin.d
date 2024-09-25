@@ -25,7 +25,7 @@ public class WindowsMIDIInput : MIDIInput {
 	protected HMIDIIN handle;
 	///The last error code produced by the OS
 	public MMRESULT lastErrorCode;
-	package this(UINT deviceID, size_t bufferSize) nothrow {
+	package this(UINT deviceID, size_t bufferSize) @system nothrow {
 		lastErrorCode = midiInOpen(&handle, deviceID, cast(size_t)(cast(void*)&midiHandler), cast(size_t)(cast(void*)this), 
 				CALLBACK_FUNCTION);
 		buffer.length = bufferSize;
@@ -97,7 +97,7 @@ public class WindowsMIDIInput : MIDIInput {
 		}
 		
 	}
-	override public ubyte[] read() pure nothrow {
+	override public ubyte[] read() @safe pure nothrow {
 		const size_t pos = bufferpos;
 		bufferpos = 0;
 		return buffer[0..pos];
@@ -106,7 +106,7 @@ public class WindowsMIDIInput : MIDIInput {
      * Starts the MIDI input stream.
      * Returns: Zero on success, or a specific error code.
      */
-    override public int start() nothrow {
+    override public int start() @trusted nothrow {
 		lastErrorCode = midiInStart(handle);
 		if (lastErrorCode == MMSYSERR_INVALHANDLE)	return lastStatusCode = MIDIDeviceStatus.DeviceDisconnected;
 		else return lastStatusCode = MIDIDeviceStatus.AllOk;
@@ -115,7 +115,7 @@ public class WindowsMIDIInput : MIDIInput {
      * Stops the MIDI input stream.
      * Returns: Zero on success, or a specific error code.
      */
-    override public int stop() nothrow {
+    override public int stop() @trusted nothrow {
 		lastErrorCode = midiInStop(handle);
 		if (lastErrorCode == MMSYSERR_INVALHANDLE)	return lastStatusCode = MIDIDeviceStatus.DeviceDisconnected;
 		else return lastStatusCode = MIDIDeviceStatus.AllOk;
@@ -131,7 +131,7 @@ public class WindowsMIDIOutput : MIDIOutput {
 	~this() {
 		midiOutClose(handle);
 	}
-	override public void write(ubyte[] buffer) {
+	override public void write(ubyte[] buffer) @trusted {
 		if (buffer.length <= 3) {
 			DWORD msg;
 			for (int i ; i < buffer.length ; i++) {

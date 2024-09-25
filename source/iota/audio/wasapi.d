@@ -30,7 +30,7 @@ shared static ~this() {
  */
 public static HRESULT lastErrorCode;
 
-package int initDriverWASAPI() {
+package int initDriverWASAPI() @trusted {
 	if (immEnum) {
 		lastErrorCode = immEnum.EnumAudioEndpoints(EDataFlow.eRender, DEVICE_STATE_ACTIVE, deviceList);
 		switch (lastErrorCode) {
@@ -64,7 +64,7 @@ public class WASAPIDevice : AudioDevice {
 	/** 
 	 * Creates an instance that refers to the backend. 
 	 */
-	package this(IMMDevice backend) {
+	package this(IMMDevice backend) @system {
 		this.backend = backend;
 		werrCode = backend.OpenPropertyStore(STGM_READ, devProperties);
 		if (werrCode == S_OK) {
@@ -100,7 +100,7 @@ public class WASAPIDevice : AudioDevice {
 	/** 
 	 * Returns the recommended sample rate, or -1 if sample-rate isn't bound to internal clock.
 	 */
-	public override int getRecommendedSampleRate() nothrow {
+	public override int getRecommendedSampleRate() nothrow @trusted {
 		WAVEFORMATEX* format;
 		werrCode = audioClient.GetMixFormat(&format);
 
@@ -116,7 +116,7 @@ public class WASAPIDevice : AudioDevice {
 	 * Returns: The actual audio specs, or AudioSpecs.init in case of failure.
 	 * In case of a failure, `errCode` is also set with the corresponding flags.
 	 */
-	public override AudioSpecs requestSpecs(AudioSpecs reqSpecs, int flags = 0) {
+	public override AudioSpecs requestSpecs(AudioSpecs reqSpecs, int flags = 0) @trusted {
 		reqSpecs.mirrorBufferSizes();
 		if (reqSpecs.outputChannels) {
 			
@@ -162,7 +162,7 @@ public class WASAPIDevice : AudioDevice {
 	 * Creates an OutputStream specific to the given driver/device, with the requested parameters, then returns it. Or
 	 * null in case of an error. 
 	 */
-	public override OutputStream createOutputStream() nothrow {
+	public override OutputStream createOutputStream() nothrow @trusted {
 		if (audioClient !is null) {
 			werrCode = audioClient.Initialize(
 					_shareMode == AudioShareMode.Shared ? AUDCLNT_SHAREMODE.AUDCLNT_SHAREMODE_SHARED : 
@@ -192,7 +192,7 @@ public class WASAPIOutputStream : OutputStream {
 	protected IAudioRenderClient buffer;
 	protected HANDLE		eventHandle;
 	public HRESULT			werrCode;
-	package this(IAudioClient backend, uint frameSize, uint bufferSize) nothrow @nogc {
+	package this(IAudioClient backend, uint frameSize, uint bufferSize) nothrow @nogc @system {
 		this.backend = backend;
 		this.frameSize = frameSize;
 		eventHandle = CreateEvent(null, FALSE, FALSE, null);
@@ -282,7 +282,7 @@ public class WASAPIOutputStream : OutputStream {
 	 * amount of data, or use whatever backend the OS has.
 	 * Returns: 0, or an error code if there was a failure.
 	 */
-	public override int runAudioThread() @nogc nothrow {
+	public override int runAudioThread() @trusted @nogc nothrow {
 		if (callback_buffer is null) return errCode = StreamRuntimeStatus.BufferCallbackNotSet;
 		werrCode = backend.Start();
 		if (werrCode != S_OK) {
@@ -298,7 +298,7 @@ public class WASAPIOutputStream : OutputStream {
 	 * Returns: 0, or an error code if there was a failure.
 	 * Note: It's wise to put this function into a mutex, or a `synchronized` block.
 	 */
-	public override int suspendAudioThread() @nogc nothrow {
+	public override int suspendAudioThread() @trusted @nogc nothrow {
 		if (errCode) {
 			backend.Stop();
 			return errCode;

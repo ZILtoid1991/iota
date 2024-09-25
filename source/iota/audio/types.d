@@ -164,7 +164,7 @@ public struct AudioSpecs {
 	/** 
 	 * Mirrors the buffer sizes if one is set to T.init.
 	 */
-	public void mirrorBufferSizes() {
+	public void mirrorBufferSizes() @safe {
 		import core.time : hnsecs;
 		if (bufferSize_slmp) {
 			bufferSize_time = hnsecs(cast(long)((1 / cast(real)sampleRate) * bufferSize_slmp * 10_000_000.0));

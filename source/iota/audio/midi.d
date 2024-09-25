@@ -27,7 +27,7 @@ package string[] outDevs;
  * Initializes MIDI subsystem.
  * Returns: Zero on success, or a specific error code.
  */
-public int initMIDI() {
+public int initMIDI() @trusted {
 	version (Windows) {
 		import std.string : fromStringz;
 		import std.utf : toUTF8;
@@ -92,7 +92,7 @@ public string[] getMIDIOutputDevs() @safe nothrow {
  *   bufSize = The input buffer size if applicable (1024 by default).
  * Returns: 0 if the operation is successful, or an error code.
  */
-public int openMIDIInput(ref MIDIInput input, uint num, size_t bufSize = 1024) {
+public int openMIDIInput(ref MIDIInput input, uint num, size_t bufSize = 1024) @trusted {
 	version (Windows) {
 		WindowsMIDIInput wmi = new WindowsMIDIInput(num, bufSize);
 		switch (wmi.lastErrorCode) {
@@ -123,7 +123,7 @@ public int openMIDIInput(ref MIDIInput input, uint num, size_t bufSize = 1024) {
  *   num = The ID of the device.
  * Returns: 
  */
-public int openMIDIOutput(ref MIDIOutput output, uint num) {
+public int openMIDIOutput(ref MIDIOutput output, uint num) @trusted {
 	version (Windows) {
 		WindowsMIDIOutput wmi = new WindowsMIDIOutput(num);
 		switch (wmi.lastErrorCode) {

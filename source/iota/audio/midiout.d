@@ -8,15 +8,15 @@ public abstract class MIDIOutput {
 	 * Params:
 	 *   buffer = Data that will be written to the output.
 	 */
-	public abstract void write(ubyte[] buffer) @nogc nothrow;
+	public abstract void write(ubyte[] buffer) @trusted @nogc nothrow;
 	/** 
      * Starts the MIDI output stream.
      * Returns: Zero on success, or a specific error code.
      */
-    public abstract int start() nothrow;
+    public abstract int start() @trusted nothrow;
     /** 
      * Stops the MIDI output stream.
      * Returns: Zero on success, or a specific error code.
      */
-    public abstract int stop() nothrow;
+    public abstract int stop() @trusted nothrow;
 }
