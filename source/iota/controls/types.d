@@ -255,12 +255,12 @@ public interface HapticDevice {
 	/**
 	 * Returns all capabilities of the haptic device.
 	 */
-	public uint[] getCapabilities() nothrow;
+	public uint[] getCapabilities() @safe nothrow;
 	/**
 	 * Returns all zones associated with the capability of the device.
 	 * Returns null if zones are not applicable for the device's given capability.
 	 */
-	public uint[] getZones(uint capability) nothrow;
+	public uint[] getZones(uint capability) @safe nothrow;
 	/**
 	 * Applies a given effect.
 	 * Params:
@@ -270,12 +270,12 @@ public interface HapticDevice {
 	 *   freq: The frequency if supported, float.nan otherwise.
 	 * Returns: 0 on success, or a specific error code.
 	 */
-	public int applyEffect(uint capability, uint zone, float val, float freq = float.nan) nothrow;
+	public int applyEffect(uint capability, uint zone, float val, float freq = float.nan) @trusted nothrow;
 	/**
 	 * Stops all haptic effects of the device.
 	 * Returns: 0 on success, or a specific error code.
 	 */
-	public int reset() nothrow;
+	public int reset() @trusted nothrow;
 }
 /** 
  * Defines a button (keyboard, game controller) event data.
@@ -465,7 +465,7 @@ public struct InputEvent {
 		ClipboardEvent		clipboard;
 		uint[5]				rawData;
 	}
-	string toString() {
+	string toString() @trusted {
 		string result = "Source: " ~ (source is null ? "null" : "{" ~ source.toString ~ "}") ~ " ; Window handle: " ~ 
 				to!string(cast(size_t)handle) ~ " ; Timestamp: " ~ to!string(timestamp) ~ " ; Type: " ~ to!string(type) ~ 
 				" ; Rest: {";

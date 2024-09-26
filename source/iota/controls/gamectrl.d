@@ -83,12 +83,12 @@ abstract class GameController : InputDevice, HapticDevice {
 	/**
 	 * Returns all capabilities of the haptic device.
 	 */
-	public abstract uint[] getCapabilities() nothrow;
+	public abstract uint[] getCapabilities() @safe nothrow;
 	/**
 	 * Returns all zones associated with the capability of the device.
 	 * Returns null if zones are not applicable for the device's given capability.
 	 */
-	public abstract uint[] getZones(uint capability) nothrow;
+	public abstract uint[] getZones(uint capability) @safe nothrow;
 	/**
 	 * Applies a given effect.
 	 * Params:
@@ -117,19 +117,19 @@ public class RawGameController : GameController {
 		ubyte		num;
 	}
 
-	override public uint[] getCapabilities() nothrow {
+	override public uint[] getCapabilities() @safe nothrow {
 		return null; // TODO: implement
 	}
 
-	override public uint[] getZones(uint capability) nothrow {
+	override public uint[] getZones(uint capability) @safe nothrow {
 		return null; // TODO: implement
 	}
 
-	override public int applyEffect(uint capability, uint zone, float val, float freq = float.nan) nothrow {
+	override public int applyEffect(uint capability, uint zone, float val, float freq = float.nan) @trusted nothrow {
 		return int.init; // TODO: implement
 	}
 
-	override public int reset() nothrow {
+	override public int reset() @trusted nothrow {
 		return int.init; // TODO: implement
 	}
 
@@ -166,7 +166,7 @@ version (Windows) public class XInputDevice : GameController {
 		import std.conv : to;
 		return "{XInputDevice; DevID: " ~ devNum().to!string ~ "}";
 	}
-	package static int poll(ref InputEvent output) @nogc nothrow {
+	package static int poll(ref InputEvent output) @system @nogc nothrow {
 		while (devC < ctrlList.length) {
 			XInputDevice dev = ctrlList[devC];
 			if (cntr == 0) {
@@ -385,14 +385,14 @@ version (Windows) public class XInputDevice : GameController {
 	/**
 	 * Returns all capabilities of the haptic device.
 	 */
-	public override uint[] getCapabilities() nothrow {
+	public override uint[] getCapabilities() @safe nothrow {
 		return [HapticDevice.Capabilities.LeftMotor, HapticDevice.Capabilities.RightMotor];
 	}
 	/**
 	 * Returns all zones associated with the capability of the device.
 	 * Returns null if zones are not applicable for the device's given capability.
 	 */
-	public override uint[] getZones(uint capability) nothrow {
+	public override uint[] getZones(uint capability) @safe nothrow {
 		return null;
 	}
 	/**
@@ -403,7 +403,7 @@ version (Windows) public class XInputDevice : GameController {
 	 *   val: Either the strength of the capability (between 0.0 and 1.0), or the frequency.
 	 * Returns: 0 on success, or a specific error code.
 	 */
-	public override int applyEffect(uint capability, uint zone, float val, float freq = float.nan) nothrow {
+	public override int applyEffect(uint capability, uint zone, float val, float freq = float.nan) @trusted nothrow {
 		switch (capability) {
 			case HapticDevice.Capabilities.LeftMotor:
 				if (val < 0.0 || val > 1.0)
@@ -427,7 +427,7 @@ version (Windows) public class XInputDevice : GameController {
 	 * Stops all haptic effects of the device.
 	 * Returns: 0 on success, or a specific error code.
 	 */
-	public override int reset() nothrow {
+	public override int reset() @trusted nothrow {
 		vibr.wLeftMotorSpeed = 0;
 		vibr.wRightMotorSpeed = 0;
 		if (XInputSetState(_devNum, &vibr) == ERROR_SUCCESS)
