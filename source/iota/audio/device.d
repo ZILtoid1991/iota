@@ -28,7 +28,7 @@ public static DriverType initializedDriver;
  *   type = The type of driver, defaults to system recommended otherwise.
  * Returns: 0 (or AudioInitializationStatus.AllOk) if there was no error, or a specific errorcode.
  */
-public int initDriver(DriverType type = OS_PREFERRED_DRIVER) {
+public int initDriver(DriverType type = OS_PREFERRED_DRIVER) @trusted {
 	final switch (type) with (DriverType) {
 		case None:
 			return AudioInitializationStatus.AllOk;
@@ -70,7 +70,7 @@ public int initDriver(DriverType type = OS_PREFERRED_DRIVER) {
 /** 
  * Returns the list of names of output devices, or null if there are none or driver haven't been initialized.
  */
-public string[] getOutputDeviceNames() {
+public string[] getOutputDeviceNames() @trusted {
 	version (Windows) {
 		if (initializedDriver == DriverType.WASAPI) {
 			string[] result;
@@ -114,7 +114,7 @@ public string[] getOutputDeviceNames() {
  *   device = Reference to newly opened device passed here.
  * Returns: 0 (or AudioInitializationStatus.AllOk) if there was no error, or a specific errorcode.
  */
-public int openDevice(int devID, ref AudioDevice device) {
+public int openDevice(int devID, ref AudioDevice device) @trusted {
 	version (Windows) {
 		if (initializedDriver == DriverType.WASAPI) {
 			IMMDevice dev; 
@@ -226,15 +226,15 @@ public abstract class AudioDevice {
 	 * Returns: The actual audio specs, or AudioSpecs.init in case of failure.
 	 * In case of a failure, `errCode` is also set with the corresponding flags.
 	 */
-	public abstract AudioSpecs requestSpecs(AudioSpecs reqSpecs, int flags = 0);
+	public abstract AudioSpecs requestSpecs(AudioSpecs reqSpecs, int flags = 0) @trusted;
 	/** 
 	 * Returns the recommended sample rate, or -1 if sample-rate isn't boind to internal clock.
 	 */
-	public abstract int getRecommendedSampleRate() nothrow;
+	public abstract int getRecommendedSampleRate() nothrow @trusted;
 	/** 
 	 * Creates an OutputStream specific to the given driver/device, with the requested parameters, then returns it. Or
 	 * null in case of an error, then it also sets `errCode` to a given error code. Might also set a separate error
 	 * code variable, depending on the OS/backend.
 	 */
-	public abstract OutputStream createOutputStream();
+	public abstract OutputStream createOutputStream() @trusted;
 }
