@@ -26,7 +26,7 @@ public class ALSAMIDIInput : MIDIInput {
 	/** 
 	 * Returns the content of the buffer and clears it.
 	 */
-	public override ubyte[] read() nothrow {
+	public override ubyte[] read() @trusted nothrow {
 		errCode = snd_rawmidi_read(rmidi, null, 0);
 		if (errCode >= 0) {
 			errCode = snd_rawmidi_read(rmidi, buffer.ptr, buffer.length);
@@ -35,12 +35,13 @@ public class ALSAMIDIInput : MIDIInput {
 			}
 		}
 		return null;
+
 	}
 	/** 
 	 * Starts the MIDI input stream.
 	 * Returns: Zero on success, or a specific error code.
 	 */
-	public override int start() nothrow {
+	public override int start() @trusted nothrow {
 		int mode;
 		if (midiInCallback is null) {
 			mode = 0x0002;
@@ -60,7 +61,7 @@ public class ALSAMIDIInput : MIDIInput {
 	 * Stops the MIDI input stream.
 	 * Returns: Zero on success, or a specific error code.
 	 */
-	public override int stop() nothrow {
+	public override int stop() @trusted nothrow {
 		errCode = snd_rawmidi_drain(rmidi);
 		isRunning = false;
 		errCode = snd_rawmidi_close(rmidi);
@@ -90,14 +91,14 @@ public class ALSAMIDIOutput : MIDIOutput {
 	 * Params:
 	 *   buffer = Data that will be written to the output.
 	 */
-	public override void write(ubyte[] buffer) @nogc nothrow {
+	public override void write(ubyte[] buffer) @trusted @nogc nothrow {
 		errCode = snd_rawmidi_write(rmidi, buffer.ptr, buffer.length);
 	}
 	/** 
      * Starts the MIDI output stream.
      * Returns: Zero on success, or a specific error code.
      */
-    public override int start() nothrow {
+    public override int start() @trusted nothrow {
 		errCode = snd_rawmidi_open(null, &rmidi, nameID.ptr, 0);
 		if (!errCode) return 0;
 		else return MIDIDeviceStatus.UnknownError;
@@ -106,7 +107,7 @@ public class ALSAMIDIOutput : MIDIOutput {
      * Stops the MIDI output stream.
      * Returns: Zero on success, or a specific error code.
      */
-    public override int stop() nothrow {
+    public override int stop() @trusted nothrow {
 		errCode = snd_rawmidi_close(rmidi);
 		if (!errCode) return 0;
 		else return MIDIDeviceStatus.UnknownError;

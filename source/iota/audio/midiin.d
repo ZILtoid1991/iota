@@ -8,7 +8,7 @@ public abstract class MIDIInput {
 	/** 
 	 * Returns the content of the buffer and clears it.
 	 */
-	public abstract ubyte[] read() @safe nothrow;
+	public abstract ubyte[] read() @trusted nothrow;
 	/** 
 	 * Starts the MIDI input stream.
 	 * Returns: Zero on success, or a specific error code.
