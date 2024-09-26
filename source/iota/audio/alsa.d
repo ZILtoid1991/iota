@@ -36,7 +36,7 @@ public class ALSADevice : AudioDevice {
 	protected snd_pcm_hw_params_t* pcmParams;
 	/// Contains ALSA-related error codes.
 	public int				alsaerrCode;
-	package this (snd_pcm_t* pcmHandle) {
+	package this (snd_pcm_t* pcmHandle) @system {
 		this.pcmHandle = pcmHandle;
 		snd_pcm_hw_params_malloc(&pcmParams);
 		snd_pcm_hw_params_any(pcmHandle, pcmParams);
@@ -51,7 +51,7 @@ public class ALSADevice : AudioDevice {
 
 	}
 
-	override public AudioSpecs requestSpecs(AudioSpecs reqSpecs, int flags = 0) {
+	override public AudioSpecs requestSpecs(AudioSpecs reqSpecs, int flags = 0) @trusted {
 		reqSpecs.mirrorBufferSizes();
 		alsaerrCode = snd_pcm_hw_params_set_access(pcmHandle, pcmParams, snd_pcm_access_t.SND_PCM_ACCESS_RW_INTERLEAVED);
 		if (alsaerrCode) {errCode = StreamInitializationStatus.UnsupportedFormat; return AudioSpecs.init;}
@@ -149,11 +149,11 @@ public class ALSADevice : AudioDevice {
 	/** 
 	 * Returns the recommended sample rate, or -1 if sample-rate isn't boind to internal clock.
 	 */
-	public override int getRecommendedSampleRate() @nogc nothrow {
+	public override int getRecommendedSampleRate() @nogc nothrow @trusted {
 		return -1;
 	}
 
-	override public OutputStream createOutputStream() {
+	override public OutputStream createOutputStream() @trusted {
 		alsaerrCode = snd_pcm_prepare(pcmHandle);
 		if (alsaerrCode) {
 			errCode = StreamInitializationStatus.Unknown;
@@ -177,7 +177,7 @@ public class ALSAOutStream : OutputStream {
 	/// Contains the last ALSA specific error code.
 	public int					alsaerrCode;
 
-	package this (ALSADevice dev) {
+	package this (ALSADevice dev) @system {
 		this.dev = dev;
 		buffer.length = (dev.specs().bufferSize_slmp * dev.specs().bits * dev.specs().outputChannels) / 8;
 		this.bufferSize = dev.specs().bufferSize_slmp;
@@ -185,7 +185,7 @@ public class ALSAOutStream : OutputStream {
 	~this() {
 		
 	}
-	protected void audioThread() @nogc nothrow {
+	protected void audioThread() @system @nogc nothrow {
 		snd_pcm_sframes_t currBufferSize;
 		while (statusCode & StatusFlags.IsRunning) {
 			callback_buffer(buffer);
@@ -202,7 +202,7 @@ public class ALSAOutStream : OutputStream {
 			}
 		}
 	}
-	override public int runAudioThread() @nogc nothrow {
+	override public int runAudioThread() @trusted @nogc nothrow {
 		if (callback_buffer is null) return errCode = StreamRuntimeStatus.BufferCallbackNotSet;
 		alsaerrCode = snd_pcm_start(dev.pcmHandle);
 		if (alsaerrCode) {
@@ -213,7 +213,7 @@ public class ALSAOutStream : OutputStream {
 		return errCode = StreamRuntimeStatus.AllOk;
 	}
 
-	override public int suspendAudioThread() @nogc nothrow {
+	override public int suspendAudioThread() @trusted @nogc nothrow {
 		alsaerrCode = snd_pcm_drain(dev.pcmHandle);
 		statusCode &= ~StatusFlags.IsRunning;
 		return errCode;
