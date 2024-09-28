@@ -26,6 +26,7 @@ public int poll(ref InputEvent output) nothrow @trusted {
 	return 0;
 }
 package @system @nogc nothrow int function(ref InputEvent) mainPollingFun;
+package InputEvent textInputCmd;
 Keyboard keyb;          ///Main keyboard, or the only keyboard on APIs not supporting differentiating between keyboards.
 Mouse mouse;            ///Main mouse, or the only mouse on APIs not supporting differentiating between mice.
 System sys;				///System device, originator of system events.
@@ -77,7 +78,12 @@ version (Windows) {
 	}
 	///Polls event using legacy API under Windows (no RawInput)
 	package int poll_win_LegacyIO(ref InputEvent output) nothrow @nogc {
-		/* tryAgain: */
+		if (textInputCmd.type != InputEventType.init) {
+			output = textInputCmd;
+			textInputCmd.type = InputEventType.init;
+			return 1;
+		}
+		tryAgain:
 		MSG msg;
 		BOOL bret = PeekMessageW(&msg, null, 0, 0, PM_REMOVE);
 		if (bret) {
@@ -85,21 +91,18 @@ version (Windows) {
 			else output.timestamp = getTimestamp();
 			output.handle = msg.hwnd;
 			auto message = msg.message & 0xFF_FF;
-			
 			DispatchMessageW(&msg);
-			
 			if (Keyboard.isTextInputEn()) {
 				TranslateMessage(&msg);     //This function only translates messages that are mapped to characters, but we still need to translate any keys to text command events
 				if ((msg.message & 0xFF_FF) == WM_KEYDOWN) {
 					keyb.processTextCommandEvent(output, translateSC(cast(uint)msg.wParam, cast(uint)msg.lParam), 1);
-					if (output.type == InputEventType.TextCommand) return 1;
-				} /* else if ((msg.message & 0xFF_FF) == WM_KEYUP) {
-					goto tryAgain;
-				}  */
+					if (output.type == InputEventType.TextCommand) textInputCmd = output;
+				} 
 			}
 		
 			switch (msg.message & 0xFF_FF) {
 				case WM_CHAR, WM_SYSCHAR, WM_UNICHAR, WM_DEADCHAR, WM_SYSDEADCHAR:
+					if (msg.wParam == '\n' || msg.wParam == '\r' || msg.wParam == '\x1b') goto tryAgain;
 					output.type = InputEventType.TextInput;
 					output.source = keyb;
 					lastChar = encodeUTF8Char(cast(dchar)(msg.wParam));
@@ -110,13 +113,6 @@ version (Windows) {
 					output.textIn = TextInputEvent(lastChar.ptr, charLength, 
 							(msg.message & 0xFF_FF) == WM_DEADCHAR || (msg.message & 0xFF_FF) == WM_SYSDEADCHAR);
 					break;
-				/* case WM_UNICHAR, WM_DEADCHAR, WM_SYSDEADCHAR:
-					output.type = InputEventType.TextInput;
-					output.source = keyb;
-					lastChar = encodeUTF8Char(cast(dchar)(msg.wParam));
-					output.textIn = TextInputEvent(&lastChar, 1, 
-							(msg.message & 0xFF_FF) == WM_DEADCHAR || (msg.message & 0xFF_FF) == WM_SYSDEADCHAR);
-					break; */
 				case WM_KEYDOWN, WM_KEYUP, WM_SYSKEYDOWN, WM_SYSKEYUP:
 					output.type = InputEventType.Keyboard;
 					output.source = keyb;
@@ -237,7 +233,12 @@ version (Windows) {
 	}
 	///Polls inputs using the more modern RawInput API.
 	package int poll_win_RawInput(ref InputEvent output) nothrow @nogc {
-		/* tryAgain: */
+		if (textInputCmd.type != InputEventType.init) {
+			output = textInputCmd;
+			textInputCmd.type = InputEventType.init;
+			return 1;
+		}
+		tryAgain:
 		MSG msg;
 		BOOL bret = PeekMessageW(&msg, null, 0, 0, PM_REMOVE);
 		if (bret) {
@@ -249,14 +250,13 @@ version (Windows) {
 				TranslateMessage(&msg);     //This function only translates messages that are mapped to characters, but we still need to translate any keys to text command events
 				if ((msg.message & 0xFF_FF) == WM_KEYDOWN) {
 					keyb.processTextCommandEvent(output, translateSC(cast(uint)msg.wParam, cast(uint)msg.lParam), 1);
-					if (output.type == InputEventType.TextCommand) return 1;
-				} /* else if ((msg.message & 0xFF_FF) == WM_KEYUP) {
-					goto tryAgain;
-				}  */
+					if (output.type == InputEventType.TextCommand) textInputCmd = output;
+				} 
 			}
 		
 			switch (msg.message & 0xFF_FF) {
 				case WM_CHAR, WM_SYSCHAR, WM_UNICHAR, WM_DEADCHAR, WM_SYSDEADCHAR:
+					if (msg.wParam == '\n' || msg.wParam == '\r' || msg.wParam == '\x1b') goto tryAgain;
 					output.type = InputEventType.TextInput;
 					output.source = keyb;
 					lastChar = encodeUTF8Char(cast(dchar)(msg.wParam));
@@ -477,7 +477,7 @@ version (Windows) {
 	
 	package int chrCntr;
 	package char[32] chrOut;
-	package InputEvent textInputCmd;
+	
 	package int[5] mousePosTracker;	//rootX; rootY; winX; winY; mask
 	package int[5] mousePosTracker0;//Previous mouse position
 	package WindowH trackedWindow;	//To track the mouse pointer without xinput2
