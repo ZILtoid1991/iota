@@ -14,17 +14,19 @@ version (Windows) {
 //import darg;
 
 string vertexShader = q{
-	#version 110
+	#version 120
 	//layout(location = 0) in vec3 vertexPosition_modelspace;
 	void main() {
-		gl_Position = gl_ProjectionMatrix * gl_ModelViewMatrix * gl_Vertex;
+		gl_TexCoord[0] = ftransform();
+		gl_Position = ftransform();
 	}	
 } ~ '\0';
 string fragmentShader = q{
-	#version 110
+	#version 120
 	//out vec4 color;
 	void main(){
-		gl_FragColor = vec4(1.0,1.0,1.0,1.0);
+		gl_FragColor = vec4((gl_TexCoord[0].t + 1.0) * 0.5,(gl_TexCoord[0].s + 1.0) * 0.5 * (gl_TexCoord[0].t * -2.0),
+				(gl_TexCoord[0].s - 1.0) * -0.5 * (gl_TexCoord[0].t * -2.0),1.0);
 	}
 } ~ '\0';
 
