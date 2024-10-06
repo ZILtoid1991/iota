@@ -138,8 +138,18 @@ int main(string[] args) {
 				case ScanCode.T:
 					inputSurface.setCursor(StandardCursors.PersonSelect);
 					break;
+				case ScanCode.F5:
+					checkForNewDevices();
+					writeln(devList);
+					break;
 				default: break;
 				}
+			} else if (event.type == InputEventType.DeviceRemoved) {
+				removeInvalidatedDevices();
+				writeln(devList);
+			} else if (event.type == InputEventType.DeviceAdded) {
+				checkForNewDevices();
+				writeln(devList);
 			}
 			writeln(event.toString());
 		}

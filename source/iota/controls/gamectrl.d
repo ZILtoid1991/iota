@@ -143,24 +143,24 @@ version (Windows) public class XInputDevice : GameController {
 	///Stores info related to current and the previous state. Any events are calculated by the difference of the two.
 	protected XINPUT_STATE		state, prevState;
 	///Counter for properties within the controller.
-	protected static int				cntr;
-	protected static int				devC;
-	protected static XInputDevice[]		ctrlList;
+	package static int			cntr;
+	package static int			devC;
+	package static XInputDevice[4]	ctrlList;
 	package this (DWORD userIndex, bool axisType) nothrow {
 		XINPUT_CAPABILITIES xic;
 		const DWORD result = XInputGetCapabilities(userIndex, 0, &xic);
-		if (result == ERROR_SUCCESS) {
+		if (result == ERROR_SUCCESS && ctrlList[userIndex] is null) {
 			if (axisType)
 				status |= TriggerAsButton;
 			//if (xic.Flags & XINPUT_CAPS.XINPUT_CAPS_FFB_SUPPORTED) 
 			status |= StatusFlags.IsHapticCapable;
-			
 			XInputGetState(_devNum, &state);
 			prevState = state;
+			_devNum = cast(ubyte)userIndex;
+			ctrlList[userIndex] = this;
 		} else {
 			status |= StatusFlags.IsInvalidated;
 		}
-		ctrlList ~= this;
 	}
 	public override string toString() const @safe pure nothrow {
 		import std.conv : to;
@@ -169,12 +169,23 @@ version (Windows) public class XInputDevice : GameController {
 	package static int poll(ref InputEvent output) @system @nogc nothrow {
 		while (devC < ctrlList.length) {
 			XInputDevice dev = ctrlList[devC];
+			if (dev is null) {
+				devC++;
+				continue;
+			}
+			if (dev.isInvalidated) {
+				devC++;
+				ctrlList[devC] = null;
+				continue;
+			}
 			if (cntr == 0) {
 				dev.prevState = dev.state;
 				const DWORD result = XInputGetState(dev.devNum, &dev.state);
 				if (result != ERROR_SUCCESS) {
 					dev.status |= StatusFlags.IsInvalidated;
-					return EventPollStatus.DeviceInvalidated;
+					output.source = dev;
+					output.type = InputEventType.DeviceRemoved;
+					return EventPollStatus.HasMore;
 				}
 			}
 			while (cntr < 20) {

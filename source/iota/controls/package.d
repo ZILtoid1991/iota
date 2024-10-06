@@ -19,6 +19,7 @@ import std.utf;
 import std.stdio;
 
 public enum IOTA_INPUTCONFIG_MANDATORY = 0;
+package uint __configFlags, __osConfigFlags;
 /** 
  * Initializes the input subsystem
  * Params:
@@ -28,6 +29,8 @@ public enum IOTA_INPUTCONFIG_MANDATORY = 0;
  */
 public int initInput(uint config = 0, uint osConfig = 0) nothrow {
 	config |= IOTA_INPUTCONFIG_MANDATORY;
+	__configFlags = config;
+	__osConfigFlags = osConfig;
 	sys = new System(config, osConfig);
 	devList ~= sys;
 	version (Windows) {
@@ -131,6 +134,25 @@ public int removeInvalidatedDevices() {
 	for (int i ; i < devList.length ; i++) {
 		if (devList[i].isInvalidated) {
 			devList = devList[0..i] ~ devList[i + 1..$];
+		}
+	}
+	return 0;
+}
+public int checkForNewDevices() {
+	version (Windows) {
+		import iota.controls.backend.windows;
+		if ((__configFlags & ConfigFlags.gc_Enable) && (__osConfigFlags & OSConfigFlags.win_XInput)) {
+			for (int i ; i < 4 ; i++) {
+				if (XInputDevice.ctrlList[i] !is null) {
+					if (!XInputDevice.ctrlList[i].isInvalidated) continue;
+				}
+				XINPUT_CAPABILITIES xic;
+				const DWORD result = XInputGetCapabilities(i, 0, &xic);
+				if (result == ERROR_SUCCESS) {
+					InputDevice x = new XInputDevice(1, (__configFlags & ConfigFlags.gc_TriggerMode) != 0);
+					if (!x.isInvalidated) devList ~= x;
+				}
+			}
 		}
 	}
 	return 0;
