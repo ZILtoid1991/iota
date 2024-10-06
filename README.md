@@ -78,7 +78,6 @@ Fullscreen is working, video modes are untested as of now.
 
 Linux is using X11 for its windowing and I/O. Has these known bugs:
 * When the window is closed, X11 replies with `X connection to :0.0 broken (explicit kill or server shutdown).`. Could be a race condition related to the destructor.
-* Cannot exit from fullscreen due to a lack of documentation for it.
 
 ## OpenGL
 
