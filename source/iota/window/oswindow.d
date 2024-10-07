@@ -151,7 +151,7 @@ public class OSWindow {
 				counter++;
 			} while (deviceResult);
 			screenModes.length = counter;
-			for (size_t i ; i < dispDevices.length ; i++) {
+			for (int i ; i < dispDevices.length ; i++) {
 				counter = 0;
 				do {
 					DEVMODEA currMode = void;
