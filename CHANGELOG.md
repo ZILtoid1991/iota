@@ -1,3 +1,9 @@
+# 0.3.1
+
+* Fixed issue regarding of an initializer ctor causing crashes on Windows if compiled with LDC2.
+* Added some extra cursor types.
+* Known bug: Hotplugging xinput devices don't work. Removal works, adding one does not.
+
 # 0.3.0
 
 * Added cursor support.
