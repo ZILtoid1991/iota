@@ -113,6 +113,8 @@ public enum StandardCursors {
 	HelpSelect,
 	LocationSelect,
 	PersonSelect,
+	ResizeHoriz,
+	ResizeVert,
 }
 ///Display mode accessing shorthands.
 public enum DisplayMode {

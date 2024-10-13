@@ -138,6 +138,12 @@ int main(string[] args) {
 				case ScanCode.T:
 					inputSurface.setCursor(StandardCursors.PersonSelect);
 					break;
+				case ScanCode.U:
+					inputSurface.setCursor(StandardCursors.ResizeHoriz);
+					break;
+				case ScanCode.V:
+					inputSurface.setCursor(StandardCursors.ResizeVert);
+					break;
 				case ScanCode.F5:
 					checkForNewDevices();
 					writeln(devList);

@@ -593,10 +593,10 @@ public class OSWindow {
 			case ResizeTopLeft, ResizeBottomRight:
 				winCursor = LoadCursorW(NULL, IDC_SIZENWSE);
 				break;
-			case ResizeTop, ResizeBottom:
+			case ResizeTop, ResizeBottom, ResizeVert:
 				winCursor = LoadCursorW(NULL, IDC_SIZENS);
 				break;
-			case ResizeLeft, ResizeRight:
+			case ResizeLeft, ResizeRight, ResizeHoriz:
 				winCursor = LoadCursorW(NULL, IDC_SIZEWE);
 				break;
 			case Move:
