@@ -687,6 +687,11 @@ public class OSWindow {
 			case PersonSelect:
 				x11_cursor = XCreateFontCursor(mainDisplay, XC_man);
 				break;
+			case ResizeHoriz:
+				x11_cursor = XCreateFontCursor(mainDisplay, XC_sb_h_double_arrow);
+				break;
+			case ResizeVert:
+				x11_cursor = XCreateFontCursor(mainDisplay, XC_sb_v_double_arrow);
 			}
 			XDefineCursor(mainDisplay, windowHandle, x11_cursor);
 		}
