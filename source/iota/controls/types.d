@@ -150,8 +150,8 @@ public enum HapticDeviceStatus {
  * Defines text edit event flags.
  */
 public enum TextCommandFlags {
-	PerWord = 1<<0,		///Modifies cursor and delete to work on a per-word basis (essentially holding down the Ctrl key)
-	Select = 1<<1,		///Modifies cursor and other nav commands
+	PerWord = 1<<1,		///Modifies cursor and delete to work on a per-word basis (essentially holding down the Ctrl key)
+	Select = 1<<0,		///Modifies cursor and other nav commands
 }
 /**
  * Contains basic info about the input device.
