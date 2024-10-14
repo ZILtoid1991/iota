@@ -17,6 +17,7 @@ import core.stdc.string;
  * Returns: 1 if an event has been polled, 0 if no events left. Other values are error codes.
  */
 public int poll(ref InputEvent output) nothrow @trusted {
+	output.rawData = [0,0,0,0,0];
 	int status = mainPollingFun(output);
 	if (status) return status;
 	version (Windows) {
