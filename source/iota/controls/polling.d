@@ -103,7 +103,8 @@ version (Windows) {
 		
 			switch (msg.message & 0xFF_FF) {
 				case WM_CHAR, WM_SYSCHAR, WM_UNICHAR, WM_DEADCHAR, WM_SYSDEADCHAR:
-					if (msg.wParam == '\n' || msg.wParam == '\r' || msg.wParam == '\x1b' || msg.wParam == '\x08') goto tryAgain;
+					if (msg.wParam == '\n' || msg.wParam == '\r' || msg.wParam == '\x1b' || msg.wParam == '\x08' 
+							|| msg.wParam == '\x7F') goto tryAgain;
 					output.type = InputEventType.TextInput;
 					output.source = keyb;
 					lastChar = encodeUTF8Char(cast(dchar)(msg.wParam));
@@ -257,7 +258,8 @@ version (Windows) {
 			
 			switch (msg.message & 0xFF_FF) {
 				case WM_CHAR, WM_SYSCHAR, WM_UNICHAR, WM_DEADCHAR, WM_SYSDEADCHAR:
-					if (msg.wParam == '\n' || msg.wParam == '\r' || msg.wParam == '\x1b' || msg.wParam == '\x08') goto tryAgain;
+					if (msg.wParam == '\n' || msg.wParam == '\r' || msg.wParam == '\x1b' || msg.wParam == '\x08' 
+							|| msg.wParam == '\x7F') goto tryAgain;
 					output.type = InputEventType.TextInput;
 					output.source = keyb;
 					lastChar = encodeUTF8Char(cast(dchar)(msg.wParam));
