@@ -27,6 +27,7 @@ version (Windows) {
 	import x11.cursorfont;
 	//import deimos.X11.Xlib;
 	//import deimos.X11.X;
+
 }
 public import iota.window.types;
 public import iota.window.exception;
@@ -44,6 +45,7 @@ import bindbc.opengl;
  * Other window types supported by this library are inherited from this class.
  */
 public class OSWindow {
+	public static Atom WM_DELETE_WINDOW;
 	///Defines Window status values, also used on Windows for event handling.
 	public enum Status : ubyte {
 		init,
@@ -191,6 +193,9 @@ public class OSWindow {
 			root = XRootWindow(mainDisplay, defScr);
 			vInfo = glXChooseVisual(mainDisplay, defScr, attrList.ptr);
 			cmap = XCreateColormap(mainDisplay, root, vInfo.visual, AllocNone);
+
+			WM_DELETE_WINDOW = XInternAtom(mainDisplay, "WM_DELETE_WINDOW", False);
+
 			int xi_opCode, event, error;
 			immutable(char)* extName = "XInputExtension".ptr;
 			if (XQueryExtension(mainDisplay, cast(char*)extName, &xi_opCode, &event, &error)) {
@@ -302,6 +307,7 @@ public class OSWindow {
 					BlackPixel(mainDisplay, scr), WhitePixel(mainDisplay, scr)); */
 			XStoreName(mainDisplay, windowHandle, cast(char*)windowname);
 			//XSelectInput(mainDisplay, windowHandle, 0x01_ff_ff_ff);
+			XSetWMProtocols(mainDisplay, windowHandle, &WM_DELETE_WINDOW, 1);
 			refCount ~= this;
 			im = XOpenIM(mainDisplay, null, null, null);
 			ic = XCreateIC(im, XNInputStyle, XIMPreeditNothing | XIMStatusNothing, XNClientWindow, windowHandle, null);
@@ -321,10 +327,22 @@ public class OSWindow {
 			if (glxContext) {
 				glXMakeCurrent(mainDisplay, None, null);
 				glXDestroyContext(mainDisplay, glxContext);
+				glxContext = null;
 			}
-			if (ic) XDestroyIC(ic);
-			if (im) XCloseIM(im);
-			XDestroyWindow(mainDisplay, windowHandle);
+			if (ic) {
+				XDestroyIC(ic);
+				ic = null;
+            }
+			if (im) {
+				XCloseIM(im);
+				im = null;
+            }
+			XSync(mainDisplay, False);
+			if (windowHandle) {
+				XDestroyWindow(mainDisplay, windowHandle);
+				windowHandle = 0;
+			}
+			XFlush(mainDisplay);
 		}
 	}
 	/**

@@ -652,6 +652,13 @@ version (Windows) {
 				output.type = InputEventType.init;
 				output.source = null;
 				return 0;
+			case ClientMessage:
+			    if (xe.xclient.data.l[0] == OSWindow.WM_DELETE_WINDOW) {
+					output.type = InputEventType.WindowClose;
+					output.handle = xe.xclient.window;
+					return 1;
+				}
+				goto default;
 			default:
 				return 0;
 		}

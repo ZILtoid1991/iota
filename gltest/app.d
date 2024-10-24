@@ -126,7 +126,6 @@ int main(string[] args) {
 				//glOutput.gl_makeCurrent();
 				glViewport(0, 0, event.window.width, event.window.height);
 			} else if (event.type == InputEventType.Keyboard && event.button.dir == 1) {
-				
 				switch (event.button.id) {
 				case ScanCode.F11:
 					int result;
@@ -135,6 +134,9 @@ int main(string[] args) {
 					isFullscreen = !isFullscreen;
 					writeln(result);
 					break;
+				case ScanCode.ESCAPE:
+				    isRunning = false;
+                    break;
 				default:
 					break;
 				}
@@ -143,6 +145,7 @@ int main(string[] args) {
 			Thread.sleep(dur!"msecs"(10));
 			//Input event polling part end
 		}
+		destroy(glOutput);
 		return 0;
 	} catch (Throwable t) {
 		writeln(t);
