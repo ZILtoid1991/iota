@@ -70,7 +70,7 @@ public class OpenGLRenderer : FrameBufferRenderer {
 	protected GLenum		scaleQ;
 	protected bool			vSync;
 	protected int[2]		prevSizes;
-	protected GLfloat[] verticles = [
+	protected const GLfloat[] verticles = [
 	//	Position	TexCoords
 		-1.0, -1.0, 0.0, 0.0,	//Top-left
 		1.0, -1.0,  1.0, 0.0,	//Top-right
