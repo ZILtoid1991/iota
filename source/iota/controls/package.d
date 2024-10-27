@@ -13,8 +13,15 @@ public import iota.window.oswindow;
 version (Windows) {
 	import core.sys.windows.windows;
 	import core.sys.windows.wtypes;
+} else {
+	import iota.controls.backend.linux;
+	import core.stdc.errno;
+	//import core.sys.linux.fcntl;
 }
 import core.stdc.stdlib;
+//import core.stdc.stdio;
+import std.conv : to;
+import std.string : toStringz, fromStringz;
 import std.utf;
 import std.stdio;
 
@@ -109,6 +116,8 @@ public int initInput(uint config = 0, uint osConfig = 0) nothrow {
 		} else {
 			keyb = new Keyboard();
 			mouse = new Mouse();
+			devList ~= keyb;
+			devList ~= mouse;
 			mainPollingFun = &poll_win_LegacyIO;
 			if (config & ConfigFlags.gc_Enable) {
 				import iota.controls.backend.windows;
@@ -122,11 +131,56 @@ public int initInput(uint config = 0, uint osConfig = 0) nothrow {
 			}
 		}
 	} else {
-		keyb = new Keyboard();
-		mouse = new Mouse();
-		mainPollingFun = &poll_x11_RegularIO;
-		devList ~= keyb;
-		devList ~= mouse;
+		if (osConfig & OSConfigFlags.libevdev_enable) {
+			try {
+				import std.file : dirEntries, SpanMode, DirEntry;
+				auto devPaths = dirEntries("/dev/input/", SpanMode.shallow);
+				foreach (DirEntry entry ; devPaths) {
+					if (!entry.isDir) {
+						auto ntStr = toStringz(entry);
+						//writeln(fromStringz(ntStr));
+						int fd = open(ntStr, 0x0000);
+						if (fd < 0) {
+							continue;
+							//if (errno == 13) return InputInitializationStatus.libevdev_AccessDenied;
+							//return InputInitializationStatus.libevdev_ErrorOpeningDev;
+						}
+						libevdev* dev;
+						if (libevdev_new_from_fd(fd, &dev) < 0) {
+							close(fd);
+							continue;
+							//return InputInitializationStatus.libevdev_ErrorOpeningDev;
+						}
+						writeln(fromStringz(libevdev_get_name(dev)));
+						int typeID = libevdev_has_event_type(dev, EV_SYN);
+						typeID |= libevdev_has_event_type(dev, EV_KEY)<<0x01;
+						typeID |= libevdev_has_event_type(dev, EV_REL)<<0x02;
+						typeID |= libevdev_has_event_type(dev, EV_ABS)<<0x03;
+						typeID |= libevdev_has_event_type(dev, EV_MSC)<<0x04;
+						typeID |= libevdev_has_event_type(dev, EV_SW)<<0x05;
+						typeID |= libevdev_has_event_type(dev, EV_LED)<<0x11;
+						typeID |= libevdev_has_event_type(dev, EV_SND)<<0x12;
+						typeID |= libevdev_has_event_type(dev, EV_REP)<<0x14;
+						typeID |= libevdev_has_event_type(dev, EV_FF)<<0x15;
+						typeID |= libevdev_has_event_type(dev, EV_PWR)<<0x16;
+						typeID |= libevdev_has_event_type(dev, EV_FF_STATUS)<<0x17;
+
+					}
+				}
+			} catch (Exception e) {
+
+			}
+			/* int fd = open("/dev/input/event0", O_RDWR);
+			if (fd < 0) return InputInitializationStatus.libevdev_ErrorOpeningDev;
+			libevdev* dev;
+			if (libevdev_new_from_fd(fd, &dev) < 0) return InputInitializationStatus.libevdev_ErrorOpeningDev; */
+		} //else {
+			keyb = new Keyboard();
+			mouse = new Mouse();
+			mainPollingFun = &poll_x11_RegularIO;
+			devList ~= keyb;
+			devList ~= mouse;
+		//}
 	}
 	return InputInitializationStatus.AllOk;
 }

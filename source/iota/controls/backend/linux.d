@@ -7,6 +7,9 @@ import core.sys.posix.sys.ioctl;
 import core.sys.posix.sys.types;
 import core.stdc.stdarg;
 
+static enum O_NONBLOCK				=	0x0000_4000;
+static enum O_RDWR					=	0x0000_0002;
+
 static enum INPUT_PROP_POINTER		=	0x00;	/* needs a pointer */
 static enum INPUT_PROP_DIRECT		=	0x01;	/* direct input devices */
 static enum INPUT_PROP_BUTTONPAD	=	0x02;	/* has button(s) under pad */
@@ -327,3 +330,6 @@ int libevdev_event_value_from_name_n(uint type, uint code, const(char)* name, si
 int libevdev_property_from_name(const(char)* name);
 int libevdev_property_from_name_n(const(char)* name, size_t len);
 int libevdev_get_repeat(const(libevdev)* dev, int* delay, int* period);
+
+int open(scope const(char)* filename, int flags, ...);
+int close(int fd);

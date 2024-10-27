@@ -9,6 +9,7 @@ version (Windows) {
 	import x11.X;
 	import x11.Xlib;
 	import x11.extensions.XInput;
+	import iota.controls.backend.linux;
 }
 /** 
  * Defines mouse button codes.
@@ -47,15 +48,24 @@ public class Mouse : InputDevice {
 			status |= StatusFlags.IsConnected;
 		}
 	} else {
-		package XDevice*	devHandle;
+		/* package XDevice*	devHandle;
 		package this(string _name, ubyte _devNum, XID devID) nothrow {
 			this._name = _name;
 			this._devNum = _devNum;
 			//this.devHandle = XOpenDevice(OSWindow.mainDisplay, devID);
 			_type = InputDeviceType.Keyboard;
 			status |= StatusFlags.IsConnected;
+		} */
+		package this(string _name, ubyte _devNum, int fd, libevdev* hDevice) {
+			this._name = _name;
+			this._devNum = _devNum;
+			this.fd = fd;
+			this.hDevice = hDevice;
 		}
 		~this() {
+			import core.stdc.stdio;
+			if (hDevice) libevdev_free(hDevice);
+			if (fd) close(fd);
 			//XCloseDevice(OSWindow.mainDisplay, devHandle);
 		}
 	}

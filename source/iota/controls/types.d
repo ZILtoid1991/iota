@@ -7,6 +7,8 @@ public import core.time : MonoTime;
 version (Windows) {
 	import core.sys.windows.wtypes;
 	import core.sys.windows.windows;
+} else {
+	import iota.controls.backend.linux;
 }
 
 ///Defines the type of the timestamp
@@ -91,29 +93,32 @@ public enum TextCommandType {
  */
 public enum ConfigFlags : uint {
 	///Enables touchscreen handling. (Always on under mobile platforms)
-	enableTouchscreen			=	1 << 0,
+	enableTouchscreen			=	1<<0,
 	///Toggles game controller trigger handling mode.
 	///If set, they will be treated as analog buttons, otherwise as axes that go between 0.0 and 1.0.
-	gc_TriggerMode				=	1 << 1,
+	gc_TriggerMode				=	1<<1,
 	///Enables game controller handling. (Always on under game consoles)
-	gc_Enable					=	1 << 2,
+	gc_Enable					=	1<<2,
 }
 /** 
  * Operating system specific flags
  */
 public enum OSConfigFlags : uint {
 	///Enables raw input under Windows for more capabilities.
-	win_RawInput				=	1 << 0,
+	win_RawInput				=	1<<0,
 	///Uses the older Wintab over other options.
-	win_Wintab					=	1 << 1,
+	win_Wintab					=	1<<1,
 	///Disables hotkey handling on Windows.
-	win_DisableHotkeys			=	1 << 2,
+	win_DisableHotkeys			=	1<<2,
 	///Enables rawinput for game controllers.
-	win_RawInputGC				=	1 << 3,
+	win_RawInputGC				=	1<<3,
 	///Use XInput for game controllers.
-	win_XInput					=	1 << 4,
+	win_XInput					=	1<<4,
 	///Enables x11 input extensions.
-	x11_InputExtensions			=	1 << 0,
+	x11_InputExtensions			=	1<<5,
+	///Enables libevdev for Linux.
+	libevdev_enable				=	1<<6,
+	libevdev_multidevice		=	1<<7,
 }
 /** 
  * Defines return codes for the `iota.controls.initInput` function.
@@ -124,6 +129,8 @@ public enum InputInitializationStatus {
 	win_DevicesAdded		=	-2,
 
 	x11_InputExtNotAvailable=	-32,
+	libevdev_ErrorOpeningDev=	-33,
+	libevdev_AccessDenied	=	-34,
 }
 /** 
  * Defines return codes for event polling.
@@ -166,7 +173,12 @@ public abstract class InputDevice {
 	/// Bits 0-7 are common, 8-15 are special to each device/interface type.
 	/// Note: flags related to indicators/etc should be kept separately.
 	package ushort				status;
-	package void*				hDevice;	/// Windows only field for RawInput
+	version (Windows) {
+		package void*			hDevice;	/// Windows only field for RawInput
+	} else {
+		package int				fd;
+		package libevdev*		hDevice;
+	}
 	/**
 	 * Defines common status codes
 	 */

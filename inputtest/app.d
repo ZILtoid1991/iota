@@ -161,5 +161,6 @@ int main(string[] args) {
 		}
 		Thread.sleep(dur!"msecs"(10));
 	}
+	destroy(inputSurface);
 	return 0;
 }

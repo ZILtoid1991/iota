@@ -10,6 +10,7 @@ version (Windows) {
 	import x11.extensions.XInput;
 	import x11.extensions.XI2;
 	import x11.extensions.XInput2;
+	import iota.controls.backend.linux;
 }
 /** 
  * Defines keyboard modifiers.
@@ -62,8 +63,10 @@ public class Keyboard : InputDevice {
 			status |= StatusFlags.IsConnected;
 		}
 	} else {
-		package XDevice*	devHandle;
+		//package XDevice*	devHandle;
+		
 		package uint		modifierTracker;
+		
 		package this(string _name, ubyte _devNum, XID devID) {
 			this._name = _name;
 			this._devNum = _devNum;
@@ -71,7 +74,16 @@ public class Keyboard : InputDevice {
 			_type = InputDeviceType.Keyboard;
 			status |= StatusFlags.IsConnected;
 		}
+		package this(string _name, ubyte _devNum, int fd, libevdev* hDevice) {
+			this._name = _name;
+			this._devNum = _devNum;
+			this.fd = fd;
+			this.hDevice = hDevice;
+		}
 		~this() {
+			import core.stdc.stdio;
+			if (hDevice) libevdev_free(hDevice);
+			if (fd) close(fd);
 			//XCloseDevice(OSWindow.mainDisplay, devHandle);
 		}
 	}
