@@ -45,7 +45,7 @@ import bindbc.opengl;
  * Other window types supported by this library are inherited from this class.
  */
 public class OSWindow {
-	public static Atom WM_DELETE_WINDOW;
+	
 	///Defines Window status values, also used on Windows for event handling.
 	public enum Status : ubyte {
 		init,
@@ -165,6 +165,7 @@ public class OSWindow {
 			}
 		}
 	} else {
+		public static Atom WM_DELETE_WINDOW;
 		public static Display* mainDisplay;
 		public static Window root;
 		protected static XVisualInfo* vInfo;
