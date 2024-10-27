@@ -23,6 +23,7 @@ import core.stdc.stdlib;
 import std.conv : to;
 import std.string : toStringz, fromStringz;
 import std.utf;
+import std.uni : asLowerCase;
 import std.stdio;
 
 public enum IOTA_INPUTCONFIG_MANDATORY = 0;
@@ -134,12 +135,13 @@ public int initInput(uint config = 0, uint osConfig = 0) nothrow {
 		if (osConfig & OSConfigFlags.libevdev_enable) {
 			try {
 				import std.file : dirEntries, SpanMode, DirEntry;
+				import std.algorithm;
 				auto devPaths = dirEntries("/dev/input/", SpanMode.shallow);
 				foreach (DirEntry entry ; devPaths) {
-					if (!entry.isDir) {
+					if (!entry.isDir && entry.name[$-4..$] != "mice") {
 						auto ntStr = toStringz(entry);
 						//writeln(fromStringz(ntStr));
-						int fd = open(ntStr, 0x0000);
+						int fd = open(ntStr, O_NONBLOCK | O_RDWR);
 						if (fd < 0) {
 							continue;
 							//if (errno == 13) return InputInitializationStatus.libevdev_AccessDenied;
@@ -151,8 +153,8 @@ public int initInput(uint config = 0, uint osConfig = 0) nothrow {
 							continue;
 							//return InputInitializationStatus.libevdev_ErrorOpeningDev;
 						}
-						writeln(fromStringz(libevdev_get_name(dev)));
-						int typeID = libevdev_has_event_type(dev, EV_SYN);
+						string name = fromStringz(libevdev_get_name(dev));
+						uint typeID = libevdev_has_event_type(dev, EV_SYN);
 						typeID |= libevdev_has_event_type(dev, EV_KEY)<<0x01;
 						typeID |= libevdev_has_event_type(dev, EV_REL)<<0x02;
 						typeID |= libevdev_has_event_type(dev, EV_ABS)<<0x03;
@@ -164,16 +166,19 @@ public int initInput(uint config = 0, uint osConfig = 0) nothrow {
 						typeID |= libevdev_has_event_type(dev, EV_FF)<<0x15;
 						typeID |= libevdev_has_event_type(dev, EV_PWR)<<0x16;
 						typeID |= libevdev_has_event_type(dev, EV_FF_STATUS)<<0x17;
+						string nameLC = asLowerCase(name);
+						if (canFind(nameLC, "keyboard", "keypad")) {
 
+						} else if (canFind(nameLC, "mouse", "trackball")) {
+
+						} else if (canFind(nameLC, "gamepad", "joystick", "controller", "wheel", "joypad")) {
+
+						}
 					}
 				}
 			} catch (Exception e) {
 
 			}
-			/* int fd = open("/dev/input/event0", O_RDWR);
-			if (fd < 0) return InputInitializationStatus.libevdev_ErrorOpeningDev;
-			libevdev* dev;
-			if (libevdev_new_from_fd(fd, &dev) < 0) return InputInitializationStatus.libevdev_ErrorOpeningDev; */
 		} //else {
 			keyb = new Keyboard();
 			mouse = new Mouse();
