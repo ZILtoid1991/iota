@@ -34,9 +34,9 @@ public enum GameControllerButtons : ubyte {
 	LeftShoulder,
 	///The upper-right shoulder button (usually digital)
 	RightShoulder,
-	///The lower-left shoulder button (usually analog)
+	///The lower-left shoulder button (usually analog), or a pedal
 	LeftTrigger,
-	///The lower-right shoulder button (usually analog)
+	///The lower-right shoulder button (usually analog), or a pedal
 	RightTrigger,
 	LeftThumbstick,
 	RightThumbstick,
@@ -54,6 +54,10 @@ public enum GameControllerButtons : ubyte {
 	R4,
 	L5,
 	R5,
+	///5th face button if present
+	Btn_V
+	///6th face button if present
+	Btn_VI
 }
 ///Defines potential POV hat states as bitflags.
 public enum POVHatStates : ubyte {
@@ -66,14 +70,29 @@ public enum POVHatStates : ubyte {
 	SE			=	0x0C,
 	SW			=	0x06,
 }
+///Defines game controller axes.
 public enum GameControllerAxes : ubyte {
 	init,
+	///X axis of the left thumbstick, but is also used for joystick X and steering wheel
 	LeftThumbstickX,
+	///Y axis of the right thumbstick, but is also used for joystick Y
 	LeftThumbstickY,
 	RightThumbstickX,
 	RightThumbstickY,
 	LeftTrigger,
 	RightTrigger,
+	///Accelerometer X, Y, and Z values
+	AccelX,
+	AccelY,
+	AccelZ,
+	///Rotation X, Y, and Z values
+	RotateX,
+	RotateY,
+	RotateZ,
+	TouchpadX,
+	TouchpadY,
+	RTouchpadX,
+	RTouchpadY,
 }
 /**
  * Implements basic functionality common for all game controllers.
