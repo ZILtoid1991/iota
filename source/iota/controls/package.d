@@ -33,9 +33,10 @@ package uint __configFlags, __osConfigFlags;
  * Params:
  *   config = Configuration flags ORed together.
  *   osConfig = OS-specific configuration flags ORed together.
+ *   table = The OS-specific part of gamecontrollerdb.txt.
  * Returns: 0 if everything is successful, or a specific errorcode.
  */
-public int initInput(uint config = 0, uint osConfig = 0) nothrow {
+public int initInput(uint config = 0, uint osConfig = 0, string table = null) nothrow {
 	config |= IOTA_INPUTCONFIG_MANDATORY;
 	__configFlags = config;
 	__osConfigFlags = osConfig;
@@ -137,6 +138,7 @@ public int initInput(uint config = 0, uint osConfig = 0) nothrow {
 				import std.file : dirEntries, SpanMode, DirEntry;
 				import std.algorithm;
 				auto devPaths = dirEntries("/dev/input/", SpanMode.shallow);
+				ubyte keybCnrt, mouseCnrt, gcCnrt;
 				foreach (DirEntry entry ; devPaths) {
 					if (!entry.isDir && entry.name[$-4..$] != "mice") {
 						auto ntStr = toStringz(entry);
@@ -167,17 +169,19 @@ public int initInput(uint config = 0, uint osConfig = 0) nothrow {
 						typeID |= libevdev_has_event_type(dev, EV_PWR)<<0x16;
 						typeID |= libevdev_has_event_type(dev, EV_FF_STATUS)<<0x17;
 						string nameLC = asLowerCase(name);
+						//Try to detect device type from name
 						if (canFind(nameLC, "keyboard", "keypad")) {
-
+							devList ~= new Keyboard(name, keybCnrt++, fd, dev);
 						} else if (canFind(nameLC, "mouse", "trackball")) {
-
-						} else if (canFind(nameLC, "gamepad", "joystick", "controller", "wheel", "joypad")) {
-
+							devList ~= new Mouse(name, mouseCnrt++, fd, dev);
+						} else if (table.length) {	//Likely a game controller, let's check the supplied table if exists
+							//libevdev_get_uniq
 						}
 					}
 				}
 			} catch (Exception e) {
-
+				//debug writeln(e);
+				return InputInitializationStatus.libevdev_ErrorOpeningDev;
 			}
 		} //else {
 			keyb = new Keyboard();
@@ -188,6 +192,13 @@ public int initInput(uint config = 0, uint osConfig = 0) nothrow {
 		//}
 	}
 	return InputInitializationStatus.AllOk;
+}
+/** 
+ * Parses SDL-compatible Game Controller mapping data.
+ * Returns: 
+ */
+package int parseGCM() {
+	return 0;
 }
 public int removeInvalidatedDevices() {
 	for (int i ; i < devList.length ; i++) {

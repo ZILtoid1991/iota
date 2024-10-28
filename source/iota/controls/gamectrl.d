@@ -55,7 +55,7 @@ public enum GameControllerButtons : ubyte {
 	L5,
 	R5,
 	///5th face button if present
-	Btn_V
+	Btn_V,
 	///6th face button if present
 	Btn_VI
 }
@@ -123,18 +123,11 @@ abstract class GameController : InputDevice, HapticDevice {
 	 */
 	public abstract int reset() nothrow;
 }
-public class RawGameController : GameController {
-	protected struct AxisDef {
-		int			vOffset;
-		ushort		bOffset;
-		ubyte		bits;
-		ubyte		num;
-	}
-	protected struct ButtonDef {
-		ushort		bOffset;
-		ubyte		bits;
-		ubyte		num;
-	}
+/**
+ * Game controller class meant to be used with RawInput and libendev.
+ */
+public class RawInputGameController : GameController {
+	
 
 	override public uint[] getCapabilities() @safe nothrow {
 		return null; // TODO: implement
