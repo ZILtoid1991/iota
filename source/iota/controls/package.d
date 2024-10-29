@@ -21,7 +21,7 @@ version (Windows) {
 import core.stdc.stdlib;
 //import core.stdc.stdio;
 import std.conv : to;
-import std.string : toStringz, fromStringz;
+import std.string : toStringz, fromStringz, splitLines, split;
 import std.utf;
 import std.uni : asLowerCase;
 import std.stdio;
@@ -193,12 +193,48 @@ public int initInput(uint config = 0, uint osConfig = 0, string table = null) no
 	}
 	return InputInitializationStatus.AllOk;
 }
+package struct RawGCMapping {
+	ubyte type;		///Type identifier
+	ubyte flags;	///Flags related to translation, e.g. resolution
+	ubyte inNum;	///Input axis/button number, or hat state
+	ubyte outNum;	///Output axis/button number
+}
+package enum RawGCMappingType : ubyte {
+	init,
+	Button,
+	Axis,
+	Trigger,
+	Hat,
+	AxisToButton,
+}
 /** 
  * Parses SDL-compatible Game Controller mapping data.
+ * Params: 
+ *   table = 
+ *   uniq =
  * Returns: 
  */
-package int parseGCM() {
-	return 0;
+package uint[] parseGCM(string table, string uniq) @safe {
+	import std.algorithm : countUntil;
+	string[] lines = table.splitLines();
+	foreach (string line ; lines) {
+		string[] vals = line.split(",");
+		if (vals.length > 2) {
+			if (vals[0] == uniq){
+				uint[] result;
+				foreach (string val ; vals) {
+					sizediff_t colonIndex = countUntil(val, ":");
+					if (colonIndex <= 0) continue;
+					switch (val[0..colonIndex]) {
+					default: 
+						break;
+					}
+				}
+				return result;
+			}
+		}
+	}
+	return null;
 }
 public int removeInvalidatedDevices() {
 	for (int i ; i < devList.length ; i++) {
