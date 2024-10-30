@@ -338,6 +338,36 @@ package RawGCMapping[] parseGCM(string table, string uniq) @safe {
 					case "righty", "RightThumbstickY":
 						result ~= RawGCMapping(val[colonIndex+1..$], GameControllerAxes.RightThumbstickY, true);
 						break;
+					case "accelx", "AccelX":
+						result ~= RawGCMapping(val[colonIndex+1..$], GameControllerAxes.AccelX, true);
+						break;
+					case "accely", "AccelY":
+						result ~= RawGCMapping(val[colonIndex+1..$], GameControllerAxes.AccelY, true);
+						break;
+					case "accelz", "AccelZ":
+						result ~= RawGCMapping(val[colonIndex+1..$], GameControllerAxes.AccelZ, true);
+						break;
+					case "rotatex", "RotateX":
+						result ~= RawGCMapping(val[colonIndex+1..$], GameControllerAxes.RotateX, true);
+						break;
+					case "rotatey", "RotateY":
+						result ~= RawGCMapping(val[colonIndex+1..$], GameControllerAxes.RotateY, true);
+						break;
+					case "rotatez", "RotateZ":
+						result ~= RawGCMapping(val[colonIndex+1..$], GameControllerAxes.RotateZ, true);
+						break;
+					case "touchpadx", "TouchPadX":
+						result ~= RawGCMapping(val[colonIndex+1..$], GameControllerAxes.TouchPadX, true);
+						break;
+					case "touchpady", "TouchPadY":
+						result ~= RawGCMapping(val[colonIndex+1..$], GameControllerAxes.TouchPadY, true);
+						break;
+					case "rtouchpadx", "RTouchPadX":
+						result ~= RawGCMapping(val[colonIndex+1..$], GameControllerAxes.RTouchPadX, true);
+						break;
+					case "rtouchpady", "RTouchPadY":
+						result ~= RawGCMapping(val[colonIndex+1..$], GameControllerAxes.RTouchPadY, true);
+						break;
 					default: 
 						break;
 					}
