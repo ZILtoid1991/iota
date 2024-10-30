@@ -33,10 +33,13 @@ package uint __configFlags, __osConfigFlags;
  * Params:
  *   config = Configuration flags ORed together.
  *   osConfig = OS-specific configuration flags ORed together.
- *   table = The OS-specific part of gamecontrollerdb.txt.
+ *   gcmTable = Game controller mapping table. Compatible with SDL's own format, but has its
+ * own extensions to the format. Be noted that the table needs to be prefiltered to only 
+ * contain the parts that are for the given OS. Can be null if either no game controllers
+ * are being used, or XInput is being used.
  * Returns: 0 if everything is successful, or a specific errorcode.
  */
-public int initInput(uint config = 0, uint osConfig = 0, string table = null) nothrow {
+public int initInput(uint config = 0, uint osConfig = 0, string gcmTable = null) nothrow {
 	config |= IOTA_INPUTCONFIG_MANDATORY;
 	__configFlags = config;
 	__osConfigFlags = osConfig;
@@ -108,6 +111,9 @@ public int initInput(uint config = 0, uint osConfig = 0, string table = null) no
 						keyb = k;
 						break;
 					default:	//Must be RIM_TYPEHID
+						try {
+							RawGCMapping[] mapping = parseGCM(gcmTable, toUTF8(data[0..nameRes]));
+						} catch (Exception e) {}
 						//debug writeln("Other device: ", data[0..nameRes]);	//For now, just print whatever name we get.
 						break;
 				}
@@ -174,11 +180,20 @@ public int initInput(uint config = 0, uint osConfig = 0, string table = null) no
 							devList ~= new Keyboard(name, keybCnrt++, fd, dev);
 						} else if (canFind(nameLC, "mouse", "trackball")) {
 							devList ~= new Mouse(name, mouseCnrt++, fd, dev);
-						} else if (table.length) {	//Likely a game controller, let's check the supplied table if exists
+						} else if (gcmTable.length) {	//Likely a game controller, let's check the supplied table if exists
+							string uniqueID = fromStringz(libevdev_get_uniq(dev));
+							RawGCMapping[] mapping = parseGCM(gcmTable, uniqueID);
+							if (mapping.length) {
+								devList ~= new RawInputGameController(name, gcCnrt++, fd, dev, mapping);
+							} else {
+								libevdev_free(dev);
+								close(fd);
+							}
 							//libevdev_get_uniq
 						}
 					}
 				}
+				if (!(keybCnrt + mouseCnrt + gcCnrt)) return InputInitializationStatus.libevdev_AccessDenied;
 			} catch (Exception e) {
 				//debug writeln(e);
 				return InputInitializationStatus.libevdev_ErrorOpeningDev;
@@ -198,7 +213,7 @@ package struct RawGCMapping {
 	ubyte flags;	///Flags related to translation, e.g. resolution, hat number
 	ubyte inNum;	///Input axis/button number, or hat state
 	ubyte outNum;	///Output axis/button number
-	this (string src, ubyte outnum, bool isButtonTarget = false) @safe @nogc nothrow {
+	this (string src, ubyte outNum, bool isButtonTarget = false) @safe @nogc nothrow {
 		switch (src[0]) {
 		case 'a':
 			if (isButtonTarget) type = RawGCMappingType.AxisToButton;
@@ -216,7 +231,7 @@ package struct RawGCMapping {
 			break;
 		default: break;
 		}
-		this.outnum = outnum;
+		this.outNum = outNum;
 	}
 }
 package enum RawGCMappingType : ubyte {
@@ -235,9 +250,9 @@ package int parseNum(string num) @nogc @safe nothrow {
 /** 
  * Parses SDL-compatible Game Controller mapping data.
  * Params: 
- *   table = 
- *   uniq =
- * Returns: 
+ *   table = Table, where the data should be read from.
+ *   uniq = Unique identifier of the game controller.
+ * Returns: A table for mapping, or null if mapping couldn't be found.
  */
 package RawGCMapping[] parseGCM(string table, string uniq) @safe {
 	import std.algorithm : countUntil;
@@ -323,7 +338,7 @@ package RawGCMapping[] parseGCM(string table, string uniq) @safe {
 					case "btnv", "Btn_V":
 						result ~= RawGCMapping(val[colonIndex+1..$], GameControllerButtons.Btn_V, true);
 						break;
-					case "btnVI", "Btn_VI":
+					case "btnvi", "Btn_VI":
 						result ~= RawGCMapping(val[colonIndex+1..$], GameControllerButtons.Btn_VI, true);
 						break;
 					case "leftx", "LeftThumbstickX":
@@ -356,17 +371,17 @@ package RawGCMapping[] parseGCM(string table, string uniq) @safe {
 					case "rotatez", "RotateZ":
 						result ~= RawGCMapping(val[colonIndex+1..$], GameControllerAxes.RotateZ, true);
 						break;
-					case "touchpadx", "TouchPadX":
-						result ~= RawGCMapping(val[colonIndex+1..$], GameControllerAxes.TouchPadX, true);
+					case "touchpadx", "TouchpadX":
+						result ~= RawGCMapping(val[colonIndex+1..$], GameControllerAxes.TouchpadX, true);
 						break;
-					case "touchpady", "TouchPadY":
-						result ~= RawGCMapping(val[colonIndex+1..$], GameControllerAxes.TouchPadY, true);
+					case "touchpady", "TouchpadY":
+						result ~= RawGCMapping(val[colonIndex+1..$], GameControllerAxes.TouchpadY, true);
 						break;
-					case "rtouchpadx", "RTouchPadX":
-						result ~= RawGCMapping(val[colonIndex+1..$], GameControllerAxes.RTouchPadX, true);
+					case "rtouchpadx", "RTouchpadX":
+						result ~= RawGCMapping(val[colonIndex+1..$], GameControllerAxes.RTouchpadX, true);
 						break;
-					case "rtouchpady", "RTouchPadY":
-						result ~= RawGCMapping(val[colonIndex+1..$], GameControllerAxes.RTouchPadY, true);
+					case "rtouchpady", "RTouchpadY":
+						result ~= RawGCMapping(val[colonIndex+1..$], GameControllerAxes.RTouchpadY, true);
 						break;
 					default: 
 						break;

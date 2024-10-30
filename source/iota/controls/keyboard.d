@@ -79,6 +79,8 @@ public class Keyboard : InputDevice {
 			this._devNum = _devNum;
 			this.fd = fd;
 			this.hDevice = hDevice;
+			_type = InputDeviceType.Keyboard;
+			status |= StatusFlags.IsConnected;
 		}
 		~this() {
 			import core.stdc.stdio;

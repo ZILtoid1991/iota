@@ -6,6 +6,7 @@ version (Windows) {
 	import core.sys.windows.windows;
 	import core.sys.windows.wtypes;
 	import iota.controls.backend.windows;
+	import iota.controls : RawGCMapping, RawGCMappingType;
 }
 /**
  * Defines standard codes for game controller buttons shared across device types.
@@ -127,8 +128,27 @@ abstract class GameController : InputDevice, HapticDevice {
  * Game controller class meant to be used with RawInput and libendev.
  */
 public class RawInputGameController : GameController {
-	
-
+	package RawGCMapping[] mapping;
+	version (Windows) {
+		package this(string _name, ubyte _devNum, HANDLE devHandle, RawGCMapping[] mapping) nothrow {
+			this._name = _name;
+			this._devNum = _devNum;
+			this.hDevice = devHandle;
+			this.mapping = mapping;
+			_type = InputDeviceType.GameController;
+			status |= StatusFlags.IsConnected;
+		}
+	} else {
+		package this(string _name, ubyte _devNum, int fd, libevdev* hDevice, RawGCMapping[] mapping) {
+			this._name = _name;
+			this._devNum = _devNum;
+			this.fd = fd;
+			this.hDevice = hDevice;
+			this.mapping = mapping;
+			_type = InputDeviceType.GameController;
+			status |= StatusFlags.IsConnected;
+		}
+	}
 	override public uint[] getCapabilities() @safe nothrow {
 		return null; // TODO: implement
 	}
