@@ -195,9 +195,29 @@ public int initInput(uint config = 0, uint osConfig = 0, string table = null) no
 }
 package struct RawGCMapping {
 	ubyte type;		///Type identifier
-	ubyte flags;	///Flags related to translation, e.g. resolution
+	ubyte flags;	///Flags related to translation, e.g. resolution, hat number
 	ubyte inNum;	///Input axis/button number, or hat state
 	ubyte outNum;	///Output axis/button number
+	this (string src, ubyte outnum, bool isButtonTarget = false) @safe @nogc nothrow {
+		switch (src[0]) {
+		case 'a':
+			if (isButtonTarget) type = RawGCMappingType.AxisToButton;
+			else type = RawGCMappingType.Axis;
+			inNum = cast(ubyte)parseNum(src[1..$]);
+			break;
+		case 'b':
+			type = RawGCMappingType.Button;
+			inNum = cast(ubyte)parseNum(src[1..$]);
+			break;
+		case 'h':
+			type = RawGCMappingType.Hat;
+			flags = cast(ubyte)parseNum(src[1..2]);
+			inNum = cast(ubyte)parseNum(src[3..$]);
+			break;
+		default: break;
+		}
+		this.outnum = outnum;
+	}
 }
 package enum RawGCMappingType : ubyte {
 	init,
@@ -207,6 +227,11 @@ package enum RawGCMappingType : ubyte {
 	Hat,
 	AxisToButton,
 }
+package int parseNum(string num) @nogc @safe nothrow {
+	int result;
+	foreach (char c ; num) result = (result * 10) + (c - '0');
+	return result;
+}
 /** 
  * Parses SDL-compatible Game Controller mapping data.
  * Params: 
@@ -214,18 +239,105 @@ package enum RawGCMappingType : ubyte {
  *   uniq =
  * Returns: 
  */
-package uint[] parseGCM(string table, string uniq) @safe {
+package RawGCMapping[] parseGCM(string table, string uniq) @safe {
 	import std.algorithm : countUntil;
 	string[] lines = table.splitLines();
 	foreach (string line ; lines) {
 		string[] vals = line.split(",");
 		if (vals.length > 2) {
 			if (vals[0] == uniq){
-				uint[] result;
+				RawGCMapping[] result;
 				foreach (string val ; vals) {
-					sizediff_t colonIndex = countUntil(val, ":");
-					if (colonIndex <= 0) continue;
+					sizediff_t colonIndex = countUntil(val, ":");//used to separate data identifier from the data itself
+					if (colonIndex <= 0) continue;	//Safety feature for when field does not have a colon (arbitrary data?)
 					switch (val[0..colonIndex]) {
+					case "a", "South":
+						result ~= RawGCMapping(val[colonIndex+1..$], GameControllerButtons.South, true);
+						break;
+					case "b", "East":
+						result ~= RawGCMapping(val[colonIndex+1..$], GameControllerButtons.East, true);
+						break;
+					case "x", "West":
+						result ~= RawGCMapping(val[colonIndex+1..$], GameControllerButtons.West, true);
+						break;
+					case "y", "North":
+						result ~= RawGCMapping(val[colonIndex+1..$], GameControllerButtons.North, true);
+						break;
+					case "dpup", "DPadUp":
+						result ~= RawGCMapping(val[colonIndex+1..$], GameControllerButtons.DPadUp, true);
+						break;
+					case "dpdown", "DPadDown":
+						result ~= RawGCMapping(val[colonIndex+1..$], GameControllerButtons.DPadDown, true);
+						break;
+					case "dpleft", "DPadLeft":
+						result ~= RawGCMapping(val[colonIndex+1..$], GameControllerButtons.DPadLeft, true);
+						break;
+					case "dpright", "DPadRight":
+						result ~= RawGCMapping(val[colonIndex+1..$], GameControllerButtons.DPadRight, true);
+						break;
+					case "leftshoulder", "LeftShoulder":
+						result ~= RawGCMapping(val[colonIndex+1..$], GameControllerButtons.LeftShoulder, true);
+						break;
+					case "rightshoulder", "RightShoulder":
+						result ~= RawGCMapping(val[colonIndex+1..$], GameControllerButtons.RightShoulder, true);
+						break;
+					case "lefttrigger", "LeftTrigger":
+						result ~= RawGCMapping(val[colonIndex+1..$], GameControllerButtons.LeftTrigger, true);
+						break;
+					case "righttrigger", "RightTrigger":
+						result ~= RawGCMapping(val[colonIndex+1..$], GameControllerButtons.RightTrigger, true);
+						break;
+					case "back", "LeftNav":
+						result ~= RawGCMapping(val[colonIndex+1..$], GameControllerButtons.LeftNav, true);
+						break;
+					case "start", "RightNav":
+						result ~= RawGCMapping(val[colonIndex+1..$], GameControllerButtons.RightNav, true);
+						break;
+					case "guide", "Home":
+						result ~= RawGCMapping(val[colonIndex+1..$], GameControllerButtons.Home, true);
+						break;
+					case "leftstick", "LeftThumbstick":
+						result ~= RawGCMapping(val[colonIndex+1..$], GameControllerButtons.LeftThumbstick, true);
+						break;
+					case "rightstick", "RightThumbstick":
+						result ~= RawGCMapping(val[colonIndex+1..$], GameControllerButtons.RightThumbstick, true);
+						break;
+					case "l4", "L4":
+						result ~= RawGCMapping(val[colonIndex+1..$], GameControllerButtons.L4, true);
+						break;
+					case "r4", "R4":
+						result ~= RawGCMapping(val[colonIndex+1..$], GameControllerButtons.R4, true);
+						break;
+					case "l5", "L5":
+						result ~= RawGCMapping(val[colonIndex+1..$], GameControllerButtons.L5, true);
+						break;
+					case "r5", "R5":
+						result ~= RawGCMapping(val[colonIndex+1..$], GameControllerButtons.R5, true);
+						break;
+					case "share", "Share":
+						result ~= RawGCMapping(val[colonIndex+1..$], GameControllerButtons.Share, true);
+						break;
+					case "touchpadclick", "TouchpadClick":
+						result ~= RawGCMapping(val[colonIndex+1..$], GameControllerButtons.TouchpadClick, true);
+						break;
+					case "btnv", "Btn_V":
+						result ~= RawGCMapping(val[colonIndex+1..$], GameControllerButtons.Btn_V, true);
+						break;
+					case "btnVI", "Btn_VI":
+						result ~= RawGCMapping(val[colonIndex+1..$], GameControllerButtons.Btn_VI, true);
+						break;
+					case "leftx", "LeftThumbstickX":
+						result ~= RawGCMapping(val[colonIndex+1..$], GameControllerAxes.LeftThumbstickX, true);
+						break;
+					case "lefty", "LeftThumbstickY":
+						result ~= RawGCMapping(val[colonIndex+1..$], GameControllerAxes.LeftThumbstickY, true);
+						break;
+					case "rightx", "RightThumbstickX":
+						result ~= RawGCMapping(val[colonIndex+1..$], GameControllerAxes.RightThumbstickX, true);
+						break;
+					case "righty", "RightThumbstickY":
+						result ~= RawGCMapping(val[colonIndex+1..$], GameControllerAxes.RightThumbstickY, true);
+						break;
 					default: 
 						break;
 					}
