@@ -14,19 +14,20 @@ import core.stdc.string;
  * Polls all input devices, and returns the found events in a given order.
  * Params:
  *   output = The input event that was found. 
- * Returns: 1 if an event has been polled, 0 if no events left. Other values are error codes.
+ * Returns: 1 if an event has been polled, 0 if no events left. Other values are error codes foind in enumerator
+ * `EventPollStatus`.
  */
 public int poll(ref InputEvent output) nothrow @trusted {
+	if (mainPollingFun is null) return EventPollStatus.InputNotInitialized;
 	output.rawData = [0,0,0,0,0];
-	int status = mainPollingFun(output);
+	int status = 0;
+	if (subPollingFun !is null) status = subPollingFun(output);
 	if (status) return status;
-	version (Windows) {
-		status = XInputDevice.poll(output);
-		if (status) return status;
-	}
-	return 0;
+	status = mainPollingFun(output);
+	return status;
 }
-package @system @nogc nothrow int function(ref InputEvent) mainPollingFun;
+package @system @nogc nothrow int function(ref InputEvent) mainPollingFun;	///Usually the main polling function, must be set
+package @system @nogc nothrow int function(ref InputEvent) subPollingFun;	///Usually the secondary polling function, optional
 package InputEvent textInputCmd;
 Keyboard keyb;          ///Main keyboard, or the only keyboard on APIs not supporting differentiating between keyboards.
 Mouse mouse;            ///Main mouse, or the only mouse on APIs not supporting differentiating between mice.
@@ -244,7 +245,8 @@ version (Windows) {
 		MSG msg;
 		BOOL bret = PeekMessageW(&msg, null, 0, 0, PM_REMOVE);
 		if (bret) {
-			output.timestamp = msg.time * 1000L;
+			version (iota_ostimestamp) output.timestamp = msg.time * 1000L;
+			else output.timestamp = getTimestamp();
 			output.handle = msg.hwnd;
 			auto message = msg.message & 0xFF_FF;
 			DispatchMessageW(&msg);
@@ -357,7 +359,8 @@ version (Windows) {
 						output.type = InputEventType.DeviceRemoved;
 					} else if (msg.wParam == 1) {	//Device added
 						output.type = InputEventType.DeviceAdded;
-						HANDLE devHandle = cast(HANDLE)msg.lParam;
+						output.arbPtr.data = cast(void*)msg.lParam;
+
 					}
 					break;
 				//begin of legacy mouse events
@@ -477,6 +480,7 @@ version (Windows) {
 	import x11.extensions.XInput;
 	import x11.extensions.XInput2;
 	import core.stdc.inttypes : wchar_t;
+	import iota.controls.backend.linux;
 	
 	package int chrCntr;
 	package char[32] chrOut;
@@ -486,9 +490,7 @@ version (Windows) {
 	package WindowH trackedWindow;	//To track the mouse pointer without xinput2
 	package WindowH rootReturn;		//Root return window for tracking
 	package WindowH	childReturn;	//Child return window for tracking
-	shared static this() {
-		
-	}
+
 	///X11 input handling, no input extensions, only used when xinput2 is not available
 	package int poll_x11_RegularIO(ref InputEvent output) nothrow @nogc @system {
 		if (trackedWindow) {
@@ -517,10 +519,13 @@ version (Windows) {
 		XNextEvent(OSWindow.mainDisplay, &xe);
 		switch (xe.type) {
 			case MappingNotify:
+				version (iota_ostimestamp) output.timestamp = 0;
+				else output.timestamp = getTimestamp();
 				XRefreshKeyboardMapping(&xe.xmapping);
 				goto tryAgain;
 			case ButtonPress, ButtonRelease:		//Note: Under X11, scrollwheel events are also mapped here.
-				output.timestamp = xe.xbutton.time * 1000L;
+				version (iota_ostimestamp) output.timestamp = xe.xbutton.time * 1000L;
+				else output.timestamp = getTimestamp();
 				output.handle = xe.xbutton.window;
 				output.source = mouse;
 				trackedWindow = xe.xbutton.window;
@@ -547,10 +552,10 @@ version (Windows) {
 								output.mouseSE.yS = 127;
 								break;
 							case 6:
-								output.mouseSE.xS = -31;
+								output.mouseSE.xS = -127;
 								break;
 							case 7:
-								output.mouseSE.xS = 31;
+								output.mouseSE.xS = 127;
 								break;
 							default:
 								break;
@@ -579,7 +584,8 @@ version (Windows) {
 				mouse.lastPosition = [xe.xbutton.x, xe.xbutton.y];
 				return 1;
 			case MotionNotify, LeaveNotify:
-				output.timestamp = xe.xmotion.time * 1000L;
+				version (iota_ostimestamp) output.timestamp = xe.xmotion.time * 1000L;
+				else output.timestamp = getTimestamp();
 				output.handle = xe.xmotion.window;
 				trackedWindow = xe.xmotion.window;
 				output.source = mouse;
@@ -592,7 +598,8 @@ version (Windows) {
 				mouse.lastPosition = [xe.xmotion.x, xe.xmotion.y];
 				return 1;
 			case KeyPress, KeyRelease:
-				output.timestamp = xe.xkey.time * 1000L;
+				version (iota_ostimestamp) output.timestamp = xe.xkey.time * 1000L;
+				else output.timestamp = getTimestamp();
 				output.handle = xe.xkey.window;
 				output.source = keyb;
 				keyb.setModifiers(xe.xkey.state);
@@ -638,7 +645,8 @@ version (Windows) {
 				output.button.dir = xe.type == KeyPress ? 1 : 0;
 				return 1;
 			case ConfigureNotify:
-				output.timestamp = 0;
+				version (iota_ostimestamp) output.timestamp = 0;
+				else output.timestamp = getTimestamp();
 				output.handle = xe.xconfigure.event;
 				output.type = InputEventType.WindowResize;
 				with (output.window) {
@@ -653,6 +661,8 @@ version (Windows) {
 				output.source = null;
 				return 0;
 			case ClientMessage:
+				version (iota_ostimestamp) output.timestamp = 0;
+				else output.timestamp = getTimestamp();
 			    if (xe.xclient.data.l[0] == OSWindow.WM_DELETE_WINDOW) {
 					output.type = InputEventType.WindowClose;
 					output.handle = xe.xclient.window;
@@ -664,6 +674,72 @@ version (Windows) {
 		}
 	}
 	package int poll_x11_xInputExt(ref InputEvent output) nothrow @nogc {
+		return 0;
+	}
+	package int evdev_devCntr;
+	package int poll_evdev(ref InputEvent output) nothrow @nogc {
+		while (devList.length > evdev_devCntr) {
+			InputDevice currdev = devList[evdev_devCntr];
+			if (!currdev.isInvalidated && currdev.hDevice) {
+				input_event event;
+				while (libevdev_next_event(dev, libevdev_read_flag.LIBEVDEV_READ_FLAG_NORMAL, &event) ==
+						libevdev_read_status.LIBEVDEV_READ_STATUS_SUCCESS) {
+					output.source = currdev;
+					version (iota_ostimestamp) output.timestamp = event.time.tv_usec + (event.time.tv_sec * 1_000_000);
+					switch (currdev.type) {
+					case InputDeviceType.Keyboard:
+						switch (event.type) {
+						case EV_KEY, EV_REP:
+							output.type = InputEventType.Keyboard;
+							output.button.id = translateKeyCode(event.code);
+							output.button.dir = cast(ubyte)event.value;
+							output.button.repeat = event.type == EV_REP ? 1 : 0;
+							return 1;
+						default:
+							break;
+						}
+						break;
+					/+
+					case InputDeviceType.Mouse:
+						switch (event.type) {
+						case EV_BTN:
+
+							break;
+						default:
+							break;
+						}
+						break;+/
+					case InputDeviceType.GameController:
+						RawInputGameController gc = cast(RawInputGameController)currdev;
+						switch (event.type) {
+						case EV_BTN:	//Button press event
+							/+foreach (RawGCMapping key ; gc.mapping) {
+								if (key.type == RawGCMappingType.Button) {
+
+								}
+							}+/
+							output.type = InputEventType.GCButton;
+							output.button.id = event.code;
+							output.button.dir = cast(ubyte)event.value;
+							return 1;
+						case EV_ABS:	//Axis/hat event
+							output.type = InputEventType.GCAxis;
+							output.axis.id = event.code;
+							output.axis.raw = event.value;
+							output.axis.val = event.value * (1.0 / short.max);
+							return 1;
+						default:
+							break;
+						}
+						break;
+					default:
+						break;
+					}
+				}
+			}
+			evdev_devCntr++;
+		}
+		evdev_devCntr = 0;
 		return 0;
 	}
 }

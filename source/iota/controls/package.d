@@ -73,6 +73,7 @@ public int initInput(uint config = 0, uint osConfig = 0, string gcmTable = null)
 							devList ~= x;
 						}
 					}
+					subPollingFun = &XInputDevice.poll;
 				}
 			}
 			if (RegisterRawInputDevices(rid.ptr, cast(UINT)rid.length, cast(UINT)(RAWINPUTDEVICE.sizeof)) == FALSE) {
@@ -86,7 +87,7 @@ public int initInput(uint config = 0, uint osConfig = 0, string gcmTable = null)
 			nDevices = GetRawInputDeviceList(devices.ptr, &nDevices, cast(UINT)(RAWINPUTDEVICELIST.sizeof));
 			if (nDevices == cast(uint)-1)
 				return InputInitializationStatus.win_DevicesAdded;
-			ubyte kbNum, mNum;
+			ubyte kbNum, mNum, gcNum;
 			foreach (RAWINPUTDEVICELIST dev ; devices) {
 				wchar[512] data;
 				//data.length = 512;
@@ -113,6 +114,9 @@ public int initInput(uint config = 0, uint osConfig = 0, string gcmTable = null)
 					default:	//Must be RIM_TYPEHID
 						try {
 							RawGCMapping[] mapping = parseGCM(gcmTable, toUTF8(data[0..nameRes]));
+							if (mapping.length) {
+								devList ~= new RawInputGameController(toUTF8(data[0..nameRes]), gcNum++, dev.hDevice, mapping);
+							}
 						} catch (Exception e) {}
 						//debug writeln("Other device: ", data[0..nameRes]);	//For now, just print whatever name we get.
 						break;
@@ -194,16 +198,17 @@ public int initInput(uint config = 0, uint osConfig = 0, string gcmTable = null)
 					}
 				}
 				if (!(keybCnrt + mouseCnrt + gcCnrt)) return InputInitializationStatus.libevdev_AccessDenied;
+				subPollingFun = &poll_evdev;
 			} catch (Exception e) {
 				//debug writeln(e);
 				return InputInitializationStatus.libevdev_ErrorOpeningDev;
 			}
 		} //else {
-			keyb = new Keyboard();
-			mouse = new Mouse();
-			mainPollingFun = &poll_x11_RegularIO;
-			devList ~= keyb;
-			devList ~= mouse;
+		keyb = new Keyboard();
+		mouse = new Mouse();
+		mainPollingFun = &poll_x11_RegularIO;
+		devList ~= keyb;
+		devList ~= mouse;
 		//}
 	}
 	return InputInitializationStatus.AllOk;
@@ -401,6 +406,11 @@ public int removeInvalidatedDevices() {
 	}
 	return 0;
 }
+/**
+ * Checks for new devices and initializes them.
+ * Returns: Zero, or a specific error code if it was unsuccessful.
+ * Bugs: Does not work with XInput at the moment.
+ */
 public int checkForNewDevices() {
 	version (Windows) {
 		import iota.controls.backend.windows;

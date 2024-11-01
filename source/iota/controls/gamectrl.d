@@ -1,12 +1,14 @@
 module iota.controls.gamectrl;
 
 public import iota.controls.types;
+import iota.controls : RawGCMapping, RawGCMappingType;
 
 version (Windows) {
 	import core.sys.windows.windows;
 	import core.sys.windows.wtypes;
 	import iota.controls.backend.windows;
-	import iota.controls : RawGCMapping, RawGCMappingType;
+} else {
+	import iota.controls.backend.linux;
 }
 /**
  * Defines standard codes for game controller buttons shared across device types.
@@ -124,6 +126,21 @@ abstract class GameController : InputDevice, HapticDevice {
 	 */
 	public abstract int reset() nothrow;
 }
+/+version(linux) package ubyte translateLibevdevBtnCodes_SDLcompat(ushort code) @safe @nogc nothrow pure {
+	immutable ubyte[16] LUT =
+		[
+			0x00,
+			0x01,
+			0xFF,
+			0x02,
+			0x03,
+			0xFF,
+			0x04,
+			0x05,
+			0xFF,
+		];
+	return LUT[(code - 0x130) & 0x0F];
+}+/
 /**
  * Game controller class meant to be used with RawInput and libendev.
  */
