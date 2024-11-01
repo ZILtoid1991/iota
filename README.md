@@ -7,11 +7,11 @@ Input-output (audio, controls, etc) library for D. Intended as a D language nati
 |--------------------------|------------------------------------|------------------------------------|
 |Audio                     |Preliminary, output stream works    |ALSA: janky, pipewire: coming soon  |
 |MIDI                      |Input+Output, with some caveat      |Input tested, output should also work|
-|Keyboard                  |Legacy: Works; Raw: Works           |X11: mostly works                   |
-|Mouse                     |Legacy: Works; Raw: Works           |X11: working                        |
+|Keyboard                  |Legacy: Works; Raw: Works           |X11: works; evdev: in progress      |
+|Mouse                     |Legacy: Works; Raw: Works           |X11: works; evdev: in progress      |
 |Mouse cursors             |Does not work for some reason       |Working                             |
 |Pen Tablet                |Not yet implemented                 |Not yet implemented                 |
-|Game controllers          |XInput: working                     |Not yet implemented                 |
+|Game controllers          |XInput: working; Raw: in progress   |Evdev: in progress                  |
 |Windowing                 |Working                             |X11: Working                        |
 |Fullscreen window support |Working (video modes untested)      |X11: Working                        |
 |OpenGL output             |Working                             |Working                             |
@@ -85,3 +85,9 @@ It works for what I've tested it, Windows parts might have their own unique chal
 # Examples
 
 See `testsource/app.d` for audio, `inputtest/app.d` for input and basic windowing, and `miditest/app.d` for MIDI.
+
+# To do list
+
+* Add option for hiding mouse.
+* Add Vulkan support.
+* Add support for alternative runtimes/memory managers.
