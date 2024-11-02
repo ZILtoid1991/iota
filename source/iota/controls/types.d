@@ -118,7 +118,7 @@ public enum OSConfigFlags : uint {
 	x11_InputExtensions			=	1<<5,
 	///Enables libevdev for Linux.
 	libevdev_enable				=	1<<6,
-	libevdev_multidevice		=	1<<7,
+	libevdev_writeenable		=	1<<7,
 }
 /** 
  * Defines return codes for the `iota.controls.initInput` function.

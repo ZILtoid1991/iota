@@ -21,14 +21,17 @@ public int poll(ref InputEvent output) nothrow @trusted {
 	if (mainPollingFun is null) return EventPollStatus.InputNotInitialized;
 	output.rawData = [0,0,0,0,0];
 	int status = 0;
-	if (subPollingFun !is null) status = subPollingFun(output);
+	if (subPollingFun !is null && subPollingFunFinished) status = subPollingFun(output);
 	if (status) return status;
+	else subPollingFunFinished = true;
 	status = mainPollingFun(output);
+	if (!status) subPollingFunFinished = false;
 	return status;
 }
 package @system @nogc nothrow int function(ref InputEvent) mainPollingFun;	///Usually the main polling function, must be set
 package @system @nogc nothrow int function(ref InputEvent) subPollingFun;	///Usually the secondary polling function, optional
 package InputEvent textInputCmd;
+bool subPollingFunFinished;
 Keyboard keyb;          ///Main keyboard, or the only keyboard on APIs not supporting differentiating between keyboards.
 Mouse mouse;            ///Main mouse, or the only mouse on APIs not supporting differentiating between mice.
 System sys;				///System device, originator of system events.
@@ -682,7 +685,7 @@ version (Windows) {
 			InputDevice currdev = devList[evdev_devCntr];
 			if (!currdev.isInvalidated && currdev.hDevice) {
 				input_event event;
-				while (libevdev_next_event(dev, libevdev_read_flag.LIBEVDEV_READ_FLAG_NORMAL, &event) ==
+				while (libevdev_next_event(currdev.hDevice, libevdev_read_flag.LIBEVDEV_READ_FLAG_NORMAL, &event) ==
 						libevdev_read_status.LIBEVDEV_READ_STATUS_SUCCESS) {
 					output.source = currdev;
 					version (iota_ostimestamp) output.timestamp = event.time.tv_usec + (event.time.tv_sec * 1_000_000);
@@ -712,7 +715,7 @@ version (Windows) {
 					case InputDeviceType.GameController:
 						RawInputGameController gc = cast(RawInputGameController)currdev;
 						switch (event.type) {
-						case EV_BTN:	//Button press event
+						case EV_SW, EV_KEY:	//Button press event
 							/+foreach (RawGCMapping key ; gc.mapping) {
 								if (key.type == RawGCMappingType.Button) {
 

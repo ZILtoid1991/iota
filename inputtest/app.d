@@ -1,5 +1,6 @@
 import std.stdio;
 import std.conv : to;
+import std.file : readText;
 import core.thread;
 import iota.controls;
 import iota.controls.keybscancodes;
@@ -21,12 +22,16 @@ struct Options {
 	uint osconfigFlags;
 
 	@Option("rumbletest", "r")
-	@Help("Enables rumble test for XInput devices.")
+	@Help("Enables rumble test for game controller devices.")
 	int rumbletest;
 
 	@Option("textinputtest", "t")
 	@Help("Enables text input for testing.")
 	int textinputtest;
+
+	@Option("mappingSrc", "s")
+	@Help("Sets the game controller mapping table source.")
+	string mappingSrc;
 }
 
 immutable usage = usageString!Options("IOTA input tester");
@@ -47,6 +52,8 @@ int main(string[] args) {
 		writeln(help);
 		return 0;
 	}
+	string mappingSrc;
+	if (options.mappingSrc) mappingSrc = readText(options.mappingSrc);
 
 	OSWindow inputSurface = 
 			new OSWindow("Iota input test", "inputSurface", -1, -1, 640, 480, WindowCfgFlags.IgnoreMenuKey);

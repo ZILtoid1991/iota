@@ -23,7 +23,7 @@ import core.stdc.stdlib;
 import std.conv : to;
 import std.string : toStringz, fromStringz, splitLines, split;
 import std.utf;
-import std.uni : asLowerCase;
+import std.uni : toLower;
 import std.stdio;
 
 public enum IOTA_INPUTCONFIG_MANDATORY = 0;
@@ -153,7 +153,7 @@ public int initInput(uint config = 0, uint osConfig = 0, string gcmTable = null)
 					if (!entry.isDir && entry.name[$-4..$] != "mice") {
 						auto ntStr = toStringz(entry);
 						//writeln(fromStringz(ntStr));
-						int fd = open(ntStr, O_NONBLOCK | O_RDWR);
+						int fd = open(ntStr, O_NONBLOCK | (osConfig & OSConfigFlags.libevdev_writeenable) ? O_RDWR : O_READONLY);
 						if (fd < 0) {
 							continue;
 							//if (errno == 13) return InputInitializationStatus.libevdev_AccessDenied;
@@ -165,7 +165,7 @@ public int initInput(uint config = 0, uint osConfig = 0, string gcmTable = null)
 							continue;
 							//return InputInitializationStatus.libevdev_ErrorOpeningDev;
 						}
-						string name = fromStringz(libevdev_get_name(dev));
+						string name = cast(string)fromStringz(libevdev_get_name(dev));
 						uint typeID = libevdev_has_event_type(dev, EV_SYN);
 						typeID |= libevdev_has_event_type(dev, EV_KEY)<<0x01;
 						typeID |= libevdev_has_event_type(dev, EV_REL)<<0x02;
@@ -178,26 +178,26 @@ public int initInput(uint config = 0, uint osConfig = 0, string gcmTable = null)
 						typeID |= libevdev_has_event_type(dev, EV_FF)<<0x15;
 						typeID |= libevdev_has_event_type(dev, EV_PWR)<<0x16;
 						typeID |= libevdev_has_event_type(dev, EV_FF_STATUS)<<0x17;
-						string nameLC = asLowerCase(name);
+						string nameLC = toLower(name);
 						//Try to detect device type from name
 						if (canFind(nameLC, "keyboard", "keypad")) {
 							devList ~= new Keyboard(name, keybCnrt++, fd, dev);
 						} else if (canFind(nameLC, "mouse", "trackball")) {
 							devList ~= new Mouse(name, mouseCnrt++, fd, dev);
-						} else if (gcmTable.length) {	//Likely a game controller, let's check the supplied table if exists
-							string uniqueID = fromStringz(libevdev_get_uniq(dev));
-							RawGCMapping[] mapping = parseGCM(gcmTable, uniqueID);
-							if (mapping.length) {
-								devList ~= new RawInputGameController(name, gcCnrt++, fd, dev, mapping);
-							} else {
-								libevdev_free(dev);
-								close(fd);
-							}
-							//libevdev_get_uniq
+						} else /+ if (gcmTable.length) +/ {	//Likely a game controller, let's check the supplied table if exists
+							string uniqueID = cast(string)fromStringz(libevdev_get_uniq(dev));
+							RawGCMapping[] mapping;
+							if (gcmTable) mapping = parseGCM(gcmTable, uniqueID);
+							//if (mapping.length) {
+							devList ~= new RawInputGameController(name, gcCnrt++, fd, dev, mapping);
+							//} else {
+							//	libevdev_free(dev);
+							//	close(fd);
+							//}
 						}
 					}
 				}
-				if (!(keybCnrt + mouseCnrt + gcCnrt)) return InputInitializationStatus.libevdev_AccessDenied;
+				//if (!(keybCnrt + mouseCnrt + gcCnrt)) return InputInitializationStatus.libevdev_AccessDenied;
 				subPollingFun = &poll_evdev;
 			} catch (Exception e) {
 				//debug writeln(e);
