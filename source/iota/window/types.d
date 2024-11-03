@@ -23,6 +23,7 @@ version (Windows) {
 ///Defines window configuration flags.
 public enum WindowCfgFlags {
 	FixedSize			=	1 << 0,	///Creates a non-resizable window.
+	NoDecorations		=	1 << 1,	///Creates a window without "server-side" decorations
 	IgnoreMenuKey		=	1 << 16,///Makes the window to ignore "menu" (Alt, F11) key under Windows.
 }
 /** 
