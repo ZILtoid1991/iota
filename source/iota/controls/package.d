@@ -140,6 +140,7 @@ public int initInput(uint config = 0, uint osConfig = 0, string gcmTable = null)
 						devList ~= x;
 					}
 				}
+				subPollingFun = &XInputDevice.poll;
 			}
 		}
 	} else {
@@ -184,16 +185,15 @@ public int initInput(uint config = 0, uint osConfig = 0, string gcmTable = null)
 							devList ~= new Keyboard(name, keybCnrt++, fd, dev);
 						} else if (canFind(nameLC, "mouse", "trackball")) {
 							devList ~= new Mouse(name, mouseCnrt++, fd, dev);
-						} else /+ if (gcmTable.length) +/ {	//Likely a game controller, let's check the supplied table if exists
+						} else if (canFind(entry.toString(), "js")) {	//Likely a game controller, let's check the supplied table if exists
 							string uniqueID = cast(string)fromStringz(libevdev_get_uniq(dev));
 							RawGCMapping[] mapping;
 							if (gcmTable) mapping = parseGCM(gcmTable, uniqueID);
-							//if (mapping.length) {
+							if (!mapping) mapping = defaultGCmapping;
 							devList ~= new RawInputGameController(name, gcCnrt++, fd, dev, mapping);
-							//} else {
-							//	libevdev_free(dev);
-							//	close(fd);
-							//}
+						} else {
+							libevdev_free(dev);
+							close(fd);
 						}
 					}
 				}
@@ -218,6 +218,12 @@ package struct RawGCMapping {
 	ubyte flags;	///Flags related to translation, e.g. resolution, hat number
 	ubyte inNum;	///Input axis/button number, or hat state
 	ubyte outNum;	///Output axis/button number
+	this (ubyte type, ubyte flags, ubyte inNum, ubyte outnum) @safe @nogc nothrow {
+		this.type = type;
+		this.flags = flags;
+		this.inNum = inNum;
+		this.outNum = outNum;
+	}
 	this (string src, ubyte outNum, bool isButtonTarget = false) @safe @nogc nothrow {
 		switch (src[0]) {
 		case 'a':
@@ -251,6 +257,40 @@ package int parseNum(string num) @nogc @safe nothrow {
 	int result;
 	foreach (char c ; num) result = (result * 10) + (c - '0');
 	return result;
+}
+version (Windows) {
+	package const RawGCMapping[] defaultGCmapping = [];
+} else {
+	package const RawGCMapping[] defaultGCmapping = [
+		RawGCMapping(RawGCMappingType.Button, 0, 0, GameControllerButtons.South),
+		RawGCMapping(RawGCMappingType.Button, 0, 1, GameControllerButtons.East),
+		RawGCMapping(RawGCMappingType.Button, 0, 2, GameControllerButtons.Btn_V),
+		RawGCMapping(RawGCMappingType.Button, 0, 3, GameControllerButtons.North),
+		RawGCMapping(RawGCMappingType.Button, 0, 4, GameControllerButtons.West),
+		RawGCMapping(RawGCMappingType.Button, 0, 5, GameControllerButtons.Btn_VI),
+		RawGCMapping(RawGCMappingType.Button, 0, 6, GameControllerButtons.LeftShoulder),
+		RawGCMapping(RawGCMappingType.Button, 0, 7, GameControllerButtons.RightShoulder),
+		RawGCMapping(RawGCMappingType.Button, 0, 8, GameControllerButtons.LeftTrigger),
+		RawGCMapping(RawGCMappingType.Button, 0, 9, GameControllerButtons.RightTrigger),
+		RawGCMapping(RawGCMappingType.Button, 0, 10, GameControllerButtons.LeftNav),
+		RawGCMapping(RawGCMappingType.Button, 0, 11, GameControllerButtons.RightNav),
+		RawGCMapping(RawGCMappingType.Button, 0, 12, GameControllerButtons.Home),
+		RawGCMapping(RawGCMappingType.Button, 0, 13, GameControllerButtons.LeftThumbstick),
+		RawGCMapping(RawGCMappingType.Button, 0, 14, GameControllerButtons.RightThumbstick),
+		RawGCMapping(RawGCMappingType.Button, 0, 15, GameControllerButtons.Share),	//???
+
+		RawGCMapping(RawGCMappingType.Hat, 1, 16, GameControllerButtons.DPadLeft),
+		RawGCMapping(RawGCMappingType.Hat, 2, 16, GameControllerButtons.DPadRight),
+		RawGCMapping(RawGCMappingType.Hat, 1, 17, GameControllerButtons.DPadDown),
+		RawGCMapping(RawGCMappingType.Hat, 2, 17, GameControllerButtons.DPadUp),
+
+		RawGCMapping(RawGCMappingType.Axis, 0, 0, GameControllerAxes.LeftThumbstickX),
+		RawGCMapping(RawGCMappingType.Axis, 0, 1, GameControllerAxes.LeftThumbstickY),
+		RawGCMapping(RawGCMappingType.Axis, 0, 2, GameControllerAxes.LeftTrigger),
+		RawGCMapping(RawGCMappingType.Axis, 0, 3, GameControllerAxes.RightThumbstickX),
+		RawGCMapping(RawGCMappingType.Axis, 0, 4, GameControllerAxes.RightThumbstickY),
+		RawGCMapping(RawGCMappingType.Axis, 0, 5, GameControllerAxes.RightTrigger),
+	];
 }
 /** 
  * Parses SDL-compatible Game Controller mapping data.
