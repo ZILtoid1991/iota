@@ -37,6 +37,8 @@ struct Options {
 immutable usage = usageString!Options("IOTA input tester");
 immutable help = helpString!Options();
 
+const(ubyte)[] iconData = cast(const(ubyte)[])import("icon");
+
 int main(string[] args) {
 	//initWindow_ext();
 	Options options;
@@ -55,11 +57,15 @@ int main(string[] args) {
 	string mappingSrc;
 	if (options.mappingSrc) mappingSrc = readText(options.mappingSrc);
 
-	OSWindow inputSurface = 
-			new OSWindow("Iota input test", "inputSurface", -1, -1, 640, 480, WindowCfgFlags.IgnoreMenuKey);
-	//inputSurface.drawDeleg = &inputSurface.testDraw;
-	//inputSurface.maximizeWindow();
-	//Thread.sleep(msecs(10_000));
+	OSWindow inputSurface;
+	try {
+		inputSurface =
+			new OSWindow("Iota input test", "inputSurface", -1, -1, 640, 480, WindowCfgFlags.IgnoreMenuKey,
+			new WindowBitmap(32, 32, iconData.dup));
+	} catch (WindowCreationException e) {
+		writeln(e);
+		return 1;
+	}
 	int errCode = initInput(options.configFlags, options.osconfigFlags);
 	if (errCode) {
 		writeln("Input initialization error! Code: ", errCode, /* " OSCode: ", GetLastError() */);
