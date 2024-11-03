@@ -57,9 +57,9 @@ public enum GameControllerButtons : ubyte {
 	R4,
 	L5,
 	R5,
-	///5th face button if present
+	///5th face button (C) if present
 	Btn_V,
-	///6th face button if present
+	///6th face button (Z) if present
 	Btn_VI
 }
 ///Defines potential POV hat states as bitflags.
@@ -126,21 +126,6 @@ abstract class GameController : InputDevice, HapticDevice {
 	 */
 	public abstract int reset() nothrow;
 }
-/+version(linux) package ubyte translateLibevdevBtnCodes_SDLcompat(ushort code) @safe @nogc nothrow pure {
-	immutable ubyte[16] LUT =
-		[
-			0x00,
-			0x01,
-			0xFF,
-			0x02,
-			0x03,
-			0xFF,
-			0x04,
-			0x05,
-			0xFF,
-		];
-	return LUT[(code - 0x130) & 0x0F];
-}+/
 /**
  * Game controller class meant to be used with RawInput and libendev.
  */
@@ -156,6 +141,7 @@ public class RawInputGameController : GameController {
 			status |= StatusFlags.IsConnected;
 		}
 	} else {
+		int[8] hatStatus;
 		package this(string _name, ubyte _devNum, int fd, libevdev* hDevice, RawGCMapping[] mapping) {
 			this._name = _name;
 			this._devNum = _devNum;
