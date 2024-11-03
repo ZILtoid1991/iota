@@ -75,6 +75,7 @@ public class OSWindow {
 	public static OSWindow[]	refCount;
 	///Handle to the window. Used for both automatic reference counting and for arguments in the I/O system.
 	protected WindowH			windowHandle;
+	protected WindowBitmap		icon;
 	///Contains various statuscodes of the window.
 	protected Status			status;
 	///Stores various flags related to the window.
@@ -121,6 +122,7 @@ public class OSWindow {
 		protected HGLRC				glRenderingContext;
 		protected HDC				windowDeviceContext;
 		protected HCURSOR			winCursor;
+		protected HICON				hIcon;
 		///hInstance is stored here, which is needed for window creation, etc. (WINDOWS ONLY)
 		public static HINSTANCE		mainInst;
 		///The current input language code (Windows).
@@ -262,11 +264,19 @@ public class OSWindow {
 	public this(string title, string name, int x, int y, int w, int h, uint flags,
 			WindowBitmap icon = null, OSWindow parent = null) @trusted {
 		this.flags = flags;
+		this.icon = icon;
 		version (Windows) {
-			
+			if (icon !is null) {
+				ICONINFO iInfo;
+				iInfo.hbmColor = CreateBitmap(icon.width, icon.height, 1, icon.getTotalBits(), icon.pixels.ptr);
+				hIcon = CreateIconIndirect(&iInfo);
+				//if (hIcon is null) throw new WindowCreationException("Failed to create icon!", GetLastError());
+			} else {
+				hIcon = LoadIcon(null, IDI_APPLICATION);
+			}
 			classname = toUTF16z(name);
 			registeredClass = WNDCLASSW(CS_HREDRAW | CS_VREDRAW | CS_OWNDC, &wndprocCallback, 0, 0, mainInst, 
-					LoadIcon(null, IDI_APPLICATION), null, GetSysColorBrush(COLOR_3DFACE), null, classname);
+					hIcon, null, GetSysColorBrush(COLOR_3DFACE), null, classname);
 			regClResult = RegisterClassW(&registeredClass);
 			if (!regClResult) {
 				auto errorCode = GetLastError();
@@ -324,6 +334,7 @@ public class OSWindow {
 			if (glRenderingContext) wglDeleteContext(glRenderingContext);
 			DestroyWindow(windowHandle);
 			UnregisterClassW(classname, mainInst);
+			DestroyIcon(hIcon);
 		} else {
 			if (glxContext) {
 				glXMakeCurrent(mainDisplay, None, null);
