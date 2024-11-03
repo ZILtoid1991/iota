@@ -10,7 +10,7 @@ class WindowCreationException : IotaException {
         this.errorCode = errorCode;
         super(msg, file, line, nextInChain);
     }
-    override string toString() {
+    override string toString() const {
         return super.toString() ~ "\n Error code: " ~ errorCode.to!string;
     }
 }
@@ -21,7 +21,7 @@ class RendererCreationException : IotaException {
         this.errorCode = errorCode;
         super(msg, file, line, nextInChain);
     }
-    override string toString() {
+    override string toString() const {
         return super.toString() ~ "\n Error code: " ~ errorCode.to!string;
     }
 }
