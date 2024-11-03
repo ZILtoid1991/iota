@@ -10,6 +10,8 @@ import core.stdc.stdarg;
 static enum O_NONBLOCK				=	0x0000_4000;
 static enum O_RDWR					=	0x0000_0002;
 static enum O_READONLY				=	0x0000_0000;
+static enum EVDEV_FIRST_GC_BTN		=	0x130;
+static enum EVDEV_FIRST_HAT			=	0x10;
 
 static enum INPUT_PROP_POINTER		=	0x00;	/* needs a pointer */
 static enum INPUT_PROP_DIRECT		=	0x01;	/* direct input devices */
