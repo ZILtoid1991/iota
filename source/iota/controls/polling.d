@@ -21,11 +21,11 @@ public int poll(ref InputEvent output) nothrow @trusted {
 	if (mainPollingFun is null) return EventPollStatus.InputNotInitialized;
 	output.rawData = [0,0,0,0,0];
 	int status = 0;
-	if (subPollingFun !is null && subPollingFunFinished) status = subPollingFun(output);
+	if (subPollingFun !is null/+ && subPollingFunFinished+/) status = subPollingFun(output);
 	if (status) return status;
-	else subPollingFunFinished = true;
+	//else subPollingFunFinished = true;
 	status = mainPollingFun(output);
-	if (!status) subPollingFunFinished = false;
+	//if (!status) subPollingFunFinished = false;
 	return status;
 }
 package @system @nogc nothrow int function(ref InputEvent) mainPollingFun;	///Usually the main polling function, must be set
@@ -716,21 +716,59 @@ version (Windows) {
 						RawInputGameController gc = cast(RawInputGameController)currdev;
 						switch (event.type) {
 						case EV_SW, EV_KEY:	//Button press event
-							/+foreach (RawGCMapping key ; gc.mapping) {
+							foreach (RawGCMapping key ; gc.mapping) {
 								if (key.type == RawGCMappingType.Button) {
-
+									if (key.inNum == event.code - EVDEV_FIRST_GC_BTN) {
+										output.type = InputEventType.GCButton;
+										output.button.id = key.outNum;
+										output.button.dir = event.value > 0 ? 1 : 0;
+										output.button.auxF = float.nan;
+										return 1;
+									}
 								}
-							}+/
-							output.type = InputEventType.GCButton;
-							output.button.id = event.code;
-							output.button.dir = cast(ubyte)event.value;
-							return 1;
+							}
+							break;
+							//output.type = InputEventType.GCButton;
+							//output.button.id = event.code;
+							//output.button.dir = cast(ubyte)event.value;
+							//return 1;
 						case EV_ABS:	//Axis/hat event
-							output.type = InputEventType.GCAxis;
-							output.axis.id = event.code;
-							output.axis.raw = event.value;
-							output.axis.val = event.value * (1.0 / short.max);
-							return 1;
+							if (event.code >= EVDEV_FIRST_HAT) {
+								foreach (RawGCMapping key ; gc.mapping) {
+									if (key.type == RawGCMappingType.Hat && key.inNum == event.code) {
+										output.type == InputEventType.GCButton;
+										output.button.id = key.outNum;
+										output.button.auxF = float.nan;
+										int* prevHatStatus = &gc.hatStatus[event.code - EVDEV_FIRST_HAT];
+										if (*prevHatStatus == event.value) break;
+										else if (event.value == 0) output.button.dir = 0;
+										else if ((event.value > 0 && key.flags == 0) != (event.value < 0 && key.flags == 1)) output.button.dir = 1;
+										*prevHatStatus = event.value;
+										return 1;
+									}
+								}
+							} else {
+								foreach (RawGCMapping key ; gc.mapping) {
+									if (key.type == RawGCMappingType.Axis && key.inNum == event.code) {
+										output.type = InputEventType.GCAxis;
+										output.axis.id = key.outNum;
+										output.axis.raw = event.value;
+										output.axis.val = event.value * (1.0 / int.max);
+										return 1;
+									} else if (key.type == RawGCMappingType.AxisToButton && key.inNum == event.code) {
+										output.type = InputEventType.GCButton;
+										output.button.id = key.outNum;
+										output.button.dir = event.value > 0 ? 1 : 0;
+										output.button.auxF = event.value * (1.0 / int.max);
+									}
+								}
+							}
+							break;
+							//output.type = InputEventType.GCAxis;
+							//output.axis.id = event.code;
+							//output.axis.raw = event.value;
+							//output.axis.val = event.value * (1.0 / int.max);
+							//return 1;
 						default:
 							break;
 						}
