@@ -21,17 +21,15 @@ public int poll(ref InputEvent output) nothrow @trusted {
 	if (mainPollingFun is null) return EventPollStatus.InputNotInitialized;
 	output.rawData = [0,0,0,0,0];
 	int status = 0;
-	if (subPollingFun !is null/+ && subPollingFunFinished+/) status = subPollingFun(output);
-	if (status) return status;
-	//else subPollingFunFinished = true;
 	status = mainPollingFun(output);
-	//if (!status) subPollingFunFinished = false;
+	if (status) return status;
+	if (subPollingFun !is null) status = subPollingFun(output);
 	return status;
 }
 package @system @nogc nothrow int function(ref InputEvent) mainPollingFun;	///Usually the main polling function, must be set
 package @system @nogc nothrow int function(ref InputEvent) subPollingFun;	///Usually the secondary polling function, optional
 package InputEvent textInputCmd;
-bool subPollingFunFinished;
+// bool subPollingFunFinished;
 Keyboard keyb;          ///Main keyboard, or the only keyboard on APIs not supporting differentiating between keyboards.
 Mouse mouse;            ///Main mouse, or the only mouse on APIs not supporting differentiating between mice.
 System sys;				///System device, originator of system events.
@@ -689,6 +687,7 @@ version (Windows) {
 						libevdev_read_status.LIBEVDEV_READ_STATUS_SUCCESS) {
 					output.source = currdev;
 					version (iota_ostimestamp) output.timestamp = event.time.tv_usec + (event.time.tv_sec * 1_000_000);
+					else output.timestamp = getTimestamp();
 					switch (currdev.type) {
 					case InputDeviceType.Keyboard:
 						switch (event.type) {
@@ -728,21 +727,26 @@ version (Windows) {
 								}
 							}
 							break;
-							//output.type = InputEventType.GCButton;
-							//output.button.id = event.code;
-							//output.button.dir = cast(ubyte)event.value;
-							//return 1;
+
 						case EV_ABS:	//Axis/hat event
 							if (event.code >= EVDEV_FIRST_HAT) {
 								foreach (RawGCMapping key ; gc.mapping) {
 									if (key.type == RawGCMappingType.Hat && key.inNum == event.code) {
-										output.type == InputEventType.GCButton;
+										output.type = InputEventType.GCButton;
 										output.button.id = key.outNum;
 										output.button.auxF = float.nan;
 										int* prevHatStatus = &gc.hatStatus[event.code - EVDEV_FIRST_HAT];
-										if (*prevHatStatus == event.value) break;
-										else if (event.value == 0) output.button.dir = 0;
-										else if ((event.value > 0 && key.flags == 0) != (event.value < 0 && key.flags == 1)) output.button.dir = 1;
+										if (*prevHatStatus == event.value) {
+											break;
+										} else {
+											if (key.flags && (*prevHatStatus <= 0 && event.value <= 0)) {
+												output.button.dir = event.value ? 1 : 0;
+											} else if (!key.flags && (*prevHatStatus >= 0 && event.value >= 0)) {
+												output.button.dir = event.value ? 1 : 0;
+											} else {
+												continue;
+											}
+										}
 										*prevHatStatus = event.value;
 										return 1;
 									}

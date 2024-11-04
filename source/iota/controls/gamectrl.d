@@ -1,7 +1,7 @@
 module iota.controls.gamectrl;
 
 public import iota.controls.types;
-import iota.controls : RawGCMapping, RawGCMappingType;
+import iota.controls;
 
 version (Windows) {
 	import core.sys.windows.windows;
