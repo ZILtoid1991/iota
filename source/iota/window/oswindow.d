@@ -105,6 +105,7 @@ public class OSWindow {
 					return DefWindowProcW(hWnd, msg, wParam, lParam);
 			}
 		}
+		///Draw function for testing purposes
 		debug public void testDraw(DrawParams params) @system nothrow {
 			PAINTSTRUCT ps;
 			RECT rc;
@@ -267,10 +268,28 @@ public class OSWindow {
 		this.icon = icon;
 		version (Windows) {
 			if (icon !is null) {
+				HDC hdc = CreateCompatibleDC(null);
+				BITMAPV5HEADER bitmapHeader;
+				bitmapHeader.bV5Size = BITMAPV5HEADER.sizeof;
+				bitmapHeader.bV5Width = icon.width;
+				bitmapHeader.bV5Height = icon.height;
+				bitmapHeader.bV5Planes = 1;
+				bitmapHeader.bV5BitCount = 32;
+				bitmapHeader.bV5Compression = BI_BITFIELDS;
+				//Let's hope this setup will work and we don't have to rearrange the pixels
+				bitmapHeader.bV5RedMask   =  0xFF000000;
+				bitmapHeader.bV5GreenMask =  0x00FF0000;
+				bitmapHeader.bV5BlueMask  =  0x0000FF00;
+				bitmapHeader.bV5AlphaMask =  0x000000FF; 
 				ICONINFO iInfo;
-				iInfo.hbmColor = CreateBitmap(icon.width, icon.height, 1, icon.getTotalBits(), icon.pixels.ptr);
+				iInfo.fIcon = TRUE;
+				iInfo.hbmColor = CreateDIBitmap(hdc, cast(BITMAPINFOHEADER*)&bitmapHeader, CBM_INIT, icon.pixels.ptr, null, DIB_RGB_COLORS);
+				iInfo.hbmMask = CreateBitmap(icon.width, icon.height, 1, 1, null);
 				hIcon = CreateIconIndirect(&iInfo);
 				//if (hIcon is null) throw new WindowCreationException("Failed to create icon!", GetLastError());
+				DeleteObject(iInfo.hbmColor);
+				DeleteObject(iInfo.hbmMask);
+				DeleteDC(hdc);
 			} else {
 				hIcon = LoadIcon(null, IDI_APPLICATION);
 			}
