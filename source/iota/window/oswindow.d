@@ -261,6 +261,9 @@ public class OSWindow {
 	 *   flags = Configuration flags.
 	 *   icon = The icon of the window, if any.
 	 *   parent = Parent if exists, null otherwise.
+	 * Bugs:
+	 *   (Windows) icon handling does not work correctly at the moment thanks to insufficient documentation on how to
+	 * implement it without relying on the resource compiler.
 	 */
 	public this(string title, string name, int x, int y, int w, int h, uint flags,
 			WindowBitmap icon = null, OSWindow parent = null) @trusted {
@@ -280,10 +283,12 @@ public class OSWindow {
 				bitmapHeader.bV5RedMask   =  0xFF000000;
 				bitmapHeader.bV5GreenMask =  0x00FF0000;
 				bitmapHeader.bV5BlueMask  =  0x0000FF00;
-				bitmapHeader.bV5AlphaMask =  0x000000FF; 
+				bitmapHeader.bV5AlphaMask =  0x000000FF;
+				bitmapHeader.bV5CSType = 0x5769_6E20;
 				ICONINFO iInfo;
 				iInfo.fIcon = TRUE;
-				iInfo.hbmColor = CreateDIBitmap(hdc, cast(BITMAPINFOHEADER*)&bitmapHeader, CBM_INIT, icon.pixels.ptr, null, DIB_RGB_COLORS);
+				void* pixels = icon.pixels.ptr;
+				iInfo.hbmColor = CreateDIBSection(hdc, cast(BITMAPINFO*)&bitmapHeader, DIB_RGB_COLORS, &pixels, null, 0);
 				iInfo.hbmMask = CreateBitmap(icon.width, icon.height, 1, 1, null);
 				hIcon = CreateIconIndirect(&iInfo);
 				//if (hIcon is null) throw new WindowCreationException("Failed to create icon!", GetLastError());
@@ -295,7 +300,7 @@ public class OSWindow {
 			}
 			classname = toUTF16z(name);
 			registeredClass = WNDCLASSW(CS_HREDRAW | CS_VREDRAW | CS_OWNDC, &wndprocCallback, 0, 0, mainInst, 
-					hIcon, null, GetSysColorBrush(COLOR_3DFACE), null, classname);
+					hIcon, LoadCursor(null, IDC_ARROW), GetSysColorBrush(COLOR_3DFACE), null, classname);
 			regClResult = RegisterClassW(&registeredClass);
 			if (!regClResult) {
 				auto errorCode = GetLastError();
@@ -333,10 +338,7 @@ public class OSWindow {
 			const int scr = DefaultScreen(mainDisplay);
 			windowHandle = XCreateWindow(mainDisplay, pH, x, y, w, h, 15, vInfo.depth, InputOutput, 
 					vInfo.visual, CWColormap | CWEventMask, &swa);
-			/* windowHandle = XCreateSimpleWindow(mainDisplay, pH, x, y, w, h, 1,
-					BlackPixel(mainDisplay, scr), WhitePixel(mainDisplay, scr)); */
 			XStoreName(mainDisplay, windowHandle, cast(char*)windowname);
-			//XSelectInput(mainDisplay, windowHandle, 0x01_ff_ff_ff);
 			XSetWMProtocols(mainDisplay, windowHandle, &WM_DELETE_WINDOW, 1);
 			refCount ~= this;
 			im = XOpenIM(mainDisplay, null, null, null);
