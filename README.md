@@ -66,6 +66,10 @@ I plan to make game controllers working via RawInput, but that will be a bit mor
 
 I/O without extensions now works, XInput2 support will be added once I find or someone provides me the API documentation. Quite hard to search, due to same name of what Microsoft has under Windows for Xbox gamepads.
 
+#### Evdev
+
+Libevdev support has added, but does not work currently, it hangs.
+
 ## Windowing
 
 ### Windows
