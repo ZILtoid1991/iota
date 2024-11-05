@@ -1,3 +1,11 @@
+# 0.4.0-alpha
+
+* Fixed bug regarding of x11 windows. Also `OSWindow` now requires manual destruction via `destroy(osWindowInstance)` to ensure the destructor runs as it should.
+* Added preliminary support for libevdev (does not work, hangs aplication).
+* Added preliminary support wor window icons under Windows (does not work, documentation on 32 bit icons does not exist!).
+
+# 0.3.2
+
 # 0.3.1
 
 * Fixed issue regarding of an initializer ctor causing crashes on Windows if compiled with LDC2.
