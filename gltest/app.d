@@ -104,6 +104,8 @@ int main(string[] args) {
 		glDeleteShader(fragmentShaderID);
 
 		while (isRunning) {
+			testVertex[7] += 0.01;
+			if (testVertex[7] >= 1.0) testVertex[7] = -1.0;
 			//Rendering part begin
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
@@ -111,9 +113,12 @@ int main(string[] args) {
 
 			glEnableVertexAttribArray(0);
 			glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
+			glBufferData(GL_ARRAY_BUFFER, testVertex.length * float.sizeof, &testVertex, GL_STATIC_DRAW);
 			glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, null);
 			glDrawArrays(GL_TRIANGLES, 0, 3);
 			glDisableVertexAttribArray(0);
+
+			glFinish();
 
 			glOutput.gl_swapBuffers();
 			//Rendering part end

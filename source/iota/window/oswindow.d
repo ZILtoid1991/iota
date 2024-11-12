@@ -331,11 +331,50 @@ public class OSWindow {
 			windowname = toStringz(nameUTF8);
 			XSetWindowAttributes swa;
 			swa.colormap = cmap;
-			swa.event_mask = 0x01_ff_ff_ff & ~ResizeRedirectMask;
+			swa.event_mask = StructureNotifyMask | KeyPressMask | KeyReleaseMask |
+                    PointerMotionMask | ButtonPressMask | ButtonReleaseMask |
+                    ExposureMask | FocusChangeMask | VisibilityChangeMask |
+                    EnterWindowMask | LeaveWindowMask | PropertyChangeMask;
 			Window pH = root;
 			if (parent !is null)
 				pH = parent.windowHandle;
 			const int scr = DefaultScreen(mainDisplay);
+			GLint glxAttribs[] = [
+				GLX_X_RENDERABLE    , True,
+				GLX_DRAWABLE_TYPE   , GLX_WINDOW_BIT,
+				GLX_RENDER_TYPE     , GLX_RGBA_BIT,
+				GLX_X_VISUAL_TYPE   , GLX_TRUE_COLOR,
+				GLX_RED_SIZE        , 8,
+				GLX_GREEN_SIZE      , 8,
+				GLX_BLUE_SIZE       , 8,
+				GLX_ALPHA_SIZE      , 8,
+				GLX_DEPTH_SIZE      , 24,
+				GLX_STENCIL_SIZE    , 8,
+				GLX_DOUBLEBUFFER    , True,
+				None
+			];
+			int fbcount;
+			GLXFBConfig* fbc = glXChooseFBConfig(display, screenId, glxAttribs, &fbcount);
+			if (!fbc) throw new WindowCreationException("Failed to create framebuffer", 0);
+
+			int best_fbc = -1, worst_fbc = -1, best_num_samp = -1, worst_num_samp = 999;
+			for (int i = 0; i < fbcount; ++i) {
+				XVisualInfo *vi = glXGetVisualFromFBConfig( display, fbc[i] );
+				if ( vi != 0) {
+					int samp_buf, samples;
+					glXGetFBConfigAttrib( display, fbc[i], GLX_SAMPLE_BUFFERS, &samp_buf );
+					glXGetFBConfigAttrib( display, fbc[i], GLX_SAMPLES       , &samples  );
+
+					if ( best_fbc < 0 || (samp_buf && samples > best_num_samp) ) {
+						best_fbc = i;
+						best_num_samp = samples;
+					}
+					if ( worst_fbc < 0 || !samp_buf || samples < worst_num_samp ) worst_fbc = i;
+						worst_num_samp = samples;
+					}
+				XFree(vi);
+			}
+
 			windowHandle = XCreateWindow(mainDisplay, pH, x, y, w, h, 15, vInfo.depth, InputOutput, 
 					vInfo.visual, CWColormap | CWEventMask, &swa);
 			XStoreName(mainDisplay, windowHandle, cast(char*)windowname);
