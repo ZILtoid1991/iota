@@ -520,8 +520,6 @@ version (Windows) {
 		XNextEvent(OSWindow.mainDisplay, &xe);
 		switch (xe.type) {
 			case MappingNotify:
-				version (iota_ostimestamp) output.timestamp = 0;
-				else output.timestamp = getTimestamp();
 				XRefreshKeyboardMapping(&xe.xmapping);
 				goto tryAgain;
 			case ButtonPress, ButtonRelease:		//Note: Under X11, scrollwheel events are also mapped here.
@@ -655,6 +653,18 @@ version (Windows) {
 					y = xe.xconfigure.y;
 					width = xe.xconfigure.width;
 					height = xe.xconfigure.height;
+				}
+				return 1;
+			case Expose:
+				version (iota_ostimestamp) output.timestamp = 0;
+				else output.timestamp = getTimestamp();
+				output.handle = xe.xexpose.window;
+				output.type = InputEventType.WindowResize;
+				with (output.window) {
+					x = xe.xexpose.x;
+					y = xe.xexpose.y;
+					width = xe.xexpose.width;
+					height = xe.xexpose.height;
 				}
 				return 1;
 			case LASTEvent:
