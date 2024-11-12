@@ -2,6 +2,7 @@ module app;
 
 import std.stdio;
 import std.conv : to;
+import std.math;
 import core.thread;
 import iota.controls;
 import iota.controls.keybscancodes;
@@ -37,9 +38,9 @@ int main(string[] args) {
 		bool isRunning = true;
 		bool isFullscreen;
 		GLfloat[9] testVertex = [
-			-1.0, -1.0, 0.0,
-			1.0, -1.0, 0.0,
-			0.0, 1.0, 0.0,
+			-0.5, -0.5, 0.0,
+			0.5, -0.5, 0.0,
+			0.0, 0.5, 0.0,
 		];
 		
 
@@ -104,8 +105,11 @@ int main(string[] args) {
 		glDeleteShader(fragmentShaderID);
 
 		while (isRunning) {
-			testVertex[7] += 0.01;
-			if (testVertex[7] >= 1.0) testVertex[7] = -1.0;
+			for (int vertexNum ; vertexNum < 9 ; vertexNum+=3) {
+				float x = testVertex[vertexNum], y = testVertex[vertexNum + 1];
+				testVertex[vertexNum] = (cos(PI / 180) * x) + (sin(PI / 180) * y);
+				testVertex[vertexNum + 1] = (-1 * sin(PI / 180) * x) + (cos(PI / 180) * y);
+			}
 			//Rendering part begin
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
