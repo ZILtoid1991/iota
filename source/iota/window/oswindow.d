@@ -173,6 +173,20 @@ public class OSWindow {
 		public static Window root;
 		protected static XVisualInfo* vInfo;
 		protected static GLint[] attrList = [GLX_RGBA, GLX_DEPTH_SIZE, 24, GLX_DOUBLEBUFFER, None];
+		protected static GLint[] glxAttribs = [
+				GLX_X_RENDERABLE    , True,
+				GLX_DRAWABLE_TYPE   , GLX_WINDOW_BIT,
+				GLX_RENDER_TYPE     , GLX_RGBA_BIT,
+				GLX_X_VISUAL_TYPE   , GLX_TRUE_COLOR,
+				GLX_RED_SIZE        , 8,
+				GLX_GREEN_SIZE      , 8,
+				GLX_BLUE_SIZE       , 8,
+				GLX_ALPHA_SIZE      , 8,
+				GLX_DEPTH_SIZE      , 24,
+				GLX_STENCIL_SIZE    , 8,
+				GLX_DOUBLEBUFFER    , True,
+				None
+			];
 		protected static Colormap cmap;
 		public static const bool xinputAvail;
 		public XIM im;
@@ -195,7 +209,33 @@ public class OSWindow {
 			mainDisplay = XOpenDisplay(null);
 			const defScr = DefaultScreen(mainDisplay);
 			root = XRootWindow(mainDisplay, defScr);
-			vInfo = glXChooseVisual(mainDisplay, defScr, attrList.ptr);
+			int fbcount;
+			GLXFBConfig* fbc = glXChooseFBConfig(defScr, DefaultScreenOfDisplay(mainDisplay), glxAttribs.ptr, &fbcount);
+			assert(fbc, "Failed to create framebuffer");
+			int bestFBC = -1, worstFBC = -1, bestNumSamp = -1, worstNumSamp = 999;
+			for (int i = 0; i < fbcount; ++i) {
+				XVisualInfo *vi = glXGetVisualFromFBConfig(display, fbc[i]);
+				if ( vi != 0) {
+					int sampBuf, samples;
+					glXGetFBConfigAttrib(display, fbc[i], GLX_SAMPLE_BUFFERS, &sampBuf);
+					glXGetFBConfigAttrib(display, fbc[i], GLX_SAMPLES, &samples);
+
+					if (bestFBC < 0 || (sampBuf && samples > bestNumSamp)) {
+						bestFBC = i;
+						bestNumSamp = samples;
+					}
+					if (worstFBC < 0 || !sampBuf || samples < worstNumSamp) {
+						worstFBC = i;
+						worstNumSamp = samples;
+					}
+				}
+				XFree(vi);
+			}
+			GLXFBConfig bestFBCFinal = fbc[bestFBC];
+			XFree(fbc);
+
+			vInfo = glXGetVisualFromFBConfig(mainDisplay, defScr, attrList.ptr);
+			assert(vInfo, "Could not create visual info");
 			cmap = XCreateColormap(mainDisplay, root, vInfo.visual, AllocNone);
 
 			WM_DELETE_WINDOW = XInternAtom(mainDisplay, "WM_DELETE_WINDOW", False);
@@ -262,8 +302,7 @@ public class OSWindow {
 	 *   icon = The icon of the window, if any.
 	 *   parent = Parent if exists, null otherwise.
 	 * Bugs:
-	 *   (Windows) icon handling does not work correctly at the moment thanks to insufficient documentation on how to
-	 * implement it without relying on the resource compiler.
+	 *   (Windows) icon handling works, but is preliminary and masking does not work.
 	 */
 	public this(string title, string name, int x, int y, int w, int h, uint flags,
 			WindowBitmap icon = null, OSWindow parent = null) @trusted {
@@ -272,26 +311,26 @@ public class OSWindow {
 		version (Windows) {
 			if (icon !is null) {
 				HDC hdc = CreateCompatibleDC(null);
-				BITMAPV5HEADER bitmapHeader;
-				bitmapHeader.bV5Size = BITMAPV5HEADER.sizeof;
-				bitmapHeader.bV5Width = icon.width;
-				bitmapHeader.bV5Height = icon.height;
-				bitmapHeader.bV5Planes = 1;
-				bitmapHeader.bV5BitCount = 32;
-				bitmapHeader.bV5Compression = BI_BITFIELDS;
-				//Let's hope this setup will work and we don't have to rearrange the pixels
-				bitmapHeader.bV5RedMask   =  0xFF000000;
-				bitmapHeader.bV5GreenMask =  0x00FF0000;
-				bitmapHeader.bV5BlueMask  =  0x0000FF00;
-				bitmapHeader.bV5AlphaMask =  0x000000FF;
-				bitmapHeader.bV5CSType = 0x5769_6E20;
 				ICONINFO iInfo;
 				iInfo.fIcon = TRUE;
-				void* pixels = icon.pixels.ptr;
-				iInfo.hbmColor = CreateDIBSection(hdc, cast(BITMAPINFO*)&bitmapHeader, DIB_RGB_COLORS, &pixels, null, 0);
+				uint[] pixels = cast(uint[])icon.pixels;
+				iInfo.hbmColor = CreateBitmap(icon.width, icon.height, 1, 32, null);
 				iInfo.hbmMask = CreateBitmap(icon.width, icon.height, 1, 1, null);
+				SelectObject(hdc, iInfo.hbmColor);
+				for (int iy ; iy < icon.height ; iy++) {
+					for (int ix ; ix < icon.width ; ix++) {
+						const pixel = pixels[iy * icon.width + ix]&0x00FFFFFF;
+						SetPixel(hdc, ix, iy, (pixel>>16) | (pixel&0x00FF00) | ((pixel&0x0000ff)<<16));
+					}
+				}
+				SelectObject(hdc, iInfo.hbmMask);
+				for (int iy ; iy < icon.height ; iy++) {
+					for (int ix ; ix < icon.width ; ix++) {
+						const pixel = pixels[iy * icon.width + ix]>>24;
+						SetPixel(hdc, ix, iy, pixel ? 0 : 0x00FF00);
+					}
+				}
 				hIcon = CreateIconIndirect(&iInfo);
-				//if (hIcon is null) throw new WindowCreationException("Failed to create icon!", GetLastError());
 				DeleteObject(iInfo.hbmColor);
 				DeleteObject(iInfo.hbmMask);
 				DeleteDC(hdc);
@@ -311,7 +350,9 @@ public class OSWindow {
 			if (x <= 0) x = CW_USEDEFAULT;
 			if (y <= 0) y = CW_USEDEFAULT;
 			if (w <= 0) w = CW_USEDEFAULT;
+			else if ((flags & WindowCfgFlags.NoDecorations) == 0) w += GetSystemMetrics(SM_CXSIZEFRAME);
 			if (h <= 0) h = CW_USEDEFAULT;
+			else if ((flags & WindowCfgFlags.NoDecorations) == 0) h += GetSystemMetrics(SM_CYSIZEFRAME);
 			windowname = toUTF16z(title);
 			HWND parentHndl = null;
 			if (parent !is null)
@@ -329,54 +370,23 @@ public class OSWindow {
 		} else {
 			string nameUTF8 = toUTF8(title);
 			windowname = toStringz(nameUTF8);
+			const int scr = DefaultScreen(mainDisplay);
 			XSetWindowAttributes swa;
 			swa.colormap = cmap;
 			swa.event_mask = StructureNotifyMask | KeyPressMask | KeyReleaseMask |
-                    PointerMotionMask | ButtonPressMask | ButtonReleaseMask |
-                    ExposureMask | FocusChangeMask | VisibilityChangeMask |
-                    EnterWindowMask | LeaveWindowMask | PropertyChangeMask;
+					PointerMotionMask | ButtonPressMask | ButtonReleaseMask |
+					ExposureMask | FocusChangeMask | VisibilityChangeMask |
+					EnterWindowMask | LeaveWindowMask | PropertyChangeMask;
+			swa.override_redirect = True;
+			swa.border_pixel = BlackPixel(mainDisplay, scr);
+			swa.background_pixel = WhitePixel(mainDisplay, scr);
 			Window pH = root;
 			if (parent !is null)
 				pH = parent.windowHandle;
-			const int scr = DefaultScreen(mainDisplay);
-			GLint glxAttribs[] = [
-				GLX_X_RENDERABLE    , True,
-				GLX_DRAWABLE_TYPE   , GLX_WINDOW_BIT,
-				GLX_RENDER_TYPE     , GLX_RGBA_BIT,
-				GLX_X_VISUAL_TYPE   , GLX_TRUE_COLOR,
-				GLX_RED_SIZE        , 8,
-				GLX_GREEN_SIZE      , 8,
-				GLX_BLUE_SIZE       , 8,
-				GLX_ALPHA_SIZE      , 8,
-				GLX_DEPTH_SIZE      , 24,
-				GLX_STENCIL_SIZE    , 8,
-				GLX_DOUBLEBUFFER    , True,
-				None
-			];
-			int fbcount;
-			GLXFBConfig* fbc = glXChooseFBConfig(display, screenId, glxAttribs, &fbcount);
-			if (!fbc) throw new WindowCreationException("Failed to create framebuffer", 0);
 
-			int best_fbc = -1, worst_fbc = -1, best_num_samp = -1, worst_num_samp = 999;
-			for (int i = 0; i < fbcount; ++i) {
-				XVisualInfo *vi = glXGetVisualFromFBConfig( display, fbc[i] );
-				if ( vi != 0) {
-					int samp_buf, samples;
-					glXGetFBConfigAttrib( display, fbc[i], GLX_SAMPLE_BUFFERS, &samp_buf );
-					glXGetFBConfigAttrib( display, fbc[i], GLX_SAMPLES       , &samples  );
-
-					if ( best_fbc < 0 || (samp_buf && samples > best_num_samp) ) {
-						best_fbc = i;
-						best_num_samp = samples;
-					}
-					if ( worst_fbc < 0 || !samp_buf || samples < worst_num_samp ) worst_fbc = i;
-						worst_num_samp = samples;
-					}
-				XFree(vi);
-			}
 
 			windowHandle = XCreateWindow(mainDisplay, pH, x, y, w, h, 15, vInfo.depth, InputOutput, 
-					vInfo.visual, CWColormap | CWEventMask, &swa);
+					vInfo.visual, CWBackPixel | CWColormap | CWBorderPixel | CWEventMask, &swa);
 			XStoreName(mainDisplay, windowHandle, cast(char*)windowname);
 			XSetWMProtocols(mainDisplay, windowHandle, &WM_DELETE_WINDOW, 1);
 			refCount ~= this;
@@ -404,11 +414,11 @@ public class OSWindow {
 			if (ic) {
 				XDestroyIC(ic);
 				ic = null;
-            }
+			}
 			if (im) {
 				XCloseIM(im);
 				im = null;
-            }
+			}
 			XSync(mainDisplay, False);
 			if (windowHandle) {
 				XDestroyWindow(mainDisplay, windowHandle);
