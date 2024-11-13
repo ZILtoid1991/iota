@@ -516,6 +516,7 @@ version (Windows) {
 			return 1;
 		}
 		tryAgain:
+		if (!XPending(OSWindow.mainDisplay)) return 0;
 		XEvent xe;
 		XNextEvent(OSWindow.mainDisplay, &xe);
 		switch (xe.type) {
