@@ -20,9 +20,27 @@ version (Windows) {
 	alias GLXDrawable = XID;
 	alias GLXPixmap = XID;
 
-	enum GLX_RGBA                      = 4;
-	enum GLX_DOUBLEBUFFER              = 5;
-	enum GLX_DEPTH_SIZE                = 12;
+	enum GLX_USE_GL					= 1;
+	enum GLX_BUFFER_SIZE			= 2;
+	enum GLX_LEVEL					= 3;
+	enum GLX_RGBA					= 4;
+	enum GLX_DOUBLEBUFFER			= 5;
+	enum GLX_STEREO					= 6;
+	enum GLX_AUX_BUFFERS			= 7;
+	enum GLX_RED_SIZE				= 8;
+	enum GLX_GREEN_SIZE				= 9;
+	enum GLX_BLUE_SIZE				= 10;
+	enum GLX_ALPHA_SIZE				= 11;
+	enum GLX_DEPTH_SIZE				= 12;
+	enum GLX_STENCIL_SIZE			= 13;
+	enum GLX_ACCUM_RED_SIZE			= 14;
+	enum GLX_ACCUM_GREEN_SIZE		= 15;
+	enum GLX_ACCUM_BLUE_SIZE		= 16;
+	enum GLX_ACCUM_ALPHA_SIZE		= 17;
+
+	// enum GLX_RGBA                      = 4;
+	// enum GLX_DOUBLEBUFFER              = 5;
+	// enum GLX_DEPTH_SIZE                = 12;
 	enum GLX_WINDOW_BIT                = 0x00000001;
 	enum GLX_PIXMAP_BIT                = 0x00000002;
 	enum GLX_PBUFFER_BIT               = 0x00000004;
@@ -479,7 +497,7 @@ version (Windows) {
 		GLXFBConfigP* glXGetFBConfigs(Display* dpy, int screen, int* nelements);
 		GLXFBConfigP* glXChooseFBConfig(Display* dpy, int screen, const(int)* attrib_list, int* nelements);
 		int glXGetFBConfigAttrib(Display* dpy, GLXFBConfigP config, int attribute, int* value);
-		XVisualInfo *glXGetVisualFromFBConfig(Display* dpy, GLXFBConfigP config);
+		XVisualInfo* glXGetVisualFromFBConfig(Display* dpy, GLXFBConfigP config);
 		GLXWindow glXCreateWindow(Display* dpy, GLXFBConfigP config, Window win, const(int)* attrib_list);
 		void glXDestroyWindow(Display* dpy, GLXWindow win);
 		GLXPixmap glXCreatePixmap(Display* dpy, GLXFBConfigP config, Pixmap pixmap, const(int)* attrib_list);

@@ -210,15 +210,15 @@ public class OSWindow {
 			const defScr = DefaultScreen(mainDisplay);
 			root = XRootWindow(mainDisplay, defScr);
 			int fbcount;
-			GLXFBConfig* fbc = glXChooseFBConfig(defScr, DefaultScreenOfDisplay(mainDisplay), glxAttribs.ptr, &fbcount);
+			GLXFBConfigP* fbc = glXChooseFBConfig(mainDisplay, defScr, glxAttribs.ptr, &fbcount);
 			assert(fbc, "Failed to create framebuffer");
 			int bestFBC = -1, worstFBC = -1, bestNumSamp = -1, worstNumSamp = 999;
 			for (int i = 0; i < fbcount; ++i) {
-				XVisualInfo *vi = glXGetVisualFromFBConfig(display, fbc[i]);
-				if ( vi != 0) {
+				XVisualInfo* vi = glXGetVisualFromFBConfig(mainDisplay, fbc[i]);
+				if (vi != null) {
 					int sampBuf, samples;
-					glXGetFBConfigAttrib(display, fbc[i], GLX_SAMPLE_BUFFERS, &sampBuf);
-					glXGetFBConfigAttrib(display, fbc[i], GLX_SAMPLES, &samples);
+					glXGetFBConfigAttrib(mainDisplay, fbc[i], GLX_SAMPLE_BUFFERS, &sampBuf);
+					glXGetFBConfigAttrib(mainDisplay, fbc[i], GLX_SAMPLES, &samples);
 
 					if (bestFBC < 0 || (sampBuf && samples > bestNumSamp)) {
 						bestFBC = i;
@@ -231,10 +231,11 @@ public class OSWindow {
 				}
 				XFree(vi);
 			}
-			GLXFBConfig bestFBCFinal = fbc[bestFBC];
+			GLXFBConfigP bestFBCFinal = fbc[bestFBC];
 			XFree(fbc);
 
-			vInfo = glXGetVisualFromFBConfig(mainDisplay, defScr, attrList.ptr);
+			// vInfo = glXGetVisualFromFBConfig(mainDisplay, defScr, attrList.ptr);
+			vInfo = glXGetVisualFromFBConfig(mainDisplay, bestFBCFinal);
 			assert(vInfo, "Could not create visual info");
 			cmap = XCreateColormap(mainDisplay, root, vInfo.visual, AllocNone);
 
