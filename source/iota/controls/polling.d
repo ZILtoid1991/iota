@@ -516,7 +516,7 @@ version (Windows) {
 			return 1;
 		}
 		tryAgain:
-		if (!XPending(OSWindow.mainDisplay)) return 0;
+		if (!XPending(OSWindow.mainDisplay)) return 0;	//To avoid waiting until a new x11 event is generated, return with 0 if there's no pending events.
 		XEvent xe;
 		XNextEvent(OSWindow.mainDisplay, &xe);
 		switch (xe.type) {
