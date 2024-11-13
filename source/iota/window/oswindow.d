@@ -302,7 +302,8 @@ public class OSWindow {
 	 *   icon = The icon of the window, if any.
 	 *   parent = Parent if exists, null otherwise.
 	 * Bugs:
-	 *   (Windows) icon handling works, but is preliminary and masking does not work.
+	 *   (Windows) icon handling works as of now, but is preliminary and masking does not work. Future versions will
+	 * feature better one, including live decompression.
 	 */
 	public this(string title, string name, int x, int y, int w, int h, uint flags,
 			WindowBitmap icon = null, OSWindow parent = null) @trusted {
@@ -323,13 +324,15 @@ public class OSWindow {
 						SetPixel(hdc, ix, iy, (pixel>>16) | (pixel&0x00FF00) | ((pixel&0x0000ff)<<16));
 					}
 				}
-				SelectObject(hdc, iInfo.hbmMask);
-				for (int iy ; iy < icon.height ; iy++) {
-					for (int ix ; ix < icon.width ; ix++) {
-						const pixel = pixels[iy * icon.width + ix]>>24;
-						SetPixel(hdc, ix, iy, pixel ? 0 : 0x00FF00);
-					}
-				}
+				// Note: I cannot find a way to write the
+
+				// SelectObject(hdc, iInfo.hbmMask);
+				// for (int iy ; iy < icon.height ; iy++) {
+					// for (int ix ; ix < icon.width ; ix++) {
+						// const pixel = pixels[iy * icon.width + ix]>>24;
+						// SetPixelV(hdc, ix, iy, pixel ? 0 : 0xFFFFFF);
+					// }
+				// }
 				hIcon = CreateIconIndirect(&iInfo);
 				DeleteObject(iInfo.hbmColor);
 				DeleteObject(iInfo.hbmMask);
