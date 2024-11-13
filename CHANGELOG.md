@@ -1,3 +1,8 @@
+# 0.4.0-beta
+
+* Fixed a bug that caused x11 to lock up until new event is generated.
+* Basic 32 bit icons now work on Windows, mask generation doesn't.
+
 # 0.4.0-alpha
 
 * Fixed bug regarding of x11 windows. Also `OSWindow` now requires manual destruction via `destroy(osWindowInstance)` to ensure the destructor runs as it should.
