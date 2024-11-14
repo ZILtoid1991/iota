@@ -354,14 +354,17 @@ public class OSWindow {
 			if (x <= 0) x = CW_USEDEFAULT;
 			if (y <= 0) y = CW_USEDEFAULT;
 			if (w <= 0) w = CW_USEDEFAULT;
-			else if ((flags & WindowCfgFlags.NoDecorations) == 0) w += GetSystemMetrics(SM_CXSIZEFRAME);
+			// else if ((flags & WindowCfgFlags.NoDecorations) == 0) w += GetSystemMetrics(SM_CXSIZEFRAME);
 			if (h <= 0) h = CW_USEDEFAULT;
-			else if ((flags & WindowCfgFlags.NoDecorations) == 0) h += GetSystemMetrics(SM_CYSIZEFRAME);
+			// else if ((flags & WindowCfgFlags.NoDecorations) == 0) h += GetSystemMetrics(SM_CYSIZEFRAME);
+			RECT windowRect = RECT(0,0,w,h);
+			AdjustWindowRect(&windowRect, dwStyle, FALSE);
 			windowname = toUTF16z(title);
 			HWND parentHndl = null;
 			if (parent !is null)
 				parentHndl = parent.getHandle();
-			windowHandle = CreateWindowW(classname, windowname, dwStyle, x, y, w, h, parentHndl, null, mainInst, null);
+			windowHandle = CreateWindowW(classname, windowname, dwStyle, x, y, windowRect.right - windowRect.left,
+					windowRect.bottom - windowRect.top, parentHndl, null, mainInst, null);
 			if (!windowHandle) {
 				auto errorCode = GetLastError();
 				throw new WindowCreationException("Failed to create window!", errorCode);

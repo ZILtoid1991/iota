@@ -1,3 +1,7 @@
+# 0.4.0-beta.2
+
+* Fixed an issue with Windows not accounting for the frames when creating a window.
+
 # 0.4.0-beta
 
 * Fixed a bug that caused x11 to lock up until new event is generated.
