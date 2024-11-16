@@ -7,12 +7,10 @@ import core.thread;
 import iota.controls;
 import iota.controls.keybscancodes;
 import iota.window;
+	import iota.controls.polling : poll;
 
 version (Windows) {
 	import core.sys.windows.windows;
-	import iota.controls.polling : poll;
-} else version (OSX) {
-	import iota.controls.polling : poll;
 }
 
 //import darg;

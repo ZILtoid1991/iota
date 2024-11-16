@@ -15,6 +15,8 @@ version (Windows) {
 	import cocoa;
 	import metal;
 	import iota.controls.polling : poll;
+} else {
+	import iota.controls.polling : poll, devList, keyb;
 }
 
 struct Options {
