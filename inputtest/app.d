@@ -14,7 +14,7 @@ version (Windows) {
 } else version(OSX) {
 	import cocoa;
 	import metal;
-	import iota.controls.polling : poll;
+	import iota.controls.polling : poll, keyb;
 } else {
 	import iota.controls.polling : poll, devList, keyb;
 }
