@@ -66,6 +66,13 @@ public enum InputEventType {
 	InputLangChange,
 	ApplExit,
 	Debug_DataDump,	///RawInput data dump 
+	// MacOS specific
+    GestureBegin = 32,
+    GestureEnd = 33,
+    GestureZoom = 34,
+    GestureRotate = 35,
+    GestureSwipe = 36,
+    ForceTouchPressure = 37
 }
 /** 
  * Defines text command event types.
@@ -488,9 +495,13 @@ public struct InputEvent {
 		ArbPtrEvent			arbPtr;
 		uint[5]				rawData;
 	}
+
 	string toString() @trusted {
+		// The cast to void* is required for OSX. It will be more readable if we don't use version'ed 
+		// code here. Leave as-is, unless it somehow causes problems on Windows or Linux?
 		string result = "Source: " ~ (source is null ? "null" : "{" ~ source.toString ~ "}") ~ " ; Window handle: " ~ 
-				to!string(cast(size_t)handle) ~ " ; Timestamp: " ~ to!string(timestamp) ~ " ; Type: " ~ to!string(type) ~ 
+				to!string(cast(size_t)cast(void*)handle) ~ " ; Timestamp: " ~ 
+				to!string(timestamp) ~ " ; Type: " ~ to!string(type) ~ 
 				" ; Rest: {";
 		switch (type) {
 			case InputEventType.Keyboard, InputEventType.GCButton:

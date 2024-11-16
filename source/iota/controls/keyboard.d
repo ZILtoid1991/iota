@@ -5,6 +5,9 @@ public import iota.controls.types;
 version (Windows) {
 	import core.sys.windows.windows;
 	import core.sys.windows.wtypes;
+} else version(OSX) {
+    import cocoa.foundation;
+    import cocoa.nsevent;
 } else {
 	import x11.extensions.XI;
 	import x11.extensions.XInput;
@@ -62,6 +65,9 @@ public class Keyboard : InputDevice {
 			_type = InputDeviceType.Keyboard;
 			status |= StatusFlags.IsConnected;
 		}
+	} else version (OSX) {
+		package uint modifierTracker;
+		package bool ignoreLockLights;
 	} else {
 		//package XDevice*	devHandle;
 		
@@ -194,6 +200,8 @@ public class Keyboard : InputDevice {
 				if (GetKeyState(VK_SCROLL))
 					result |= KeyboardModifiers.ScrollLock;
 			}
+		} else version (OSX) {
+			return cast(ubyte)modifierTracker;
 		} else {
 			if (modifierTracker & ShiftMask)
 				result |= KeyboardModifiers.Shift;
@@ -217,9 +225,23 @@ public class Keyboard : InputDevice {
 		return result;
 	}
 	///Sets the modifier flags for X11 input tracking.
-	package void setModifiers(uint flags) @nogc @safe pure nothrow {
+	package void setModifiers(uint flags) @nogc @safe nothrow {
 		version (Windows) {
 
+		} else version (OSX) {
+			modifierTracker = 0;
+            if (flags & NSEventModifierFlags.ShiftKeyMask)
+                modifierTracker |= KeyboardModifiers.Shift;
+            if (flags & NSEventModifierFlags.ControlKeyMask)
+                modifierTracker |= KeyboardModifiers.Ctrl;
+            if (flags & NSEventModifierFlags.AlternateKeyMask)
+                modifierTracker |= KeyboardModifiers.Alt;
+            if (flags & NSEventModifierFlags.CommandKeyMask)
+                modifierTracker |= KeyboardModifiers.Meta;
+            if (!isIgnoringLockLights()) {
+                if (flags & NSEventModifierFlags.AlphaShiftKeyMask)
+                    modifierTracker |= KeyboardModifiers.CapsLock;
+            }
 		} else {
 			modifierTracker = flags;
 		}

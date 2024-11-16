@@ -453,6 +453,131 @@ version(Windows) package uint translateSC(uint input, uint aux) @nogc @safe pure
 		default:
 			return 0xFF_FF;
 	}
+} else version(OSX) {
+    package ushort translateKeyCode(const uint code) @nogc @safe pure nothrow {
+        switch(code) {
+            case 0x00: return ScanCode.A;
+            case 0x0B: return ScanCode.B;
+            case 0x08: return ScanCode.C;
+            case 0x02: return ScanCode.D;
+            case 0x0E: return ScanCode.E;
+            case 0x03: return ScanCode.F;
+            case 0x05: return ScanCode.G;
+            case 0x04: return ScanCode.H;
+            case 0x22: return ScanCode.I;
+            case 0x26: return ScanCode.J;
+            case 0x28: return ScanCode.K;
+            case 0x25: return ScanCode.L;
+            case 0x2E: return ScanCode.M;
+            case 0x2D: return ScanCode.N;
+            case 0x1F: return ScanCode.O;
+            case 0x23: return ScanCode.P;
+            case 0x0C: return ScanCode.Q;
+            case 0x0F: return ScanCode.R;
+            case 0x01: return ScanCode.S;
+            case 0x11: return ScanCode.T;
+            case 0x20: return ScanCode.U;
+            case 0x09: return ScanCode.V;
+            case 0x0D: return ScanCode.W;
+            case 0x07: return ScanCode.X;
+            case 0x10: return ScanCode.Y;
+            case 0x06: return ScanCode.Z;
+
+            case 0x12: return ScanCode.n1;
+            case 0x13: return ScanCode.n2;
+            case 0x14: return ScanCode.n3;
+            case 0x15: return ScanCode.n4;
+            case 0x17: return ScanCode.n5;
+            case 0x16: return ScanCode.n6;
+            case 0x1A: return ScanCode.n7;
+            case 0x1C: return ScanCode.n8;
+            case 0x19: return ScanCode.n9;
+            case 0x1D: return ScanCode.n0;
+
+            case 0x24: return ScanCode.ENTER;
+            case 0x35: return ScanCode.ESCAPE;
+            case 0x33: return ScanCode.BACKSPACE;
+            case 0x30: return ScanCode.TAB;
+            case 0x31: return ScanCode.SPACE;
+
+            case 0x1B: return ScanCode.MINUS;
+            case 0x18: return ScanCode.EQUALS;
+            case 0x21: return ScanCode.LEFTBRACKET;
+            case 0x1E: return ScanCode.RIGHTBRACKET;
+            case 0x2A: return ScanCode.BACKSLASH;
+            case 0x29: return ScanCode.SEMICOLON;
+            case 0x27: return ScanCode.APOSTROPHE;
+            case 0x32: return ScanCode.GRAVE;
+            case 0x2B: return ScanCode.COMMA;
+            case 0x2F: return ScanCode.PERIOD;
+            case 0x2C: return ScanCode.SLASH;
+            case 0x39: return ScanCode.CAPSLOCK;
+
+            case 0x7A: return ScanCode.F1;
+            case 0x78: return ScanCode.F2;
+            case 0x63: return ScanCode.F3;
+            case 0x76: return ScanCode.F4;
+            case 0x60: return ScanCode.F5;
+            case 0x61: return ScanCode.F6;
+            case 0x62: return ScanCode.F7;
+            case 0x64: return ScanCode.F8;
+            case 0x65: return ScanCode.F9;
+            case 0x6D: return ScanCode.F10;
+            case 0x67: return ScanCode.F11;
+            case 0x6F: return ScanCode.F12;
+
+            case 0x69: return ScanCode.F13;
+            case 0x6B: return ScanCode.F14;
+            case 0x71: return ScanCode.F15;
+            case 0x6A: return ScanCode.F16;
+            case 0x40: return ScanCode.F17;
+            case 0x4F: return ScanCode.F18;
+            case 0x50: return ScanCode.F19;
+            case 0x5A: return ScanCode.F20;
+
+            case 0x72: return ScanCode.INSERT;
+            case 0x73: return ScanCode.HOME;
+            case 0x74: return ScanCode.PAGEUP;
+            case 0x75: return ScanCode.DELETE;
+            case 0x77: return ScanCode.END;
+            case 0x79: return ScanCode.PAGEDOWN;
+            case 0x7C: return ScanCode.RIGHT;
+            case 0x7B: return ScanCode.LEFT;
+            case 0x7D: return ScanCode.DOWN;
+            case 0x7E: return ScanCode.UP;
+
+            case 0x47: return ScanCode.NUMLOCK;
+            case 0x4B: return ScanCode.NP_DIVIDE;
+            case 0x43: return ScanCode.NP_MULTIPLY;
+            case 0x4E: return ScanCode.NP_MINUS;
+            case 0x45: return ScanCode.NP_PLUS;
+            case 0x4C: return ScanCode.NP_ENTER;
+
+            case 0x53: return ScanCode.np1;
+            case 0x54: return ScanCode.np2;
+            case 0x55: return ScanCode.np3;
+            case 0x56: return ScanCode.np4;
+            case 0x57: return ScanCode.np5;
+            case 0x58: return ScanCode.np6;
+            case 0x59: return ScanCode.np7;
+            case 0x5B: return ScanCode.np8;
+            case 0x5C: return ScanCode.np9;
+            case 0x52: return ScanCode.np0;
+
+            case 0x41: return ScanCode.NP_PERIOD;
+
+            case 0x3B: return ScanCode.LCTRL;
+            case 0x38: return ScanCode.LSHIFT;
+            case 0x3A: return ScanCode.LALT;
+            case 0x37: return ScanCode.LGUI;
+            case 0x3E: return ScanCode.RCTRL;
+            case 0x3C: return ScanCode.RSHIFT;
+            case 0x3D: return ScanCode.RALT;
+            case 0x36: return ScanCode.RGUI;
+
+            default: return ScanCode.init;
+        }
+    }
 } else {
 	///Translates KeySyms to USB HID ScanCodes
 	///(Temporary, only use if other methods fail)

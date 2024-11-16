@@ -105,6 +105,8 @@ public string[] getOutputDeviceNames() @trusted {
 			}
 			return result;
 		} else return null;
+	} else version (OSX) {
+		return null;
 	}
 }
 /** 

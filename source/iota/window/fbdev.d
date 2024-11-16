@@ -6,6 +6,9 @@ version (Windows) {
 	import core.sys.windows.wingdi;
 	import std.utf : toUTF16z;
 	import std.conv : to;
+} else version(OSX) {
+    import cocoa.nsopengl;
+	import cocoa.nsview;
 }
 
 import std.math : nextPow2;
@@ -79,6 +82,8 @@ public class OpenGLRenderer : FrameBufferRenderer {
 	];
 	version (Windows) {
 		protected HGLRC     renderingContext;
+	} else version (OSX) {
+        protected NSOpenGLContext renderingContext;
 	}
 	public static int initGL() {
 		loadOpenGL();
@@ -93,6 +98,23 @@ public class OpenGLRenderer : FrameBufferRenderer {
 			//renderingSurface = window;
 			HDC hdc = GetDC(window);
 			renderingContext = wglCreateContext(hdc);
+		} else version (OSX) {
+			int[] attrs = [
+                NSOpenGLPFADoubleBuffer,
+                NSOpenGLPFAColorSize, 24,
+                NSOpenGLPFAAlphaSize, 8,
+                NSOpenGLPFADepthSize, 24,
+                NSOpenGLPFAStencilSize, 8,
+                0
+            ];
+            
+            NSOpenGLPixelFormat format = NSOpenGLPixelFormat.alloc.initWithAttributes(attrs.ptr);
+            renderingContext = NSOpenGLContext.alloc.initWithFormat(format, null);
+            renderingContext.setView(cast(NSView)window.contentView());
+            
+            glGenTextures(1, &textureID);
+            glGenBuffers(1, &vbo);
+            glBufferData(GL_ARRAY_BUFFER, verticles.length, verticles.ptr, GL_STATIC_DRAW);
 		}
 		glGenTextures(1, &textureID);
 		//glGenBuffers(1, &frameBufferID);
@@ -102,6 +124,10 @@ public class OpenGLRenderer : FrameBufferRenderer {
 	~this() {
 		version (Windows) {
 			wglDeleteContext(renderingContext);
+		} else version (OSX) {
+			if (renderingContext !is null) {
+				renderingContext = null;
+			}
 		}
 		
 	}

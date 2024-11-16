@@ -5,6 +5,9 @@ public import iota.controls.types;
 version (Windows) {
 	import core.sys.windows.windows;
 	import core.sys.windows.wtypes;
+} else version(OSX) {
+    import cocoa.foundation;
+    import cocoa.nsevent;
 } else {
 	import x11.X;
 	import x11.Xlib;
@@ -47,6 +50,13 @@ public class Mouse : InputDevice {
 			_type = InputDeviceType.Mouse;
 			status |= StatusFlags.IsConnected;
 		}
+	} else version(OSX) {
+    	package this(string _name, ubyte _devNum) nothrow {
+    	    this._name = _name;
+    	    this._devNum = _devNum;
+    	    _type = InputDeviceType.Mouse;
+    	    status |= StatusFlags.IsConnected;
+    	}
 	} else {
 		/* package XDevice*	devHandle;
 		package this(string _name, ubyte _devNum, XID devID) nothrow {

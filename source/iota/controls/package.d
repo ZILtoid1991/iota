@@ -26,6 +26,17 @@ import std.utf;
 import std.uni : toLower;
 import std.stdio;
 
+static this() {
+    version(Windows) {
+        mainPollingFun = &poll_win_LegacyIO;
+    } else version(OSX) {
+        mainPollingFun = &poll_osx;
+    } else {
+        mainPollingFun = &poll_x11_RegularIO;
+    }
+}
+
+
 public enum IOTA_INPUTCONFIG_MANDATORY = 0;
 package uint __configFlags, __osConfigFlags;
 /** 
@@ -143,6 +154,12 @@ public int initInput(uint config = 0, uint osConfig = 0, string gcmTable = null)
 				subPollingFun = &XInputDevice.poll;
 			}
 		}
+	} else version(OSX) {
+	    keyb = new Keyboard();
+	    mouse = new Mouse();
+	    mainPollingFun = &poll_osx;
+	    devList ~= keyb;
+	    devList ~= mouse;
 	} else {
 		if (osConfig & OSConfigFlags.libevdev_enable) {
 			try {

@@ -7,6 +7,8 @@ version (Windows) {
 	import core.sys.windows.windows;
 	import core.sys.windows.wtypes;
 	import iota.controls.backend.windows;
+} else version(OSX) {
+    import cocoa.gamecontroller;
 } else {
 	import iota.controls.backend.linux;
 }
@@ -480,4 +482,45 @@ version (Windows) public class XInputDevice : GameController {
 			return HapticDeviceStatus.AllOk;
 		return HapticDeviceStatus.DeviceInvalidated;
 	}
+} else version (OSX) {
+   	public class GCGameController : GameController {
+   	    protected GCController* controller;
+
+   	    public override uint[] getCapabilities() @safe nothrow {
+   	        if (controller.haptics)
+   	            return [HapticDevice.Capabilities.LeftMotor, HapticDevice.Capabilities.RightMotor];
+   	        return null;
+   	    }
+
+   	    public override uint[] getZones(uint capability) @safe nothrow {
+   	        return null;
+   	    }
+
+   	    public override int applyEffect(uint capability, uint zone, float val, float freq = float.nan) @trusted nothrow {
+   	        if (!controller.haptics)
+   	            return HapticDeviceStatus.UnsupportedCapability;
+
+   	        if (val < 0.0 || val > 1.0)
+   	            return HapticDeviceStatus.OutOfRange;
+
+   	        switch (capability) {
+				case HapticDevice.Capabilities.LeftMotor:
+    				controller.haptics.createEngine(GCHapticsLocality.Left).createContinuousEvent(val);
+    				return HapticDeviceStatus.AllOk;
+				case HapticDevice.Capabilities.RightMotor:
+    				controller.haptics.createEngine(GCHapticsLocality.Right).createContinuousEvent(val);
+    				return HapticDeviceStatus.AllOk;
+   	            default:
+   	                return HapticDeviceStatus.UnsupportedCapability;
+   	        }
+   	    }
+
+   	    public override int reset() @trusted nothrow {
+   	        if (controller.haptics) {
+   	            controller.haptics.cancelAll();
+   	            return HapticDeviceStatus.AllOk;
+   	        }
+   	        return HapticDeviceStatus.UnsupportedCapability;
+   	    }
+   	}
 }

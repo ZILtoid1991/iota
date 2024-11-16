@@ -11,21 +11,38 @@ dependency "x11d" version="*"
 versions "GL_AllowDeprecated"
 libs "asound" "GL" "X11" "Xext" "Xi" "libevdev" platform="linux"
 libs "winmm" "gdi32" "user32" "opengl32" "xinput" "ole32" "comctl32" platform="windows"
+
+//OSX specific
+configuration "osx" {
+    toolchainRequirements ldc=">=1.30.0"
+    compiler "ldc2"
+    architecture "aarch64"
+    dependency "objc_meta" version="*"
+    dependency "d-metal-binding" version="*"
+    dependency "avaudioengine" version="*"
+    sourcePaths "cocoa/" "carbon/" "objc/" "source"
+    lflags "-framework" "CoreData" "-framework" "CoreGraphics" "-framework" "Cocoa" "-framework" "Foundation" "-framework" "AppKit" "-framework" "Metal" "-framework" "MetalKit" "-framework" "OpenGL" "-framework" "AVFoundation" "-framework" "GameController"
+    libs "objc"
+}
+
 //lflags "/subsystem:windows" "/entry:wmainCRTStartup" platform="windows" compiler="DMD"
 subPackage {
     name "audiotest"
+    configurations "osx" platform="osx"
     sourcePaths "testsource/"
     dependency "iota" version="*"
     targetType "executable"
 }
 subPackage {
     name "miditest"
+    configurations "osx" platform="osx"
     sourcePaths "miditest/"
     dependency "iota" version="*"
     targetType "executable"
 }
 subPackage {
     name "inputtest"
+    configurations "osx" platform="osx"
     sourcePaths "inputtest/"
     dependency "iota" version="*"
     dependency "darg" version="*"
@@ -35,8 +52,19 @@ subPackage {
 }
 subPackage {
     name "gltest"
+    configurations "osx" platform="osx"
     sourcePaths "gltest/"
     dependency "iota" version="*"
     targetType "executable"
     dflags "resources.res" platform="windows"
+}
+subPackage {
+    name "mactest"
+    configurations "osx" platform="osx"
+    sourcePaths "mactest/"
+    dependency "objc_meta" version="*"
+    dependency "bindbc-opengl" version="*"
+    dependency "d-metal-binding" version="*"
+    dependency "iota" version="*"
+    targetType "executable"
 }
