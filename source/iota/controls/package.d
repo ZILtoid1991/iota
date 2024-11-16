@@ -7,12 +7,15 @@ public import iota.controls.keyboard;
 public import iota.controls.mouse;
 public import iota.controls.system;
 public import iota.controls.gamectrl;
-public import iota.controls.polling;
+public import iota.controls.polling : mainPollingFun, keyb, mouse, sys, devList;
 public import iota.window.oswindow;
 
 version (Windows) {
 	import core.sys.windows.windows;
 	import core.sys.windows.wtypes;
+} else version (OSX) {
+	import cocoa.foundation;
+	import iota.controls.polling : poll_osx;
 } else {
 	import iota.controls.backend.linux;
 	import core.stdc.errno;
@@ -232,6 +235,7 @@ public int initInput(uint config = 0, uint osConfig = 0, string gcmTable = null)
 }
 version (Windows) {
 	package const RawGCMapping[] defaultGCmapping = [];
+} else version (OSX) {
 } else {
 	package const RawGCMapping[] defaultGCmapping = [
 		RawGCMapping(RawGCMappingType.Button, 0, 0, GameControllerButtons.South),

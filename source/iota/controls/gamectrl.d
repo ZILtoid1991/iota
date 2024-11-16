@@ -1,7 +1,7 @@
 module iota.controls.gamectrl;
 
 public import iota.controls.types;
-import iota.controls;
+// import iota.controls;
 
 version (Windows) {
 	import core.sys.windows.windows;
@@ -142,7 +142,7 @@ public class RawInputGameController : GameController {
 			_type = InputDeviceType.GameController;
 			status |= StatusFlags.IsConnected;
 		}
-	} else {
+	} else version (linux) {
 		int[8] hatStatus;
 		package this(string _name, ubyte _devNum, int fd, libevdev* hDevice, RawGCMapping[] mapping) {
 			this._name = _name;

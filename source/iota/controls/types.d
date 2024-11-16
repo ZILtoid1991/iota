@@ -9,7 +9,7 @@ public import core.time : MonoTime;
 version (Windows) {
 	import core.sys.windows.wtypes;
 	import core.sys.windows.windows;
-} else {
+} else version (linux) {
 	import iota.controls.backend.linux;
 }
 
@@ -185,7 +185,7 @@ public abstract class InputDevice {
 	protected InputDeviceType	_type;		/// Defines the type of the input device
 	version (Windows) {
 		package void*			hDevice;	/// Field for RawInput
-	} else {
+	} else version (linux) {
 		package libevdev*		hDevice;	/// Field for evdev
 		package int				fd;
 	}

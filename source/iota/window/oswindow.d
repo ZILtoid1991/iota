@@ -17,6 +17,7 @@ version (Windows) {
 	import objc.meta;
 	import objc.runtime;
 	import bindbc.opengl;
+	import iota.controls.polling : setEventMonitor;
 	struct Display {
         int width;
         int height;
@@ -205,6 +206,7 @@ public class OSWindow {
 			auto app = NSApplication.sharedApplication;
             app.setActivationPolicy(NSApplicationActivationPolicy.Regular);
             app.activateIgnoringOtherApps(YES);
+			setEventMonitor();
         }
 	} else version (linux) {
 		public static Atom WM_DELETE_WINDOW;

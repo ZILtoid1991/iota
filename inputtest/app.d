@@ -13,6 +13,7 @@ version (Windows) {
 } else version(OSX) {
 	import cocoa;
 	import metal;
+	import iota.controls.polling : poll;
 }
 
 struct Options {

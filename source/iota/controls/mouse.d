@@ -96,7 +96,11 @@ public class Mouse : InputDevice {
 	
 	public override string toString() @safe const {
 		import std.conv : to;
-		return "{" ~ _name.to!string ~ "; devID: " ~ _devNum.to!string ~ "; devHandle: " ~ hDevice.to!string ~ "}";
+		version (OSX) {
+			return "{" ~ _name.to!string ~ "; devID: " ~ _devNum.to!string ~ "}";
+		} else {
+			return "{" ~ _name.to!string ~ "; devID: " ~ _devNum.to!string ~ "; devHandle: " ~ hDevice.to!string ~ "}";
+		}
 	}
 	/* override public int poll(ref InputEvent output) @nogc nothrow {
 		return 0;

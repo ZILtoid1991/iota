@@ -35,37 +35,6 @@ Mouse mouse;            ///Main mouse, or the only mouse on APIs not supporting 
 System sys;				///System device, originator of system events.
 InputDevice[] devList;	///List of input devices.
 
-version(OSX) {
-	import std.stdio;
-	import objc.meta;
-	import objc.runtime;
-
-	private OSWindow currentWindow;
-	public void setCurrentWindow(OSWindow window) @nogc nothrow {
-	    currentWindow = window;
-	}
-
-    private __gshared bool[256] keyHeldState;
-    private __gshared ubyte[256] keyRepeatState;
-    private __gshared NSObject eventMonitor;
-
-	private extern(C++) NSEvent eventHandler(NSEvent event) nothrow @nogc {
-	    const ushort kc = event.keyCode();
-	    if (kc < 256) {
-	        if (event.type() == NSEventType.KeyDown) {
-	            if (!keyHeldState[kc]) {
-	                keyHeldState[kc] = true;
-	                keyRepeatState[kc] = 1;
-	            } else {
-	                keyRepeatState[kc] = (keyRepeatState[kc] < 255) ? cast(ubyte)(keyRepeatState[kc] + 1) : 255;
-	            }
-	            debug writefln("Monitor: Key %d down, held=%d, repeat=%d", kc, keyHeldState[kc], keyRepeatState[kc]);
-	        }
-	    }
-	    return event;
-	}
-}
-
 version (Windows) {
 	import core.sys.windows.windows;
 	import core.sys.windows.wtypes;
@@ -502,9 +471,36 @@ version (Windows) {
 		return 1;
 	}
 } else version(OSX) {
+	import std.stdio;
 	import cocoa;
+	import objc.meta;
 	import objc.runtime;
 	import iota.window.oswindow;
+
+	private OSWindow currentWindow;
+	public void setCurrentWindow(OSWindow window) @nogc nothrow {
+	    currentWindow = window;
+	}
+
+    private __gshared bool[256] keyHeldState;
+    private __gshared ubyte[256] keyRepeatState;
+    private __gshared NSObject eventMonitor;
+
+	private extern(C++) NSEvent eventHandler(NSEvent event) @objc nothrow @nogc {
+	    const ushort kc = event.keyCode();
+	    if (kc < 256) {
+	        if (event.type() == NSEventType.KeyDown) {
+	            if (!keyHeldState[kc]) {
+	                keyHeldState[kc] = true;
+	                keyRepeatState[kc] = 1;
+	            } else {
+	                keyRepeatState[kc] = (keyRepeatState[kc] < 255) ? cast(ubyte)(keyRepeatState[kc] + 1) : 255;
+	            }
+	            debug writefln("Monitor: Key %d down, held=%d, repeat=%d", kc, keyHeldState[kc], keyRepeatState[kc]);
+	        }
+	    }
+	    return event;
+	}
 
 	package int poll_osx(ref InputEvent output) nothrow @nogc @system {
 	    NSEvent event = NSApplication.sharedApplication.nextEventMatchingMask(
@@ -629,11 +625,14 @@ version (Windows) {
 	    return 0;
 	}
 
-	static this() {
+	void setEventMonitor() {
 	    eventMonitor = NSEvent.addLocalMonitorForEventsMatchingMask(
 	        NSEventMask.KeyDown | NSEventMask.KeyUp | NSEventMask.FlagsChanged,
 	        &eventHandler
 	    );
+	}
+
+	static this() {
         mainPollingFun = &poll_osx;
 	}
 
