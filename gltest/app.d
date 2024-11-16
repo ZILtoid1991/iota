@@ -10,6 +10,7 @@ import iota.window;
 
 version (Windows) {
 	import core.sys.windows.windows;
+	import iota.controls.polling : poll;
 } else version (OSX) {
 	import iota.controls.polling : poll;
 }

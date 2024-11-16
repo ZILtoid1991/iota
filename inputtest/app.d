@@ -10,6 +10,7 @@ import darg;
 
 version (Windows) {
 	import core.sys.windows.windows;
+	import iota.controls.polling : poll, devList, keyb;
 } else version(OSX) {
 	import cocoa;
 	import metal;

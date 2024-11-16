@@ -7,18 +7,19 @@ public import iota.controls.keyboard;
 public import iota.controls.mouse;
 public import iota.controls.system;
 public import iota.controls.gamectrl;
-public import iota.controls.polling : mainPollingFun, keyb, mouse, sys, devList;
 public import iota.window.oswindow;
 
 version (Windows) {
 	import core.sys.windows.windows;
 	import core.sys.windows.wtypes;
+	import iota.controls.polling;
 } else version (OSX) {
 	import cocoa.foundation;
-	import iota.controls.polling : poll_osx;
+    import iota.controls.polling : poll_osx, mainPollingFun, keyb, mouse, sys, devList;
 } else {
 	import iota.controls.backend.linux;
 	import core.stdc.errno;
+	import iota.controls.polling;
 	//import core.sys.linux.fcntl;
 }
 import core.stdc.stdlib;

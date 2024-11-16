@@ -14,15 +14,15 @@ libs "winmm" "gdi32" "user32" "opengl32" "xinput" "ole32" "comctl32" platform="w
 
 //OSX specific
 configuration "osx" {
-    toolchainRequirements ldc=">=1.30.0"
-    compiler "ldc2"
-    architecture "aarch64"
-    dependency "objc_meta" version="*"
-    dependency "d-metal-binding" version="*"
-    dependency "avaudioengine" version="*"
-    sourcePaths "cocoa/" "carbon/" "objc/" "source"
-    lflags "-framework" "CoreData" "-framework" "CoreGraphics" "-framework" "Cocoa" "-framework" "Foundation" "-framework" "AppKit" "-framework" "Metal" "-framework" "MetalKit" "-framework" "OpenGL" "-framework" "AVFoundation" "-framework" "GameController"
-    libs "objc"
+    toolchainRequirements ldc=">=1.30.0" platform="osx"
+    compiler "ldc2" platform="osx"
+    architecture "aarch64" platform="osx"
+    dependency "objc_meta" version="*" platform="osx"
+    dependency "d-metal-binding" version="*" platform="osx"
+    dependency "avaudioengine" version="*" platform="osx"
+    sourcePaths "cocoa/" "carbon/" "objc/" "source/" platform="osx"
+    lflags "-framework" "CoreData" "-framework" "CoreGraphics" "-framework" "Cocoa" "-framework" "Foundation" "-framework" "AppKit" "-framework" "Metal" "-framework" "MetalKit" "-framework" "OpenGL" "-framework" "AVFoundation" "-framework" "GameController" platform="osx"
+    libs "objc" platform="osx"
 }
 
 //lflags "/subsystem:windows" "/entry:wmainCRTStartup" platform="windows" compiler="DMD"
