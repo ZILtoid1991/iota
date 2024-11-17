@@ -9,7 +9,7 @@ public import core.time : MonoTime;
 version (Windows) {
 	import core.sys.windows.wtypes;
 	import core.sys.windows.windows;
-} else {
+} else version (linux) {
 	import iota.controls.backend.linux;
 }
 
@@ -66,6 +66,13 @@ public enum InputEventType {
 	InputLangChange,
 	ApplExit,
 	Debug_DataDump,	///RawInput data dump 
+	// MacOS specific
+    GestureBegin = 32,
+    GestureEnd = 33,
+    GestureZoom = 34,
+    GestureRotate = 35,
+    GestureSwipe = 36,
+    ForceTouchPressure = 37
 }
 /** 
  * Defines text command event types.
@@ -178,7 +185,7 @@ public abstract class InputDevice {
 	protected InputDeviceType	_type;		/// Defines the type of the input device
 	version (Windows) {
 		package void*			hDevice;	/// Field for RawInput
-	} else {
+	} else version (linux) {
 		package libevdev*		hDevice;	/// Field for evdev
 		package int				fd;
 	}
@@ -488,9 +495,13 @@ public struct InputEvent {
 		ArbPtrEvent			arbPtr;
 		uint[5]				rawData;
 	}
+
 	string toString() @trusted {
+		// The cast to void* is required for OSX. It will be more readable if we don't use version'ed 
+		// code here. Leave as-is, unless it somehow causes problems on Windows or Linux?
 		string result = "Source: " ~ (source is null ? "null" : "{" ~ source.toString ~ "}") ~ " ; Window handle: " ~ 
-				to!string(cast(size_t)handle) ~ " ; Timestamp: " ~ to!string(timestamp) ~ " ; Type: " ~ to!string(type) ~ 
+				to!string(cast(size_t)cast(void*)handle) ~ " ; Timestamp: " ~ 
+				to!string(timestamp) ~ " ; Type: " ~ to!string(type) ~ 
 				" ; Rest: {";
 		switch (type) {
 			case InputEventType.Keyboard, InputEventType.GCButton:

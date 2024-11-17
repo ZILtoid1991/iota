@@ -12,7 +12,18 @@ version (Windows) {
 	extern (Windows) nothrow @nogc {
 		void SetThemeAppProperties(DWORD dwFlags);
 	} */
-	
+} else version(OSX) {
+	import cocoa;
+	import objc.meta;
+	import objc.runtime;
+	import bindbc.opengl;
+	import iota.controls.polling : setEventMonitor;
+	struct Display {
+        int width;
+        int height;
+    }
+
+    alias inputContext = void*;  // For OSX compatibility with the existing interface
 } else {
 	import x11.Xlib;
 	import x11.X;
@@ -167,7 +178,37 @@ public class OSWindow {
 				} while (deviceResult);
 			}
 		}
-	} else {
+	} else version (OSX) {
+        protected NSWindow nsWindow;
+        protected NSView contentView;
+		private NSOpenGLContext glContext;
+    	private NSOpenGLPixelFormat pixelFormat;
+
+        @property Display mainDisplay() {
+            Display disp;
+            NSScreen screen = NSScreen.mainScreen();
+            CGRect frame = screen.frame();
+            disp.width = cast(int)frame.size.width;
+            disp.height = cast(int)frame.size.height;
+            return disp;
+        }
+
+        @property inputContext ic() {
+            return null; // Temporary stub for OSX
+        }
+
+		public NSWindow getNSWindow() @nogc nothrow {
+			return nsWindow;
+		}
+
+        shared static this() {
+            // Initialize NSApplication
+			auto app = NSApplication.sharedApplication;
+            app.setActivationPolicy(NSApplicationActivationPolicy.Regular);
+            app.activateIgnoringOtherApps(YES);
+			setEventMonitor();
+        }
+	} else version (linux) {
 		public static Atom WM_DELETE_WINDOW;
 		public static Display* mainDisplay;
 		public static Window root;
@@ -374,6 +415,64 @@ public class OSWindow {
 			//SetLayeredWindowAttributes(windowHandle, 0, 0xFF, LWA_ALPHA);
 			ShowWindow(windowHandle, SW_RESTORE);
 			UpdateWindow(windowHandle);
+		} else version(OSX) {
+			CGRect frame = CGRect(CGPoint(x, y), CGSize(w, h));
+
+			auto app = NSApp();
+			app.setActivationPolicy(NSApplicationActivationPolicy.Regular);
+
+			auto delegate_ = AppDelegate.alloc.initialize();
+			NSApp.setDelegate(delegate_);
+
+			// Create menubar and app menu
+			NSMenu menubar = NSMenu.new_();
+			NSMenuItem appMenuItem = NSMenuItem.new_();
+			menubar.addItem(appMenuItem);
+			NSApp.setMainMenu(menubar);
+
+			NSMenu appMenu = NSMenu.new_();
+			NSMenuItem quitMenuItem = NSMenuItem.alloc()
+			    .initWithTitle("Quit".ns, sel_registerName("terminate:"), "q".ns);
+			quitMenuItem.setTarget(app);
+			quitMenuItem.setAction(sel_registerName("terminate:"));
+			appMenu.addItem(quitMenuItem);
+			appMenuItem.setSubmenu(appMenu);
+
+			// Create and set up window
+			nsWindow = NSWindow.alloc.initWithContentRect(
+			    frame,
+			    NSWindowStyleMask.Titled | NSWindowStyleMask.Closable |
+			    NSWindowStyleMask.Miniaturizable | NSWindowStyleMask.Resizable,
+			    NSBackingStoreType.Buffered,
+			    NO
+			);
+	
+			nsWindow.setTitle(title.ns);
+			nsWindow.center();
+			
+			// contentView = NSView.alloc.initWithFrame(frame);
+			// nsWindow.setContentView(contentView);
+
+			// After contentView creation
+			NSTrackingAreaOptions options = NSTrackingAreaOptions.ActiveAlways | 
+			                               NSTrackingAreaOptions.MouseMoved |
+			                               NSTrackingAreaOptions.MouseEnteredAndExited;
+			NSTrackingArea trackingArea = NSTrackingArea.alloc.initWithRect(
+			    contentView.bounds(),
+			    options,
+			    contentView,
+			    null
+			);
+			contentView.addTrackingArea(trackingArea);
+
+
+		    // Set up window and activation
+			import iota.controls.polling : setCurrentWindow;		
+	        nsWindow.makeKeyAndOrderFront(null);
+	        NSApp.activateIgnoringOtherApps(YES);	
+			setCurrentWindow(this);
+
+			refCount ~= this;
 		} else {
 			string nameUTF8 = toUTF8(title);
 			windowname = toStringz(nameUTF8);
@@ -407,32 +506,41 @@ public class OSWindow {
 	}
 
 	~this() {
-		version (Windows) {
-			if (glRenderingContext) wglDeleteContext(glRenderingContext);
-			DestroyWindow(windowHandle);
-			UnregisterClassW(classname, mainInst);
+	    version(Windows) {
+	        if(glRenderingContext) wglDeleteContext(glRenderingContext);
+	        DestroyWindow(windowHandle);
+	        UnregisterClassW(classname, mainInst);
 			DestroyIcon(hIcon);
-		} else {
-			if (glxContext) {
-				glXMakeCurrent(mainDisplay, None, null);
-				glXDestroyContext(mainDisplay, glxContext);
+	    } else version(OSX) {
+	        if(nsWindow) {
+	            nsWindow.release();
+	            nsWindow = null;
+	        }
+	        if(contentView) {
+	            contentView.release();
+	            contentView = null;
+	        }
+	    } else {
+	        if(glxContext) {
+	            glXMakeCurrent(mainDisplay, None, null);
+	            glXDestroyContext(mainDisplay, glxContext);
 				glxContext = null;
-			}
-			if (ic) {
+	        }
+	        if(ic) {
 				XDestroyIC(ic);
 				ic = null;
 			}
-			if (im) {
+	        if(im) {
 				XCloseIM(im);
 				im = null;
 			}
 			XSync(mainDisplay, False);
 			if (windowHandle) {
-				XDestroyWindow(mainDisplay, windowHandle);
+		        XDestroyWindow(mainDisplay, windowHandle);
 				windowHandle = 0;
 			}
 			XFlush(mainDisplay);
-		}
+	    }
 	}
 	/**
 	 * Compares two classes to each other.
@@ -448,7 +556,11 @@ public class OSWindow {
 	}
 	///Just to make the scanner happy...
 	public override size_t toHash() const @nogc @safe pure nothrow {
-		return cast(size_t)windowHandle;
+		version (OSX) {
+			return 0xf456; // Just random number, otherwise we get and error on OSX
+		} else {
+			return cast(size_t)windowHandle;
+		}
 	}
 	/**  
 	 * Returns the handle of this window.
@@ -487,29 +599,36 @@ public class OSWindow {
 	 *   w = Width of the active area of the window.
 	 *   h = Height of the active area of the window.
 	 */
-	public void moveWindow(int x, int y, int w, int h) @nogc nothrow @trusted {
-		version (Windows) {
-			MoveWindow(windowHandle, x, y, w, h, TRUE);
-		} else {
-			XMoveResizeWindow(mainDisplay, windowHandle, x, y, w, h);
-		}
-	}
+	 public void moveWindow(int x, int y, int w, int h) @nogc nothrow @trusted {
+	     version(Windows) {
+	         MoveWindow(windowHandle, x, y, w, h, TRUE);
+	     } else version(OSX) {
+	         CGRect frame = CGRect(CGPoint(x, y), CGSize(w, h));
+	         nsWindow.setFrame(frame, YES);
+	     } else {
+	         XMoveResizeWindow(mainDisplay, windowHandle, x, y, w, h);
+	     }
+	 }
 	/**
 	 * Returns an array, of which the first two elements are the top-left coordinates 
 	 * of the window, and the last two elements are the size of the active area of the
 	 * window.
 	 */
-	public int[4] getWindowPosition() @nogc nothrow @trusted {
-		version (Windows) {
-			RECT windowSize;
-			GetWindowRect(windowHandle, &windowSize);
-			return [windowSize.left, windowSize.top, windowSize.right - windowSize.left + 1, 
-					windowSize.bottom - windowSize.top + 1];
-		} else {
-			XWindowAttributes winattr;
-			XGetWindowAttributes(mainDisplay, windowHandle, &winattr);
-			return [winattr.x, winattr.y, winattr.width, winattr.height];
-		}
+	 public int[4] getWindowPosition() @nogc nothrow @trusted {
+	    version(Windows) {
+	        RECT windowSize;
+	        GetWindowRect(windowHandle, &windowSize);
+	        return [windowSize.left, windowSize.top, windowSize.right - windowSize.left + 1, 
+	                windowSize.bottom - windowSize.top + 1];
+	    } else version(OSX) {
+	        CGRect frame = nsWindow.frame();
+	        return [cast(int)frame.origin.x, cast(int)frame.origin.y, 
+	                cast(int)frame.size.width, cast(int)frame.size.height];
+	    } else {
+	        XWindowAttributes winattr;
+	        XGetWindowAttributes(mainDisplay, windowHandle, &winattr);
+	        return [winattr.x, winattr.y, winattr.width, winattr.height];
+	    }
 	}
 	/**
 	 * Sets the window to the given screen mode.
@@ -560,6 +679,23 @@ public class OSWindow {
 				break;
 			}
 			return cast(int)errorcode;
+		} else version (OSX) {
+		    switch(mode) {
+		        case DisplayMode.Windowed:
+		            nsWindow.setStyleMask(NSWindowStyleMask.Titled | NSWindowStyleMask.Closable | 
+		                NSWindowStyleMask.Miniaturizable | NSWindowStyleMask.Resizable);
+		            nsWindow.setFrame(CGRect(CGPoint(prevVals[0], prevVals[1]), 
+		                CGSize(prevVals[2], prevVals[3])), YES);
+		            return 0;
+
+		        case DisplayMode.FullscreenDesktop:
+		            prevVals = getWindowPosition();
+		            nsWindow.toggleFullScreen(null);
+		            return 0;
+
+		        default:
+		            return 1;
+		    }
 		} else {
 			Atom windowType = XInternAtom (mainDisplay, "_NET_WM_WINDOW_TYPE_NORMAL", True);
 			XEvent ev;
@@ -731,6 +867,51 @@ public class OSWindow {
 			/* SetCursor(winCursor);
 			SetClassLongW(windowHandle, GCL_HCURSOR, cast(DWORD)winCursor);
 			ShowCursor(TRUE); */
+	    } else version(OSX) {
+	        NSCursor systemCursor;
+			final switch(cursor) with(StandardCursors) {
+				case Arrow: 
+	                NSCursor.arrowCursor().set(); break;
+	            case TextSelect: 
+	                NSCursor.IBeamCursor().set(); break;
+	            case Busy:
+	            case WaitArrow:
+	                NSCursor.operationNotAllowedCursor().set(); break;
+	            case PrecisionSelect:
+	                NSCursor.crosshairCursor().set(); break;
+	            case AltSelect:
+	            case HelpSelect:
+	                NSCursor.contextualMenuCursor().set(); break;
+	            case ResizeTopLeft:
+				    NSCursor.windowResizeNorthWestSouthEastCursor().set(); break;
+	            case ResizeTopRight:
+				    NSCursor.windowResizeNorthEastSouthWestCursor().set(); break;
+	            case ResizeBottomLeft:
+				    NSCursor.windowResizeNorthWestSouthEastCursor().set(); break;
+	            case ResizeBottomRight:
+				    NSCursor.windowResizeNorthEastSouthWestCursor().set(); break;
+	            case ResizeLeft:
+	                NSCursor.resizeLeftCursor().set(); break;
+	            case ResizeRight:
+	                NSCursor.resizeRightCursor().set(); break;
+	            case ResizeHoriz:
+	                NSCursor.resizeLeftRightCursor().set(); break;
+	            case ResizeTop:
+	                NSCursor.resizeUpCursor().set(); break;
+	            case ResizeBottom:
+	                NSCursor.resizeDownCursor().set(); break;
+	            case ResizeVert:
+	                NSCursor.resizeUpDownCursor().set(); break;
+	            case Move:
+	                NSCursor.openHandCursor().set(); break;
+	            case Forbidden:
+	                NSCursor.operationNotAllowedCursor().set(); break;
+	            case Hand:
+	            case LocationSelect:
+	            case PersonSelect:
+	                NSCursor.pointingHandCursor().set(); break;
+			}
+	        systemCursor.set();
 		} else {
 			Cursor x11_cursor;
 			final switch (cursor) with (StandardCursors) {
@@ -822,6 +1003,29 @@ public class OSWindow {
 			glRenderingContext = wglCreateContext(windowDeviceContext);
 			wglMakeCurrent(windowDeviceContext, glRenderingContext);
 			return glRenderingContext;
+		} else version(OSX) {
+	        if (!glContext) {
+	            static immutable int[] attrs = [
+	                NSOpenGLPFADoubleBuffer,
+	                NSOpenGLPFAColorSize, 24,
+	                NSOpenGLPFAAlphaSize, 8,
+	                NSOpenGLPFADepthSize, 24,
+	                NSOpenGLPFAStencilSize, 8,
+	                0
+	            ];
+
+	            pixelFormat = NSOpenGLPixelFormat.alloc.initWithAttributes(attrs.ptr);
+	            glContext = NSOpenGLContext.alloc.initWithFormat(pixelFormat, null);
+
+	            const int swapInterval = 1;
+	            glContext.setValues(&swapInterval, NSOpenGLContextParameter.NSOpenGLCPSwapInterval);
+
+	            NSView contentView = getNSWindow().contentView();
+	            glContext.setView(contentView);
+	        }
+
+	        glContext.makeCurrentContext();
+	        return cast(void*)glContext;
 		} else {
 			if (glxContext) return glxContext;
 			glxContext = glXCreateContext(mainDisplay, vInfo, null, GL_TRUE);
@@ -830,21 +1034,45 @@ public class OSWindow {
 		}
 	}
 	public void gl_swapBuffers() @nogc nothrow @trusted {
-		version (Windows) SwapBuffers(windowDeviceContext);
-		else glXSwapBuffers(mainDisplay, windowHandle);
+		version (Windows) {
+			SwapBuffers(windowDeviceContext);
+		} else version(OSX) {
+			(cast(NSOpenGLContext)getOpenGLHandle()).flushBuffer();
+		} else glXSwapBuffers(mainDisplay, windowHandle);
 	}
 	public void gl_makeCurrent() @nogc nothrow @trusted {
-		version (Windows) wglMakeCurrent(windowDeviceContext, glRenderingContext);
+		version (Windows) {
+			wglMakeCurrent(windowDeviceContext, glRenderingContext);
+		} else version (OSX) {
+			(cast(NSOpenGLContext)getOpenGLHandle()).makeCurrentContext();
+		}
 		else glXMakeCurrent(mainDisplay, windowHandle, glxContext);
 	}
 	/**
 	 * Returns the current input language code. (Linux UNIMPLEMENTED)
 	 */
-	public uint getInputLangCode() @nogc @safe nothrow const {
+	public uint getInputLangCode() @nogc nothrow const {
 		version (Windows)
 			return inputLang;
+		else version(OSX)
+        	return NSTextInputContext.currentInputContext().selectedKeyboardInputSource().intValue();
 		else
 			return 0;
+	}
+
+	public void processEvents() @nogc nothrow {
+	    version(OSX) {
+	        NSEvent event = NSApplication.sharedApplication().nextEventMatchingMask(
+	            NSEventMaskAny,
+	            NSDate.distantPast(),
+	            "kCFRunLoopDefaultMode".ns,
+	            true
+	        );
+	
+	        if (event !is null) {
+	            NSApplication.sharedApplication().sendEvent(event);
+	        }
+	    }
 	}
 
 	/** 

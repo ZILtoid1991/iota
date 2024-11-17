@@ -7,15 +7,19 @@ public import iota.controls.keyboard;
 public import iota.controls.mouse;
 public import iota.controls.system;
 public import iota.controls.gamectrl;
-public import iota.controls.polling;
 public import iota.window.oswindow;
 
 version (Windows) {
 	import core.sys.windows.windows;
 	import core.sys.windows.wtypes;
+	import iota.controls.polling;
+} else version (OSX) {
+	import cocoa.foundation;
+    import iota.controls.polling : poll_osx, mainPollingFun, keyb, mouse, sys, devList;
 } else {
 	import iota.controls.backend.linux;
 	import core.stdc.errno;
+	import iota.controls.polling;
 	//import core.sys.linux.fcntl;
 }
 import core.stdc.stdlib;
@@ -25,6 +29,17 @@ import std.string : toStringz, fromStringz, splitLines, split;
 import std.utf;
 import std.uni : toLower;
 import std.stdio;
+
+static this() {
+    version(Windows) {
+        mainPollingFun = &poll_win_LegacyIO;
+    } else version(OSX) {
+        mainPollingFun = &poll_osx;
+    } else {
+        mainPollingFun = &poll_x11_RegularIO;
+    }
+}
+
 
 public enum IOTA_INPUTCONFIG_MANDATORY = 0;
 package uint __configFlags, __osConfigFlags;
@@ -143,6 +158,12 @@ public int initInput(uint config = 0, uint osConfig = 0, string gcmTable = null)
 				subPollingFun = &XInputDevice.poll;
 			}
 		}
+	} else version(OSX) {
+	    keyb = new Keyboard();
+	    mouse = new Mouse();
+	    mainPollingFun = &poll_osx;
+	    devList ~= keyb;
+	    devList ~= mouse;
 	} else {
 		if (osConfig & OSConfigFlags.libevdev_enable) {
 			try {
@@ -215,6 +236,7 @@ public int initInput(uint config = 0, uint osConfig = 0, string gcmTable = null)
 }
 version (Windows) {
 	package const RawGCMapping[] defaultGCmapping = [];
+} else version (OSX) {
 } else {
 	package const RawGCMapping[] defaultGCmapping = [
 		RawGCMapping(RawGCMappingType.Button, 0, 0, GameControllerButtons.South),

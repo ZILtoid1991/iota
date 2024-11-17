@@ -25,8 +25,12 @@ public abstract class OutputStream {
 	 * Returns the thread ID of the stream thread.
 	 * Warning: It is not advised to join this thread.
 	 */
-	public @property ThreadID threadID() @nogc @safe pure nothrow const {
-		return _threadID;
+	public @property ThreadID threadID() @nogc @trusted pure nothrow const {
+		version (OSX) {
+			return cast(ThreadID)(_threadID);
+		} else {
+			return _threadID;
+		}
 	}
 	/** 
 	 * Called periodically request more data to device output.

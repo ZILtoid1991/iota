@@ -10,6 +10,13 @@ import darg;
 
 version (Windows) {
 	import core.sys.windows.windows;
+	import iota.controls.polling : poll, devList, keyb;
+} else version(OSX) {
+	import cocoa;
+	import metal;
+	import iota.controls.polling : poll, keyb;
+} else {
+	import iota.controls.polling : poll, devList, keyb;
 }
 
 struct Options {
@@ -38,6 +45,20 @@ immutable usage = usageString!Options("IOTA input tester");
 immutable help = helpString!Options();
 
 const(ubyte)[] iconData = cast(const(ubyte)[])import("icon");
+
+void printDeviceList() {
+    version(OSX) {
+        auto devList = MTLCopyAllDevices();
+        writeln("Number of devices: ", devList.count);
+        for (NSUInteger i = 0; i < devList.count; i++) {
+            auto device = cast(MTLDevice)devList.objectAtIndex(i);
+            writeln("  Device ", i, ": ", device.name.toString);
+        }
+    }
+    else {
+		writeln(devList);
+    }
+}
 
 int main(string[] args) {
 	//initWindow_ext();
@@ -71,7 +92,7 @@ int main(string[] args) {
 		writeln("Input initialization error! Code: ", errCode, /* " OSCode: ", GetLastError() */);
 		return 1;
 	}
-	writeln(devList);
+	printDeviceList();
 	bool isRunning = true;
 	keyb.setTextInput(options.textinputtest == 1);
 	while (isRunning) {
@@ -159,16 +180,16 @@ int main(string[] args) {
 					break;
 				case ScanCode.F5:
 					checkForNewDevices();
-					writeln(devList);
+					printDeviceList();
 					break;
 				default: break;
 				}
 			} else if (event.type == InputEventType.DeviceRemoved) {
 				removeInvalidatedDevices();
-				writeln(devList);
+				printDeviceList();
 			} else if (event.type == InputEventType.DeviceAdded) {
 				checkForNewDevices();
-				writeln(devList);
+				printDeviceList();
 			}
 			writeln(event.toString());
 		}

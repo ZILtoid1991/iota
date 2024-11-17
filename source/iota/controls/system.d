@@ -9,6 +9,9 @@ version (Windows) {
 	import std.utf;
 	import std.stdio;
 	import iota.controls.keybscancodes : translateSC, translatePS2MC;
+} else version (OSX) {
+	import cocoa.nsscreen;
+	import cocoa.foundation;
 } else {
 	import x11.X;
 	import x11.Xlib;
@@ -38,11 +41,21 @@ public class System : InputDevice {
 		Win_RawInput		=	1 << 8,
 	}
 	package this(uint config = 0, uint osConfig = 0) nothrow {
-	version (Windows) {
-			
-		screenSize = [GetSystemMetrics(SM_CXVIRTUALSCREEN), GetSystemMetrics(SM_CXVIRTUALSCREEN), 
-				GetSystemMetrics(SM_CXSCREEN), GetSystemMetrics(SM_CYSCREEN)];
-	} 
+		version (Windows) {
+			screenSize = [GetSystemMetrics(SM_CXVIRTUALSCREEN), GetSystemMetrics(SM_CXVIRTUALSCREEN), 
+					GetSystemMetrics(SM_CXSCREEN), GetSystemMetrics(SM_CYSCREEN)];
+		} else version(OSX) {
+			NSScreen mainScreen = NSScreen.mainScreen();
+	        if (mainScreen !is null) {
+	            CGRect frame = mainScreen.frame();
+	            screenSize = [
+	                cast(int)frame.size.width,
+	                cast(int)frame.size.height,
+	                cast(int)frame.size.width,
+	                cast(int)frame.size.height
+	            ];
+	        }
+		}
 	}
 		
 }

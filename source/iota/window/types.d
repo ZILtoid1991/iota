@@ -7,6 +7,9 @@ import std.conv : to;
 version (Windows) {
 	import core.sys.windows.windows;
 	import core.sys.windows.wtypes;
+} else version(OSX) {
+    import cocoa.nswindow;
+    import cocoa.nsscreen;
 } else {
 	import x11.Xlib;
 	import x11.X;
@@ -16,16 +19,36 @@ version (Windows) {
  */
 version (Windows) {
 	alias WindowH = HWND;
+} else version(OSX) {
+	alias WindowH = NSWindow;
 } else {
 	alias WindowH = Window;
 	//alias WindowH = void*;
 }
-///Defines window configuration flags.
-public enum WindowCfgFlags {
-	FixedSize			=	1 << 0,	///Creates a non-resizable window.
+
+version (OSX) {
+	public enum WindowCfgFlags {
+		FixedSize			=	1 << 0,	///Creates a non-resizable window.
+		IgnoreMenuKey		=	1 << 16,///Makes the window to ignore "menu" (Alt, F11) key under Windows.
+		MetalEnabled		=	1 << 17,///Enables Metal support for the window.
+	}
+
+	enum InputDeviceFlags {
+        HasForceFeedback = 1 << 0,
+        HasPressure = 1 << 1,
+        HasTrackpad = 1 << 2,
+        HasForceTouch = 1 << 3
+    }
+
+} else {
+	///Defines window configuration flags.
+	public enum WindowCfgFlags {
+		FixedSize			=	1 << 0,	///Creates a non-resizable window.
 	NoDecorations		=	1 << 1,	///Creates a window without "server-side" decorations
-	IgnoreMenuKey		=	1 << 16,///Makes the window to ignore "menu" (Alt, F11) key under Windows.
+		IgnoreMenuKey		=	1 << 16,///Makes the window to ignore "menu" (Alt, F11) key under Windows.
+	}
 }
+
 /** 
  * Defines various window option flags that can be supplied during creating a new window.
  */
@@ -146,5 +169,8 @@ public struct ScreenMode {
 	BitFlags!ScreenModeFlags flags;
 	string toString() @safe const {
 		return width.to!string ~ "x" ~ height.to!string ~ "@" ~ refreshRate.to!string ~ "Hz";
+	}
+	version (OSX) {
+		NSScreen* screen;  // Store native NSScreen reference
 	}
 }

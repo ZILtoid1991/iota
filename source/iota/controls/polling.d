@@ -470,6 +470,172 @@ version (Windows) {
 		}
 		return 1;
 	}
+} else version(OSX) {
+	import std.stdio;
+	import cocoa;
+	import objc.meta;
+	import objc.runtime;
+	import iota.window.oswindow;
+
+	private OSWindow currentWindow;
+	public void setCurrentWindow(OSWindow window) @nogc nothrow {
+	    currentWindow = window;
+	}
+
+    private __gshared bool[256] keyHeldState;
+    private __gshared ubyte[256] keyRepeatState;
+    private __gshared NSObject eventMonitor;
+
+	private extern(C++) NSEvent eventHandler(NSEvent event) @objc nothrow @nogc {
+	    const ushort kc = event.keyCode();
+	    if (kc < 256) {
+	        if (event.type() == NSEventType.KeyDown) {
+	            if (!keyHeldState[kc]) {
+	                keyHeldState[kc] = true;
+	                keyRepeatState[kc] = 1;
+	            } else {
+	                keyRepeatState[kc] = (keyRepeatState[kc] < 255) ? cast(ubyte)(keyRepeatState[kc] + 1) : 255;
+	            }
+	            debug writefln("Monitor: Key %d down, held=%d, repeat=%d", kc, keyHeldState[kc], keyRepeatState[kc]);
+	        }
+	    }
+	    return event;
+	}
+
+	package int poll_osx(ref InputEvent output) nothrow @nogc @system {
+	    NSEvent event = NSApplication.sharedApplication.nextEventMatchingMask(
+	        NSEventMask.KeyDown | NSEventMask.KeyUp | NSEventMask.FlagsChanged | 
+	        NSEventMask.LeftMouseDown | NSEventMask.LeftMouseUp | 
+	        NSEventMask.RightMouseDown | NSEventMask.RightMouseUp | 
+			NSEventMask.OtherMouseDown | NSEventMask.OtherMouseUp |
+			NSEventMask.ScrollWheel |
+	        NSEventMask.MouseMoved | NSEventMask.MouseEntered | NSEventMask.MouseExited |
+			NSEventMask.AppKitDefined | NSEventMask.SystemDefined,
+	        NSDate.distantPast(),
+	        "kCFRunLoopDefaultMode".ns,
+	        YES
+	    );
+
+	    if (event is null) return 0;
+
+		output.handle = event.window;
+    	output.timestamp = cast(long)(event.timestamp() * 1_000_000);
+
+		NSEventType eventType = event.type();
+
+		if (eventType == NSEventType.FlagsChanged) {
+		    output.type = InputEventType.Keyboard;
+		    output.source = keyb;
+
+		    NSEventModifierFlags flags = event.modifierFlags();
+
+		    void handleModifierKey(NSEventModifierFlags flags, NSEventModifierFlags mask, uint scanCode) {
+		        bool isPressed = (flags & mask) != 0;
+		        output.button.id = scanCode;
+		        output.button.dir = isPressed ? 1 : 0;
+		        output.button.repeat = isPressed ? 1 : 0;
+		    }
+
+		    handleModifierKey(flags, NSEventModifierFlags.ShiftKeyMask, ScanCode.LSHIFT);
+			handleModifierKey(flags, NSEventModifierFlags.ControlKeyMask, ScanCode.LCTRL);
+			handleModifierKey(flags, NSEventModifierFlags.AlternateKeyMask, ScanCode.LALT);
+			handleModifierKey(flags, NSEventModifierFlags.CommandKeyMask, ScanCode.LGUI); 
+	
+		    output.button.aux = cast(ushort)flags;
+		    NSApplication.sharedApplication.sendEvent(event);
+		    return 1;
+		}
+
+		if (eventType == NSEventType.KeyDown || eventType == NSEventType.KeyUp) {
+		    output.type = InputEventType.Keyboard;
+		    output.source = keyb;
+		    const ushort kc = translateKeyCode(event.keyCode());
+		    output.button.id = kc;
+		
+		    if (kc < 256) {
+		        bool isHeld = CGEventSourceKeyState(0, kc);  // 0 = kCGEventSourceStateHIDSystemState
+		        output.button.dir = isHeld ? 1 : 0;
+		        if (isHeld) {
+		            keyRepeatState[kc] = cast(ubyte)(keyRepeatState[kc] < 255 ? keyRepeatState[kc] + 1 : 255);
+		        } else {
+		            keyRepeatState[kc] = 0;
+		        }
+		        output.button.repeat = keyRepeatState[kc];
+		    }
+		
+		    output.button.aux = cast(ushort)event.modifierFlags();
+		    NSApplication.sharedApplication.sendEvent(event);
+		    return 1;
+		}
+
+	    // Only process mouse events if they occur in our window
+	    if (currentWindow !is null && event.window() == currentWindow.getNSWindow()) {
+	        switch (eventType) {
+				case NSEventType.ScrollWheel:
+	                output.type = InputEventType.MouseScroll;
+	                output.source = mouse;
+	                output.mouseSE.xS = cast(short)(event.deltaX() * 127);
+	                output.mouseSE.yS = cast(short)(event.deltaY() * 127);
+	                auto loc = event.locationInWindow();
+	                output.mouseSE.x = cast(int)loc.x;
+	                output.mouseSE.y = cast(int)loc.y;
+	                break;
+
+	            case NSEventType.LeftMouseDown:
+	            case NSEventType.RightMouseDown:
+	            case NSEventType.OtherMouseDown:
+	                output.type = InputEventType.MouseClick;
+	                output.source = mouse;
+	                output.mouseCE.dir = 1;
+	                output.mouseCE.button = eventType == NSEventType.LeftMouseDown ? 1 :
+	                                      eventType == NSEventType.RightMouseDown ? 2 : 3;
+	                auto loc = event.locationInWindow();
+	                output.mouseCE.x = cast(int)loc.x;
+	                output.mouseCE.y = cast(int)loc.y;
+	                break;
+
+	            case NSEventType.LeftMouseUp:
+	            case NSEventType.RightMouseUp:
+	            case NSEventType.OtherMouseUp:
+	                output.type = InputEventType.MouseClick;
+	                output.source = mouse;
+	                output.mouseCE.dir = 0;
+	                output.mouseCE.button = eventType == NSEventType.LeftMouseUp ? 1 :
+	                                      eventType == NSEventType.RightMouseUp ? 2 : 3;
+	                auto loc = event.locationInWindow();
+	                output.mouseCE.x = cast(int)loc.x;
+	                output.mouseCE.y = cast(int)loc.y;
+	                break;
+
+	            case NSEventType.MouseMoved:
+	                output.type = InputEventType.MouseMove;
+	                output.source = mouse;
+	                auto loc = event.locationInWindow();
+	                output.mouseME.x = cast(int)loc.x;
+	                output.mouseME.y = cast(int)loc.y;
+					output.mouseME.xD = cast(int)event.deltaX();
+        			output.mouseME.yD = cast(int)event.deltaY();
+	                break;
+	            default:
+	                break;
+	        }
+	    }
+
+	    NSApp.sendEvent(event);
+	    return 0;
+	}
+
+	void setEventMonitor() {
+	    eventMonitor = NSEvent.addLocalMonitorForEventsMatchingMask(
+	        NSEventMask.KeyDown | NSEventMask.KeyUp | NSEventMask.FlagsChanged,
+	        &eventHandler
+	    );
+	}
+
+	static this() {
+        mainPollingFun = &poll_osx;
+	}
+
 } else {
 	import x11.X;
 
