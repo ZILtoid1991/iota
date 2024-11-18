@@ -3,22 +3,22 @@ Input-output (audio, controls, etc) library for D. Intended as a D language nati
 
 # Current state
 
-|Component                 |Windows                             |Linux                               |
-|--------------------------|------------------------------------|------------------------------------|
-|Audio                     |Preliminary, output stream works    |ALSA: janky, pipewire: coming soon  |
-|MIDI                      |Input+Output, with some caveat      |Input tested, output should also work|
-|Keyboard                  |Legacy: Works; Raw: Works           |X11: works; evdev: in progress      |
-|Mouse                     |Legacy: Works; Raw: Works           |X11: works; evdev: in progress      |
-|Mouse cursors             |Working                             |Working                             |
-|Pen Tablet                |Not yet implemented                 |Not yet implemented                 |
-|Game controllers          |XInput: working; Raw: in progress   |Evdev: in progress                  |
-|Windowing                 |Working                             |X11: Working                        |
-|Fullscreen window support |Working (video modes untested)      |X11: Working                        |
-|OpenGL output             |Working                             |Working                             |
+|Component                 |Windows                             |Linux                               |MacOSX                              |
+|--------------------------|------------------------------------|------------------------------------|------------------------------------|
+|Audio                     |Preliminary, output stream works    |ALSA: janky, pipewire: coming soon  |N/A                       |
+|MIDI                      |Input+Output, with some caveat      |Input tested, output should also work|N/A                    |
+|Keyboard                  |Legacy: Works; Raw: Works           |X11: works; evdev: in progress      |Implemented              |
+|Mouse                     |Legacy: Works; Raw: Works           |X11: works; evdev: in progress      |Implemented              |
+|Mouse cursors             |Working                             |Working                             |Implemented              |
+|Pen Tablet                |Not yet implemented                 |Not yet implemented                 |Not yet implemented                 |
+|Game controllers          |XInput: working; Raw: in progress   |Evdev: in progress                  |Implemented              |
+|Windowing                 |Working                             |X11: Working                        |Implemented              |
+|Fullscreen window support |Working (video modes untested)      |X11: Working                        |Implemented              |
+|OpenGL output             |Working                             |Working                             |Implemented              |
 
-MacOSX is not yet supported due to lack of hardware. Please consider contributing to this project!
+MacOSX support just got added!
 
-Wayland is not supported yet as XWayland provides sufficient compatibility.
+Wayland is not supported yet as XWayland provides sufficient compatibility so far.
 
 ## Audio
 
