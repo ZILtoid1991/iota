@@ -3,7 +3,7 @@ Input-output (audio, controls, etc) library for D. Intended as a D language nati
 
 # Current state
 
-|Component                 |Windows                             |Linux                               |MacOSX                              |
+|Component                 |Windows                             |Linux                               |macOS                              |
 |--------------------------|------------------------------------|------------------------------------|------------------------------------|
 |Audio                     |Preliminary, output stream works    |ALSA: janky, pipewire: coming soon  |N/A                       |
 |MIDI                      |Input+Output, with some caveat      |Input tested, output should also work|N/A                    |
@@ -16,7 +16,7 @@ Input-output (audio, controls, etc) library for D. Intended as a D language nati
 |Fullscreen window support |Working (video modes untested)      |X11: Working                        |Implemented              |
 |OpenGL output             |Working                             |Working                             |Implemented              |
 
-MacOSX support just got added!
+macOS support just got added!
 
 Wayland is not supported yet as XWayland provides sufficient compatibility so far.
 
