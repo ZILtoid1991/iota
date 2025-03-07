@@ -227,6 +227,7 @@ public class OSWindow {
 				GLX_DOUBLEBUFFER    , True,
 				None
 			];
+		protected static GLXFBConfigP bestFBCFinal;
 		protected static Colormap cmap;
 		public static const bool xinputAvail;
 		public XIM im;
@@ -271,7 +272,7 @@ public class OSWindow {
 				}
 				XFree(vi);
 			}
-			GLXFBConfigP bestFBCFinal = fbc[bestFBC];
+			bestFBCFinal = fbc[bestFBC];
 			XFree(fbc);
 
 			// vInfo = glXGetVisualFromFBConfig(mainDisplay, defScr, attrList.ptr);
@@ -1059,7 +1060,7 @@ public class OSWindow {
 			return null;
 		} else {
 			if (glxContext) return glxContext;
-			glxContext = glXCreateContextAttribsARB(mainDisplay, vInfo, null, GL_TRUE, attribList.ptr);
+			glxContext = glXCreateContextAttribsARB(mainDisplay, bestFBCFinal, null, GL_TRUE, attribList.ptr);
 			glXMakeCurrent(mainDisplay, windowHandle, glxContext);
 			return glxContext;
 		}
