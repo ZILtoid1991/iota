@@ -6,12 +6,9 @@ version (Windows) {
 	import core.sys.windows.commctrl;
 	import core.sys.windows.wingdi;
 	import std.conv : to;
-	/* enum STAP_ALLOW_NONCLIENT = 1<<0;
-	enum STAP_ALLOW_CONTROLS = 1<<1;
-	enum STAP_ALLOW_WEBCONTENT = 1<<2;
-	extern (Windows) nothrow @nogc {
-		void SetThemeAppProperties(DWORD dwFlags);
-	} */
+	package extern(Windows) @nogc nothrow {
+		alias  PFNWGLCREATECONTEXTATTRIBSARBPROC = HGLRC function(HDC hDC, HGLRC hShareContext, const(int)* attribList);
+	}
 } else version(OSX) {
 	import cocoa;
 	import objc.meta;
@@ -89,6 +86,7 @@ public class OSWindow {
 	protected WindowBitmap		icon;
 	///Contains various statuscodes of the window.
 	protected Status			status;
+	protected bool				glAttribARBDone;
 	///Stores various flags related to the window.
 	protected uint				flags;
 	protected int[4]			prevVals;
@@ -135,6 +133,7 @@ public class OSWindow {
 		protected HDC				windowDeviceContext;
 		protected HCURSOR			winCursor;
 		protected HICON				hIcon;
+		protected static PFNWGLCREATECONTEXTATTRIBSARBPROC wglCreateContextAttribsARB;
 		///hInstance is stored here, which is needed for window creation, etc. (WINDOWS ONLY)
 		public static HINSTANCE		mainInst;
 		///The current input language code (Windows).
@@ -1029,6 +1028,38 @@ public class OSWindow {
 		} else {
 			if (glxContext) return glxContext;
 			glxContext = glXCreateContext(mainDisplay, vInfo, null, GL_TRUE);
+			glXMakeCurrent(mainDisplay, windowHandle, glxContext);
+			return glxContext;
+		}
+	}
+	public void* getOpenGLHandleAttribsARB(const(int)[] attribList) @nogc nothrow @trusted {
+		assert(attribList[$ - 1] == 0, "Missing closing null value");
+		version (Windows) {
+			if (glAttribARBDone) return glRenderingContext;
+			if (!glRenderingContext) getOpenGLHandle();
+			wglCreateContextAttribsARB = cast(PFNWGLCREATECONTEXTATTRIBSARBPROC)wglGetProcAddress("wglCreateContextAttribsARB");
+			wglDeleteContext(glRenderingContext);
+			glRenderingContext = null;
+			if (wglCreateContextAttribsARB is null) return null;
+			windowDeviceContext = GetDC(windowHandle);
+			PIXELFORMATDESCRIPTOR pfd = PIXELFORMATDESCRIPTOR(cast(WORD)PIXELFORMATDESCRIPTOR.sizeof, 1,
+					PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER, PFD_TYPE_RGBA, 32,
+					0,0,0,0,0,0,
+					0,0,0,
+					0,0,0,0,
+					24,8,0,PFD_MAIN_PLANE,0,0,0,0);
+			int pixelFormatNum = ChoosePixelFormat(windowDeviceContext, &pfd);
+			SetPixelFormat(windowDeviceContext, pixelFormatNum, &pfd);
+
+			glRenderingContext = wglCreateContextAttribsARB(windowDeviceContext, null, attribList.ptr);
+			wglMakeCurrent(windowDeviceContext, glRenderingContext);
+			glAttribARBDone = true;
+			return glRenderingContext;
+		} else version(OSX) {
+			return null;
+		} else {
+			if (glxContext) return glxContext;
+			glxContext = glXCreateContextAttribsARB(mainDisplay, vInfo, null, GL_TRUE, attribList.ptr);
 			glXMakeCurrent(mainDisplay, windowHandle, glxContext);
 			return glxContext;
 		}

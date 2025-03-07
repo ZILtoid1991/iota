@@ -36,7 +36,11 @@ import bindbc.opengl;
 
 int main(string[] args) {
 	try {
+		bool attribsArb;
 		bool isRunning = true;
+		foreach (string arg ; args) {
+			if (arg == "--attribsArb") attribsArb = true;
+		}
 		bool isFullscreen;
 		GLfloat[9] testVertex = [
 			-0.5, -0.5, 0.0,
@@ -48,7 +52,16 @@ int main(string[] args) {
 		OSWindow glOutput = 
 			new OSWindow("Iota OpenGL test", "glSurface", -1, -1, 1280, 960, WindowCfgFlags.IgnoreMenuKey);
 		int errCode = initInput(ConfigFlags.gc_Enable | ConfigFlags.gc_TriggerMode, OSConfigFlags.win_XInput);
-		const glRC = glOutput.getOpenGLHandle();
+		// const glRC = glOutput.getOpenGLHandle();
+		if (attribsArb) {
+			glOutput.getOpenGLHandleAttribsARB([
+				OpenGLContextAtrb.MajorVersion, 3,
+				OpenGLContextAtrb.MinorVersion, 3,
+				OpenGLContextAtrb.Flags, OpenGLContextFlags.Debug | OpenGLContextFlags.ForwardCompatible,
+				0]);
+		} else {
+			glOutput.getOpenGLHandle();
+		}
 		const glStatus = loadOpenGL();
 		if (glStatus < GLSupport.gl11) {
 			writeln("OpenGL not found!");

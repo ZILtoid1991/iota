@@ -25,7 +25,6 @@ version (Windows) {
 	alias WindowH = Window;
 	//alias WindowH = void*;
 }
-
 version (OSX) {
 	public enum WindowCfgFlags {
 		FixedSize			=	1 << 0,	///Creates a non-resizable window.
@@ -47,6 +46,19 @@ version (OSX) {
 	NoDecorations		=	1 << 1,	///Creates a window without "server-side" decorations
 		IgnoreMenuKey		=	1 << 16,///Makes the window to ignore "menu" (Alt, F11) key under Windows.
 	}
+}
+
+public enum OpenGLContextAtrb {
+	MajorVersion		=	0x2091,
+	MinorVersion		=	0x2092,
+	LayersPlane			=	0x2093,
+	Flags				=	0x2094,
+	ProfileMask			=	0x9126,
+}
+
+public enum OpenGLContextFlags {
+	Debug				=	0x0001,
+	ForwardCompatible	=	0x0002,
 }
 
 /** 
