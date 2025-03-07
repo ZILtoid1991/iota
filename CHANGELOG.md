@@ -1,3 +1,11 @@
+# 0.4.0-beta.4
+
+* Added wrappers for `wglCreateContextAttribsARB` and `glXCreateContextAttribsARB`.
+
+# 0.4.0-beta.3
+
+* Preliminary Mac support
+
 # 0.4.0-beta.2
 
 * Fixed an issue with Windows not accounting for the frames when creating a window.
