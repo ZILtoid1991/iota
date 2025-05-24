@@ -178,8 +178,6 @@ public int initInput(uint config = 0, uint osConfig = 0, string gcmTable = null)
 						int fd = open(ntStr, O_NONBLOCK | (osConfig & OSConfigFlags.libevdev_writeenable) ? O_RDWR : O_READONLY);
 						if (fd < 0) {
 							continue;
-							//if (errno == 13) return InputInitializationStatus.libevdev_AccessDenied;
-							//return InputInitializationStatus.libevdev_ErrorOpeningDev;
 						}
 						libevdev* dev;
 						if (libevdev_new_from_fd(fd, &dev) < 0) {
@@ -206,7 +204,7 @@ public int initInput(uint config = 0, uint osConfig = 0, string gcmTable = null)
 							devList ~= new Keyboard(name, keybCnrt++, fd, dev);
 						} else if (canFind(nameLC, "mouse", "trackball")) {
 							devList ~= new Mouse(name, mouseCnrt++, fd, dev);
-						} else if (canFind(entry.name(), "js")) {	//Likely a game controller, let's check the supplied table if exists
+						} else if (canFind(nameLC, "js")) {	//Likely a game controller, let's check the supplied table if exists
 							string uniqueID = cast(string)fromStringz(libevdev_get_uniq(dev));
 							RawGCMapping[] mapping;
 							if (gcmTable) mapping = parseGCM(gcmTable, uniqueID);
@@ -235,8 +233,11 @@ public int initInput(uint config = 0, uint osConfig = 0, string gcmTable = null)
 	return InputInitializationStatus.AllOk;
 }
 version (Windows) {
+	// TODO: Make game controllers work though rawinput, as an option
 	package const RawGCMapping[] defaultGCmapping = [];
 } else version (OSX) {
+
+	package const RawGCMapping[] defaultGCmapping = [];
 } else {
 	package const RawGCMapping[] defaultGCmapping = [
 		RawGCMapping(RawGCMappingType.Button, 0, 0, GameControllerButtons.South),

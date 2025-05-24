@@ -128,6 +128,8 @@ public enum OSConfigFlags : uint {
 	///Enables libevdev for Linux.
 	libevdev_enable				=	1<<6,
 	libevdev_writeenable		=	1<<7,
+	libevdev_gconly				=	1<<8,
+	win_GameInput				=	1<<9,
 }
 /** 
  * Defines return codes for the `iota.controls.initInput` function.
@@ -439,6 +441,7 @@ public struct PenEvent {
 	float		xTilt;
 	float		yTilt;
 	float		pressure;
+	float		rotation;
 }
 public struct WindowEvent {
 	int			x;
@@ -480,7 +483,7 @@ public struct InputEvent {
 	WindowH					handle;		///Window handle for GUI applications if there's any, null otherwise.
 	Timestamp				timestamp;	///Timestamp for when the event have happened.
 	InputEventType			type;		///Type of the input event.
-	union {
+	union {					// Note: New fields should be maximum 32 byte long, try to use bitpacking whenever possible.
 		ButtonEvent			button;
 		TextInputEvent		textIn;
 		TextCommandEvent	textCmd;
@@ -493,7 +496,7 @@ public struct InputEvent {
 		WindowEvent			window;
 		ClipboardEvent		clipboard;
 		ArbPtrEvent			arbPtr;
-		uint[5]				rawData;
+		uint[8]				rawData;
 	}
 
 	string toString() @trusted {
