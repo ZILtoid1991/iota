@@ -19,7 +19,7 @@ import core.stdc.string;
  */
 public int poll(ref InputEvent output) nothrow @trusted {
 	if (mainPollingFun is null) return EventPollStatus.InputNotInitialized;
-	output.rawData = [0,0,0,0,0];
+	output.rawData = [0,0,0,0,0,0,0,0];
 	int status = 0;
 	status = mainPollingFun(output);
 	if (status) return status;
