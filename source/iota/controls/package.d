@@ -90,6 +90,10 @@ public int initInput(uint config = 0, uint osConfig = 0, string gcmTable = null)
 					}
 					subPollingFun = &XInputDevice.poll;
 				}
+				version (IOTA_GAMEINPUT_ENABLE) if (osConfig & OSConfigFlags.win_GameInput) {
+					import iota.controls.backend.windows;
+					const HRESULT isGIInitialized = GameInputCreate(&GIGameController.gameInputHandler);
+				}
 			}
 			if (RegisterRawInputDevices(rid.ptr, cast(UINT)rid.length, cast(UINT)(RAWINPUTDEVICE.sizeof)) == FALSE) {
 				return InputInitializationStatus.win_RawInputError;
@@ -186,18 +190,18 @@ public int initInput(uint config = 0, uint osConfig = 0, string gcmTable = null)
 							//return InputInitializationStatus.libevdev_ErrorOpeningDev;
 						}
 						string name = cast(string)fromStringz(libevdev_get_name(dev));
-						uint typeID = libevdev_has_event_type(dev, EV_SYN);
-						typeID |= libevdev_has_event_type(dev, EV_KEY)<<0x01;
-						typeID |= libevdev_has_event_type(dev, EV_REL)<<0x02;
-						typeID |= libevdev_has_event_type(dev, EV_ABS)<<0x03;
-						typeID |= libevdev_has_event_type(dev, EV_MSC)<<0x04;
-						typeID |= libevdev_has_event_type(dev, EV_SW)<<0x05;
-						typeID |= libevdev_has_event_type(dev, EV_LED)<<0x11;
-						typeID |= libevdev_has_event_type(dev, EV_SND)<<0x12;
-						typeID |= libevdev_has_event_type(dev, EV_REP)<<0x14;
-						typeID |= libevdev_has_event_type(dev, EV_FF)<<0x15;
-						typeID |= libevdev_has_event_type(dev, EV_PWR)<<0x16;
-						typeID |= libevdev_has_event_type(dev, EV_FF_STATUS)<<0x17;
+						// uint typeID = libevdev_has_event_type(dev, EV_SYN);
+						// typeID |= libevdev_has_event_type(dev, EV_KEY)<<0x01;
+						// typeID |= libevdev_has_event_type(dev, EV_REL)<<0x02;
+						// typeID |= libevdev_has_event_type(dev, EV_ABS)<<0x03;
+						// typeID |= libevdev_has_event_type(dev, EV_MSC)<<0x04;
+						// typeID |= libevdev_has_event_type(dev, EV_SW)<<0x05;
+						// typeID |= libevdev_has_event_type(dev, EV_LED)<<0x11;
+						// typeID |= libevdev_has_event_type(dev, EV_SND)<<0x12;
+						// typeID |= libevdev_has_event_type(dev, EV_REP)<<0x14;
+						// typeID |= libevdev_has_event_type(dev, EV_FF)<<0x15;
+						// typeID |= libevdev_has_event_type(dev, EV_PWR)<<0x16;
+						// typeID |= libevdev_has_event_type(dev, EV_FF_STATUS)<<0x17;
 						string nameLC = toLower(name);
 						//Try to detect device type from name
 						if (canFind(nameLC, "keyboard", "keypad")) {

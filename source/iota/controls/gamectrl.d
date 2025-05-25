@@ -123,6 +123,25 @@ abstract class GameController : InputDevice, HapticDevice {
 	 */
 	public abstract int applyEffect(uint capability, uint zone, float val, float freq = float.nan) nothrow;
 	/**
+	 * Applies an envelop-style effect with variable
+	 * Params:
+	 *   capability = The capability to be used.
+	 *   zone = The zone where the effect should be used.
+	 *   stages = The stages of the envelop effect. 1: Attack stage, 2: Sustain stage, 3: Release stage
+	 *   repeatCount = The count of repeats for this effect. 0 means the effect is played only once
+	 *   repeatDelay = The delay between each repeats.
+	 * Returns: 0 on success, or a specific error code.
+	 */
+	public int applyEnvelopEffect(uint capability, uint zone, HapticEnvelopStage[3] stages, uint repeatCount = 0,
+			Duration repeatDelay = msecs(0)) @trusted nothrow;
+	/**
+	 * Sets te maximum of all haptic effects.
+	 * Params:
+	 *   val = The gain to be set. 0.0 disables all haptic effects.
+	 * Returns: 0 on success, or a specific error code.
+	 */
+	public int setMaximumGain(float val = 1.0) @trusted nothrow;
+	/**
 	 * Stops all haptic effects of the device.
 	 * Returns: 0 on success, or a specific error code.
 	 */
@@ -171,356 +190,371 @@ public class RawInputGameController : GameController {
 	}
 
 }
-/**
- * Implements functionalities related to XInput game controller devices. (Windows)
- */
-version (Windows) public class XInputDevice : GameController {
-	///Passed to XInputSetState.
-	protected XINPUT_VIBRATION	vibr;
-	///Stores info related to current and the previous state. Any events are calculated by the difference of the two.
-	protected XINPUT_STATE		state, prevState;
-	///Counter for properties within the controller.
-	package static int			cntr;
-	package static int			devC;
-	package static XInputDevice[4]	ctrlList;
-	package this (DWORD userIndex, bool axisType) nothrow {
-		XINPUT_CAPABILITIES xic;
-		const DWORD result = XInputGetCapabilities(userIndex, 0, &xic);
-		if (result == ERROR_SUCCESS && ctrlList[userIndex] is null) {
-			if (axisType)
-				status |= TriggerAsButton;
-			//if (xic.Flags & XINPUT_CAPS.XINPUT_CAPS_FFB_SUPPORTED) 
-			status |= StatusFlags.IsHapticCapable;
-			XInputGetState(_devNum, &state);
-			prevState = state;
-			_devNum = cast(ubyte)userIndex;
-			ctrlList[userIndex] = this;
-		} else {
-			status |= StatusFlags.IsInvalidated;
+
+version (Windows) {
+	/**
+	 * Implements functionalities related to XInput game controller devices. (Windows)
+	 */
+	public class XInputDevice : GameController {
+		///Passed to XInputSetState.
+		protected XINPUT_VIBRATION	vibr;
+		///Stores info related to current and the previous state. Any events are calculated by the difference of the two.
+		protected XINPUT_STATE		state, prevState;
+		///Counter for properties within the controller.
+		package static int			cntr;
+		package static int			devC;
+		package static XInputDevice[4]	ctrlList;
+		package this (DWORD userIndex, bool axisType) nothrow {
+			XINPUT_CAPABILITIES xic;
+			const DWORD result = XInputGetCapabilities(userIndex, 0, &xic);
+			if (result == ERROR_SUCCESS && ctrlList[userIndex] is null) {
+				if (axisType)
+					status |= TriggerAsButton;
+				//if (xic.Flags & XINPUT_CAPS.XINPUT_CAPS_FFB_SUPPORTED)
+				status |= StatusFlags.IsHapticCapable;
+				XInputGetState(_devNum, &state);
+				prevState = state;
+				_devNum = cast(ubyte)userIndex;
+				ctrlList[userIndex] = this;
+			} else {
+				status |= StatusFlags.IsInvalidated;
+			}
 		}
-	}
-	public override string toString() const @safe pure nothrow {
-		import std.conv : to;
-		return "{XInputDevice; DevID: " ~ devNum().to!string ~ "}";
-	}
-	package static int poll(ref InputEvent output) @system @nogc nothrow {
-		while (devC < ctrlList.length) {
-			XInputDevice dev = ctrlList[devC];
-			if (dev is null) {
-				devC++;
-				continue;
-			}
-			if (dev.isInvalidated) {
-				devC++;
-				ctrlList[devC] = null;
-				continue;
-			}
-			if (cntr == 0) {
-				dev.prevState = dev.state;
-				const DWORD result = XInputGetState(dev.devNum, &dev.state);
-				if (result != ERROR_SUCCESS) {
-					dev.status |= StatusFlags.IsInvalidated;
-					output.source = dev;
-					output.type = InputEventType.DeviceRemoved;
-					return EventPollStatus.HasMore;
+		public override string toString() const @safe pure nothrow {
+			import std.conv : to;
+			return "{XInputDevice; DevID: " ~ devNum().to!string ~ "}";
+		}
+		package static int poll(ref InputEvent output) @system @nogc nothrow {
+			while (devC < ctrlList.length) {
+				XInputDevice dev = ctrlList[devC];
+				if (dev is null) {
+					devC++;
+					continue;
 				}
-			}
-			while (cntr < 20) {
-				switch (cntr++) {
-					case 0:
- 						if (dev.state.Gamepad.bLeftTrigger != dev.prevState.Gamepad.bLeftTrigger) {
-							if (dev.status & TriggerAsButton) {
-								output.button.id = GameControllerButtons.LeftTrigger;
-								output.button.auxF = dev.state.Gamepad.bLeftTrigger / 255.0;
-								output.button.dir = dev.state.Gamepad.bLeftTrigger ? 1 : 0;
-								goto case 257;
-							} else {
-								output.axis.id = GameControllerAxes.LeftTrigger;
-								output.axis.val = dev.state.Gamepad.bLeftTrigger / 255.0;
-								goto case 256;
-							}
-						}
-						break;
-					case 1:
-						if (dev.state.Gamepad.bRightTrigger != dev.prevState.Gamepad.bRightTrigger) {
-							if (dev.status & TriggerAsButton) {
-								output.button.id = GameControllerButtons.RightTrigger;
-								output.button.auxF = dev.state.Gamepad.bRightTrigger / 255.0;
-								output.button.dir = dev.state.Gamepad.bRightTrigger ? 1 : 0;
-								goto case 257;
-							} else {
-								output.axis.id = GameControllerAxes.RightTrigger;
-								output.axis.val = dev.state.Gamepad.bRightTrigger / 255.0;
-								goto case 256;
-							}
-						}
-						break;
-					case 2:
-						if (dev.state.Gamepad.sThumbLX != dev.prevState.Gamepad.sThumbLX) {
-							output.axis.id = GameControllerAxes.LeftThumbstickX;
-							output.axis.val = dev.state.Gamepad.sThumbLX / 32_768.0;
-							goto case 256;
-						}
-						break;
-					case 3:
-						if (dev.state.Gamepad.sThumbLY != dev.prevState.Gamepad.sThumbLY) {
-							output.axis.id = GameControllerAxes.LeftThumbstickY;
-							output.axis.val = dev.state.Gamepad.sThumbLY / 32_768.0;
-							goto case 256;
-						}
-						break;
-					case 4:
-						if (dev.state.Gamepad.sThumbRX != dev.prevState.Gamepad.sThumbRX) {
-							output.axis.id = GameControllerAxes.RightThumbstickX;
-							output.axis.val = dev.state.Gamepad.sThumbRX / 32_768.0;
-							goto case 256;
-						}
-						break;
-					case 5:
-						if (dev.state.Gamepad.sThumbRY != dev.prevState.Gamepad.sThumbRY) {
-							output.axis.id = GameControllerAxes.RightThumbstickY;
-							output.axis.val = dev.state.Gamepad.sThumbRY / 32_768.0;
-							goto case 256;
-						}
-						break;
-					case 6:
-						if ((dev.state.Gamepad.wButtons & XINPUT_BUTTONS.XINPUT_GAMEPAD_DPAD_UP) ^
-								(dev.prevState.Gamepad.wButtons & XINPUT_BUTTONS.XINPUT_GAMEPAD_DPAD_UP)) {
-							output.button.id = GameControllerButtons.DPadUp;
-							output.button.dir = (dev.state.Gamepad.wButtons & XINPUT_BUTTONS.XINPUT_GAMEPAD_DPAD_UP) ? 1 : 0;
-							goto case 255;
-						}
-						break;
-					case 7:
-						if ((dev.state.Gamepad.wButtons & XINPUT_BUTTONS.XINPUT_GAMEPAD_DPAD_DOWN) ^
-								(dev.prevState.Gamepad.wButtons & XINPUT_BUTTONS.XINPUT_GAMEPAD_DPAD_DOWN)) {
-							output.button.id = GameControllerButtons.DPadDown;
-							output.button.dir = (dev.state.Gamepad.wButtons & XINPUT_BUTTONS.XINPUT_GAMEPAD_DPAD_DOWN) ? 1 : 0;
-							goto case 255;
-						}
-						break;
-					case 8:
-						if ((dev.state.Gamepad.wButtons & XINPUT_BUTTONS.XINPUT_GAMEPAD_DPAD_LEFT) ^
-								(dev.prevState.Gamepad.wButtons & XINPUT_BUTTONS.XINPUT_GAMEPAD_DPAD_LEFT)) {
-							output.button.id = GameControllerButtons.DPadLeft;
-							output.button.dir = (dev.state.Gamepad.wButtons & XINPUT_BUTTONS.XINPUT_GAMEPAD_DPAD_LEFT) ? 1 : 0;
-							goto case 255;
-						}
-						break;
-					case 9:
-						if ((dev.state.Gamepad.wButtons & XINPUT_BUTTONS.XINPUT_GAMEPAD_DPAD_RIGHT) ^
-								(dev.prevState.Gamepad.wButtons & XINPUT_BUTTONS.XINPUT_GAMEPAD_DPAD_RIGHT)) {
-							output.button.id = GameControllerButtons.DPadRight;
-							output.button.dir = (dev.state.Gamepad.wButtons & XINPUT_BUTTONS.XINPUT_GAMEPAD_DPAD_RIGHT) ? 1 : 0;
-							goto case 255;
-						}
-						break;
-					case 10:
-						if ((dev.state.Gamepad.wButtons & XINPUT_BUTTONS.XINPUT_GAMEPAD_START) ^
-								(dev.prevState.Gamepad.wButtons & XINPUT_BUTTONS.XINPUT_GAMEPAD_START)) {
-							output.button.id = GameControllerButtons.RightNav;
-							output.button.dir = (dev.state.Gamepad.wButtons & XINPUT_BUTTONS.XINPUT_GAMEPAD_START) ? 1 : 0;
-							goto case 255;
-						}
-						break;
-					case 11:
-						if ((dev.state.Gamepad.wButtons & XINPUT_BUTTONS.XINPUT_GAMEPAD_BACK) ^
-								(dev.prevState.Gamepad.wButtons & XINPUT_BUTTONS.XINPUT_GAMEPAD_BACK)) {
-							output.button.id = GameControllerButtons.LeftNav;
-							output.button.dir = (dev.state.Gamepad.wButtons & XINPUT_BUTTONS.XINPUT_GAMEPAD_BACK) ? 1 : 0;
-							goto case 255;
-						}
-						break;
-					case 12:
-						if ((dev.state.Gamepad.wButtons & XINPUT_BUTTONS.XINPUT_GAMEPAD_LEFT_THUMB) ^
-								(dev.prevState.Gamepad.wButtons & XINPUT_BUTTONS.XINPUT_GAMEPAD_LEFT_THUMB)) {
-							output.button.id = GameControllerButtons.LeftThumbstick;
-							output.button.dir = (dev.state.Gamepad.wButtons & XINPUT_BUTTONS.XINPUT_GAMEPAD_LEFT_THUMB) ? 1 : 0;
-							goto case 255;
-						}
-						break;
-					case 13:
-						if ((dev.state.Gamepad.wButtons & XINPUT_BUTTONS.XINPUT_GAMEPAD_RIGHT_THUMB) ^
-								(dev.prevState.Gamepad.wButtons & XINPUT_BUTTONS.XINPUT_GAMEPAD_RIGHT_THUMB)) {
-							output.button.id = GameControllerButtons.RightThumbstick;
-							output.button.dir = (dev.state.Gamepad.wButtons & XINPUT_BUTTONS.XINPUT_GAMEPAD_RIGHT_THUMB) ? 1 : 0;
-							goto case 255;
-						}
-						break;
-					case 14:
-						if ((dev.state.Gamepad.wButtons & XINPUT_BUTTONS.XINPUT_GAMEPAD_LEFT_SHOULDER) ^
-								(dev.prevState.Gamepad.wButtons & XINPUT_BUTTONS.XINPUT_GAMEPAD_LEFT_SHOULDER)) {
-							output.button.id = GameControllerButtons.LeftShoulder;
-							output.button.dir = (dev.state.Gamepad.wButtons & XINPUT_BUTTONS.XINPUT_GAMEPAD_LEFT_SHOULDER) ? 1 : 0;
-							goto case 255;
-						}
-						break;
-					case 15:
-						if ((dev.state.Gamepad.wButtons & XINPUT_BUTTONS.XINPUT_GAMEPAD_RIGHT_SHOULDER) ^
-								(dev.prevState.Gamepad.wButtons & XINPUT_BUTTONS.XINPUT_GAMEPAD_RIGHT_SHOULDER)) {
-							output.button.id = GameControllerButtons.RightShoulder;
-							output.button.dir = (dev.state.Gamepad.wButtons & XINPUT_BUTTONS.XINPUT_GAMEPAD_RIGHT_SHOULDER) ? 1 : 0;
-							goto case 255;
-						}
-						break;
-					case 16:
-						if ((dev.state.Gamepad.wButtons & XINPUT_BUTTONS.XINPUT_GAMEPAD_A) ^
-								(dev.prevState.Gamepad.wButtons & XINPUT_BUTTONS.XINPUT_GAMEPAD_A)) {
-							output.button.id = GameControllerButtons.South;
-							output.button.dir  = (dev.state.Gamepad.wButtons & XINPUT_BUTTONS.XINPUT_GAMEPAD_A) ? 1 : 0;
-							goto case 255;
-						}
-						break;
-					case 17:
-						if ((dev.state.Gamepad.wButtons & XINPUT_BUTTONS.XINPUT_GAMEPAD_B) ^
-								(dev.prevState.Gamepad.wButtons & XINPUT_BUTTONS.XINPUT_GAMEPAD_B)) {
-							output.button.id = GameControllerButtons.East;
-							output.button.dir = (dev.state.Gamepad.wButtons & XINPUT_BUTTONS.XINPUT_GAMEPAD_B) ? 1 : 0;
-							goto case 255;
-						}
-						break;
-					case 18:
-						if ((dev.state.Gamepad.wButtons & XINPUT_BUTTONS.XINPUT_GAMEPAD_X) ^
-								(dev.prevState.Gamepad.wButtons & XINPUT_BUTTONS.XINPUT_GAMEPAD_X)) {
-							output.button.id = GameControllerButtons.West;
-							output.button.dir = (dev.state.Gamepad.wButtons & XINPUT_BUTTONS.XINPUT_GAMEPAD_X) ? 1 : 0;
-							goto case 255;
-						}
-						break;
-					case 19:
-						if ((dev.state.Gamepad.wButtons & XINPUT_BUTTONS.XINPUT_GAMEPAD_Y) ^
-								(dev.prevState.Gamepad.wButtons & XINPUT_BUTTONS.XINPUT_GAMEPAD_Y)) {
-							output.button.id = GameControllerButtons.North;
-							output.button.dir = (dev.state.Gamepad.wButtons & XINPUT_BUTTONS.XINPUT_GAMEPAD_Y) ? 1 : 0;
-							goto case 255;
-						}
-						break;
-					case 20:
-						devC++;
-						cntr = 0;
-						output.type = InputEventType.init;
-						return EventPollStatus.HasMore;
-					case 255:	//Button events global
-						output.type = InputEventType.GCButton;
-						output.button.repeat = 0;
-						output.button.aux = 0;
-						output.button.auxF = float.nan;
-						goto case 384;
-					case 256:	//Axis of any kind
-						output.type = InputEventType.GCAxis;
-						goto case 384;
-					case 257:	//Triggers when handled as buttons
-						output.type = InputEventType.GCButton;
-						output.button.repeat = 0;
-						output.button.aux = 0;
-						goto case 384;
-					case 384:	//All event commons
+				if (dev.isInvalidated) {
+					devC++;
+					ctrlList[devC] = null;
+					continue;
+				}
+				if (cntr == 0) {
+					dev.prevState = dev.state;
+					const DWORD result = XInputGetState(dev.devNum, &dev.state);
+					if (result != ERROR_SUCCESS) {
+						dev.status |= StatusFlags.IsInvalidated;
 						output.source = dev;
-						output.timestamp = getTimestamp();
+						output.type = InputEventType.DeviceRemoved;
 						return EventPollStatus.HasMore;
-					default:
-						break;
+					}
 				}
+				while (cntr < 20) {
+					switch (cntr++) {
+						case 0:
+							if (dev.state.Gamepad.bLeftTrigger != dev.prevState.Gamepad.bLeftTrigger) {
+								if (dev.status & TriggerAsButton) {
+									output.button.id = GameControllerButtons.LeftTrigger;
+									output.button.auxF = dev.state.Gamepad.bLeftTrigger / 255.0;
+									output.button.dir = dev.state.Gamepad.bLeftTrigger ? 1 : 0;
+									goto case 257;
+								} else {
+									output.axis.id = GameControllerAxes.LeftTrigger;
+									output.axis.val = dev.state.Gamepad.bLeftTrigger / 255.0;
+									goto case 256;
+								}
+							}
+							break;
+						case 1:
+							if (dev.state.Gamepad.bRightTrigger != dev.prevState.Gamepad.bRightTrigger) {
+								if (dev.status & TriggerAsButton) {
+									output.button.id = GameControllerButtons.RightTrigger;
+									output.button.auxF = dev.state.Gamepad.bRightTrigger / 255.0;
+									output.button.dir = dev.state.Gamepad.bRightTrigger ? 1 : 0;
+									goto case 257;
+								} else {
+									output.axis.id = GameControllerAxes.RightTrigger;
+									output.axis.val = dev.state.Gamepad.bRightTrigger / 255.0;
+									goto case 256;
+								}
+							}
+							break;
+						case 2:
+							if (dev.state.Gamepad.sThumbLX != dev.prevState.Gamepad.sThumbLX) {
+								output.axis.id = GameControllerAxes.LeftThumbstickX;
+								output.axis.val = dev.state.Gamepad.sThumbLX / 32_768.0;
+								goto case 256;
+							}
+							break;
+						case 3:
+							if (dev.state.Gamepad.sThumbLY != dev.prevState.Gamepad.sThumbLY) {
+								output.axis.id = GameControllerAxes.LeftThumbstickY;
+								output.axis.val = dev.state.Gamepad.sThumbLY / 32_768.0;
+								goto case 256;
+							}
+							break;
+						case 4:
+							if (dev.state.Gamepad.sThumbRX != dev.prevState.Gamepad.sThumbRX) {
+								output.axis.id = GameControllerAxes.RightThumbstickX;
+								output.axis.val = dev.state.Gamepad.sThumbRX / 32_768.0;
+								goto case 256;
+							}
+							break;
+						case 5:
+							if (dev.state.Gamepad.sThumbRY != dev.prevState.Gamepad.sThumbRY) {
+								output.axis.id = GameControllerAxes.RightThumbstickY;
+								output.axis.val = dev.state.Gamepad.sThumbRY / 32_768.0;
+								goto case 256;
+							}
+							break;
+						case 6:
+							if ((dev.state.Gamepad.wButtons & XINPUT_BUTTONS.XINPUT_GAMEPAD_DPAD_UP) ^
+									(dev.prevState.Gamepad.wButtons & XINPUT_BUTTONS.XINPUT_GAMEPAD_DPAD_UP)) {
+								output.button.id = GameControllerButtons.DPadUp;
+								output.button.dir = (dev.state.Gamepad.wButtons & XINPUT_BUTTONS.XINPUT_GAMEPAD_DPAD_UP) ? 1 : 0;
+								goto case 255;
+							}
+							break;
+						case 7:
+							if ((dev.state.Gamepad.wButtons & XINPUT_BUTTONS.XINPUT_GAMEPAD_DPAD_DOWN) ^
+									(dev.prevState.Gamepad.wButtons & XINPUT_BUTTONS.XINPUT_GAMEPAD_DPAD_DOWN)) {
+								output.button.id = GameControllerButtons.DPadDown;
+								output.button.dir = (dev.state.Gamepad.wButtons & XINPUT_BUTTONS.XINPUT_GAMEPAD_DPAD_DOWN) ? 1 : 0;
+								goto case 255;
+							}
+							break;
+						case 8:
+							if ((dev.state.Gamepad.wButtons & XINPUT_BUTTONS.XINPUT_GAMEPAD_DPAD_LEFT) ^
+									(dev.prevState.Gamepad.wButtons & XINPUT_BUTTONS.XINPUT_GAMEPAD_DPAD_LEFT)) {
+								output.button.id = GameControllerButtons.DPadLeft;
+								output.button.dir = (dev.state.Gamepad.wButtons & XINPUT_BUTTONS.XINPUT_GAMEPAD_DPAD_LEFT) ? 1 : 0;
+								goto case 255;
+							}
+							break;
+						case 9:
+							if ((dev.state.Gamepad.wButtons & XINPUT_BUTTONS.XINPUT_GAMEPAD_DPAD_RIGHT) ^
+									(dev.prevState.Gamepad.wButtons & XINPUT_BUTTONS.XINPUT_GAMEPAD_DPAD_RIGHT)) {
+								output.button.id = GameControllerButtons.DPadRight;
+								output.button.dir = (dev.state.Gamepad.wButtons & XINPUT_BUTTONS.XINPUT_GAMEPAD_DPAD_RIGHT) ? 1 : 0;
+								goto case 255;
+							}
+							break;
+						case 10:
+							if ((dev.state.Gamepad.wButtons & XINPUT_BUTTONS.XINPUT_GAMEPAD_START) ^
+									(dev.prevState.Gamepad.wButtons & XINPUT_BUTTONS.XINPUT_GAMEPAD_START)) {
+								output.button.id = GameControllerButtons.RightNav;
+								output.button.dir = (dev.state.Gamepad.wButtons & XINPUT_BUTTONS.XINPUT_GAMEPAD_START) ? 1 : 0;
+								goto case 255;
+							}
+							break;
+						case 11:
+							if ((dev.state.Gamepad.wButtons & XINPUT_BUTTONS.XINPUT_GAMEPAD_BACK) ^
+									(dev.prevState.Gamepad.wButtons & XINPUT_BUTTONS.XINPUT_GAMEPAD_BACK)) {
+								output.button.id = GameControllerButtons.LeftNav;
+								output.button.dir = (dev.state.Gamepad.wButtons & XINPUT_BUTTONS.XINPUT_GAMEPAD_BACK) ? 1 : 0;
+								goto case 255;
+							}
+							break;
+						case 12:
+							if ((dev.state.Gamepad.wButtons & XINPUT_BUTTONS.XINPUT_GAMEPAD_LEFT_THUMB) ^
+									(dev.prevState.Gamepad.wButtons & XINPUT_BUTTONS.XINPUT_GAMEPAD_LEFT_THUMB)) {
+								output.button.id = GameControllerButtons.LeftThumbstick;
+								output.button.dir = (dev.state.Gamepad.wButtons & XINPUT_BUTTONS.XINPUT_GAMEPAD_LEFT_THUMB) ? 1 : 0;
+								goto case 255;
+							}
+							break;
+						case 13:
+							if ((dev.state.Gamepad.wButtons & XINPUT_BUTTONS.XINPUT_GAMEPAD_RIGHT_THUMB) ^
+									(dev.prevState.Gamepad.wButtons & XINPUT_BUTTONS.XINPUT_GAMEPAD_RIGHT_THUMB)) {
+								output.button.id = GameControllerButtons.RightThumbstick;
+								output.button.dir = (dev.state.Gamepad.wButtons & XINPUT_BUTTONS.XINPUT_GAMEPAD_RIGHT_THUMB) ? 1 : 0;
+								goto case 255;
+							}
+							break;
+						case 14:
+							if ((dev.state.Gamepad.wButtons & XINPUT_BUTTONS.XINPUT_GAMEPAD_LEFT_SHOULDER) ^
+									(dev.prevState.Gamepad.wButtons & XINPUT_BUTTONS.XINPUT_GAMEPAD_LEFT_SHOULDER)) {
+								output.button.id = GameControllerButtons.LeftShoulder;
+								output.button.dir = (dev.state.Gamepad.wButtons & XINPUT_BUTTONS.XINPUT_GAMEPAD_LEFT_SHOULDER) ? 1 : 0;
+								goto case 255;
+							}
+							break;
+						case 15:
+							if ((dev.state.Gamepad.wButtons & XINPUT_BUTTONS.XINPUT_GAMEPAD_RIGHT_SHOULDER) ^
+									(dev.prevState.Gamepad.wButtons & XINPUT_BUTTONS.XINPUT_GAMEPAD_RIGHT_SHOULDER)) {
+								output.button.id = GameControllerButtons.RightShoulder;
+								output.button.dir = (dev.state.Gamepad.wButtons & XINPUT_BUTTONS.XINPUT_GAMEPAD_RIGHT_SHOULDER) ? 1 : 0;
+								goto case 255;
+							}
+							break;
+						case 16:
+							if ((dev.state.Gamepad.wButtons & XINPUT_BUTTONS.XINPUT_GAMEPAD_A) ^
+									(dev.prevState.Gamepad.wButtons & XINPUT_BUTTONS.XINPUT_GAMEPAD_A)) {
+								output.button.id = GameControllerButtons.South;
+								output.button.dir  = (dev.state.Gamepad.wButtons & XINPUT_BUTTONS.XINPUT_GAMEPAD_A) ? 1 : 0;
+								goto case 255;
+							}
+							break;
+						case 17:
+							if ((dev.state.Gamepad.wButtons & XINPUT_BUTTONS.XINPUT_GAMEPAD_B) ^
+									(dev.prevState.Gamepad.wButtons & XINPUT_BUTTONS.XINPUT_GAMEPAD_B)) {
+								output.button.id = GameControllerButtons.East;
+								output.button.dir = (dev.state.Gamepad.wButtons & XINPUT_BUTTONS.XINPUT_GAMEPAD_B) ? 1 : 0;
+								goto case 255;
+							}
+							break;
+						case 18:
+							if ((dev.state.Gamepad.wButtons & XINPUT_BUTTONS.XINPUT_GAMEPAD_X) ^
+									(dev.prevState.Gamepad.wButtons & XINPUT_BUTTONS.XINPUT_GAMEPAD_X)) {
+								output.button.id = GameControllerButtons.West;
+								output.button.dir = (dev.state.Gamepad.wButtons & XINPUT_BUTTONS.XINPUT_GAMEPAD_X) ? 1 : 0;
+								goto case 255;
+							}
+							break;
+						case 19:
+							if ((dev.state.Gamepad.wButtons & XINPUT_BUTTONS.XINPUT_GAMEPAD_Y) ^
+									(dev.prevState.Gamepad.wButtons & XINPUT_BUTTONS.XINPUT_GAMEPAD_Y)) {
+								output.button.id = GameControllerButtons.North;
+								output.button.dir = (dev.state.Gamepad.wButtons & XINPUT_BUTTONS.XINPUT_GAMEPAD_Y) ? 1 : 0;
+								goto case 255;
+							}
+							break;
+						case 20:
+							devC++;
+							cntr = 0;
+							output.type = InputEventType.init;
+							return EventPollStatus.HasMore;
+						case 255:	//Button events global
+							output.type = InputEventType.GCButton;
+							output.button.repeat = 0;
+							output.button.aux = 0;
+							output.button.auxF = float.nan;
+							goto case 384;
+						case 256:	//Axis of any kind
+							output.type = InputEventType.GCAxis;
+							goto case 384;
+						case 257:	//Triggers when handled as buttons
+							output.type = InputEventType.GCButton;
+							output.button.repeat = 0;
+							output.button.aux = 0;
+							goto case 384;
+						case 384:	//All event commons
+							output.source = dev;
+							output.timestamp = getTimestamp();
+							return EventPollStatus.HasMore;
+						default:
+							break;
+					}
+				}
+				devC++;
+				//cntr = 0;
 			}
-			devC++;
-			//cntr = 0;
+			cntr = 0;
+			devC = 0;
+			return EventPollStatus.Done;
+
 		}
-		cntr = 0;
-		devC = 0;
-		return EventPollStatus.Done;
-		
-	}
-	/**
-	 * Returns all capabilities of the haptic device.
-	 */
-	public override uint[] getCapabilities() @safe nothrow {
-		return [HapticDevice.Capabilities.LeftMotor, HapticDevice.Capabilities.RightMotor];
-	}
-	/**
-	 * Returns all zones associated with the capability of the device.
-	 * Returns null if zones are not applicable for the device's given capability.
-	 */
-	public override uint[] getZones(uint capability) @safe nothrow {
-		return null;
-	}
-	/**
-	 * Applies a given effect.
-	 * Params:
-	 *   capability: The capability to be used.
-	 *   zone: The zone where the effect should be used.
-	 *   val: Either the strength of the capability (between 0.0 and 1.0), or the frequency.
-	 * Returns: 0 on success, or a specific error code.
-	 */
-	public override int applyEffect(uint capability, uint zone, float val, float freq = float.nan) @trusted nothrow {
-		switch (capability) {
-			case HapticDevice.Capabilities.LeftMotor:
-				if (val < 0.0 || val > 1.0)
-					return HapticDeviceStatus.OutOfRange;
-				vibr.wLeftMotorSpeed = cast(ushort)(val * ushort.max);
-				if (XInputSetState(_devNum, &vibr) == ERROR_SUCCESS)
-					return HapticDeviceStatus.AllOk;
-				return HapticDeviceStatus.DeviceInvalidated;
-			case HapticDevice.Capabilities.RightMotor:
-				if (val < 0.0 || val > 1.0)
-					return HapticDeviceStatus.OutOfRange;
-				vibr.wRightMotorSpeed = cast(ushort)(val * ushort.max);
-				if (XInputSetState(_devNum, &vibr) == ERROR_SUCCESS)
-					return HapticDeviceStatus.AllOk;
-				return HapticDeviceStatus.DeviceInvalidated;
-			default:
-				return HapticDeviceStatus.UnsupportedCapability;
+		/**
+		* Returns all capabilities of the haptic device.
+		*/
+		public override uint[] getCapabilities() @safe nothrow {
+			return [HapticDevice.Capabilities.LeftMotor, HapticDevice.Capabilities.RightMotor];
+		}
+		/**
+		* Returns all zones associated with the capability of the device.
+		* Returns null if zones are not applicable for the device's given capability.
+		*/
+		public override uint[] getZones(uint capability) @safe nothrow {
+			return null;
+		}
+		/**
+		* Applies a given effect.
+		* Params:
+		*   capability: The capability to be used.
+		*   zone: The zone where the effect should be used.
+		*   val: Either the strength of the capability (between 0.0 and 1.0), or the frequency.
+		* Returns: 0 on success, or a specific error code.
+		*/
+		public override int applyEffect(uint capability, uint zone, float val, float freq = float.nan) @trusted nothrow {
+			switch (capability) {
+				case HapticDevice.Capabilities.LeftMotor:
+					if (val < 0.0 || val > 1.0)
+						return HapticDeviceStatus.OutOfRange;
+					vibr.wLeftMotorSpeed = cast(ushort)(val * ushort.max);
+					if (XInputSetState(_devNum, &vibr) == ERROR_SUCCESS)
+						return HapticDeviceStatus.AllOk;
+					return HapticDeviceStatus.DeviceInvalidated;
+				case HapticDevice.Capabilities.RightMotor:
+					if (val < 0.0 || val > 1.0)
+						return HapticDeviceStatus.OutOfRange;
+					vibr.wRightMotorSpeed = cast(ushort)(val * ushort.max);
+					if (XInputSetState(_devNum, &vibr) == ERROR_SUCCESS)
+						return HapticDeviceStatus.AllOk;
+					return HapticDeviceStatus.DeviceInvalidated;
+				default:
+					return HapticDeviceStatus.UnsupportedCapability;
+			}
+		}
+		/**
+		* Stops all haptic effects of the device.
+		* Returns: 0 on success, or a specific error code.
+		*/
+		public override int reset() @trusted nothrow {
+			vibr.wLeftMotorSpeed = 0;
+			vibr.wRightMotorSpeed = 0;
+			if (XInputSetState(_devNum, &vibr) == ERROR_SUCCESS)
+				return HapticDeviceStatus.AllOk;
+			return HapticDeviceStatus.DeviceInvalidated;
 		}
 	}
-	/**
-	 * Stops all haptic effects of the device.
-	 * Returns: 0 on success, or a specific error code.
-	 */
-	public override int reset() @trusted nothrow {
-		vibr.wLeftMotorSpeed = 0;
-		vibr.wRightMotorSpeed = 0;
-		if (XInputSetState(_devNum, &vibr) == ERROR_SUCCESS)
-			return HapticDeviceStatus.AllOk;
-		return HapticDeviceStatus.DeviceInvalidated;
+
+	version(IOTA_GAMEINPUT_ENABLE) public class GIGameController : GameController {
+		package static IGameInput* gameInputHandler;
+		package static InputEvent[] processedInputEvents;
+		package static uint eventsIn, eventsOut, eventsModulo;
+
+		shared static ~this() {
+			if (gameInputHandler) {
+				gameInputHandler.Release();
+			}
+		}
 	}
 } else version (OSX) {
-   	public class GCGameController : GameController {
-   	    protected GCController* controller;
+	public class GCGameController : GameController {
+		protected GCController* controller;
 
-   	    public override uint[] getCapabilities() @safe nothrow {
-   	        if (controller.haptics)
-   	            return [HapticDevice.Capabilities.LeftMotor, HapticDevice.Capabilities.RightMotor];
-   	        return null;
-   	    }
+		public override uint[] getCapabilities() @safe nothrow {
+			if (controller.haptics)
+				return [HapticDevice.Capabilities.LeftMotor, HapticDevice.Capabilities.RightMotor];
+			return null;
+		}
 
-   	    public override uint[] getZones(uint capability) @safe nothrow {
-   	        return null;
-   	    }
+		public override uint[] getZones(uint capability) @safe nothrow {
+			return null;
+		}
 
    	    public override int applyEffect(uint capability, uint zone, float val, float freq = float.nan) @trusted nothrow {
-   	        if (!controller.haptics)
-   	            return HapticDeviceStatus.UnsupportedCapability;
+			if (!controller.haptics)
+				return HapticDeviceStatus.UnsupportedCapability;
 
-   	        if (val < 0.0 || val > 1.0)
-   	            return HapticDeviceStatus.OutOfRange;
+			if (val < 0.0 || val > 1.0)
+				return HapticDeviceStatus.OutOfRange;
 
-   	        switch (capability) {
+			switch (capability) {
 				case HapticDevice.Capabilities.LeftMotor:
-    				controller.haptics.createEngine(GCHapticsLocality.Left).createContinuousEvent(val);
-    				return HapticDeviceStatus.AllOk;
+					controller.haptics.createEngine(GCHapticsLocality.Left).createContinuousEvent(val);
+					return HapticDeviceStatus.AllOk;
 				case HapticDevice.Capabilities.RightMotor:
-    				controller.haptics.createEngine(GCHapticsLocality.Right).createContinuousEvent(val);
-    				return HapticDeviceStatus.AllOk;
-   	            default:
-   	                return HapticDeviceStatus.UnsupportedCapability;
-   	        }
-   	    }
+					controller.haptics.createEngine(GCHapticsLocality.Right).createContinuousEvent(val);
+					return HapticDeviceStatus.AllOk;
+				default:
+					return HapticDeviceStatus.UnsupportedCapability;
+			}
+		}
 
-   	    public override int reset() @trusted nothrow {
-   	        if (controller.haptics) {
-   	            controller.haptics.cancelAll();
-   	            return HapticDeviceStatus.AllOk;
-   	        }
-   	        return HapticDeviceStatus.UnsupportedCapability;
-   	    }
-   	}
+		public override int reset() @trusted nothrow {
+			if (controller.haptics) {
+				controller.haptics.cancelAll();
+				return HapticDeviceStatus.AllOk;
+			}
+			return HapticDeviceStatus.UnsupportedCapability;
+		}
+	}
 }

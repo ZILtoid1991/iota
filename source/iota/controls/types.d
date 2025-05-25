@@ -5,7 +5,7 @@ import iota.controls.gamectrl;
 import std.conv : to;
 import std.bitmanip : bitfields;
 import std.string : toStringz, fromStringz, splitLines, split;
-public import core.time : MonoTime;
+public import core.time : MonoTime, Duration, msecs;
 version (Windows) {
 	import core.sys.windows.wtypes;
 	import core.sys.windows.windows;
@@ -164,6 +164,7 @@ public enum HapticDeviceStatus {
 	UnsupportedCapability,
 	OutOfRange,
 	FrequencyNeeded,
+	ComplexParamsNeeded,	///Haptic capability requires to be applied through a different function call
 }
 /** 
  * Defines text edit event flags.
@@ -262,6 +263,10 @@ public abstract class InputDevice {
 		return _name.to!string;
 	}
 }
+public struct HapticEnvelopStage {
+	Duration dur;
+	float gain;
+}
 /**
  * Defines basic functions for haptic devices.
  */
@@ -289,15 +294,35 @@ public interface HapticDevice {
 	 */
 	public uint[] getZones(uint capability) @safe nothrow;
 	/**
-	 * Applies a given effect.
+	 * Applies a simple effect.
 	 * Params:
 	 *   capability: The capability to be used.
 	 *   zone: The zone where the effect should be used.
 	 *   val: The strength of the capability (between 0.0 and 1.0).
 	 *   freq: The frequency if supported, float.nan otherwise.
 	 * Returns: 0 on success, or a specific error code.
+	 * Note: Has an automatic timeout on certain API.
 	 */
 	public int applyEffect(uint capability, uint zone, float val, float freq = float.nan) @trusted nothrow;
+	/**
+	 * Applies an envelop-style effect with variable
+	 * Params:
+	 *   capability = The capability to be used.
+	 *   zone = The zone where the effect should be used.
+	 *   stages = The stages of the envelop effect. 1: Attack stage, 2: Sustain stage, 3: Release stage
+	 *   repeatCount = The count of repeats for this effect. 0 means the effect is played only once
+	 *   repeatDelay = The delay between each repeats.
+	 * Returns: 0 on success, or a specific error code.
+	 */
+	public int applyEnvelopEffect(uint capability, uint zone, HapticEnvelopStage[3] stages, uint repeatCount = 0,
+			Duration repeatDelay = msecs(0)) @trusted nothrow;
+	/**
+	 * Sets te maximum of all haptic effects.
+	 * Params:
+	 *   val = The gain to be set. 0.0 disables all haptic effects.
+	 * Returns: 0 on success, or a specific error code.
+	 */
+	public int setMaximumGain(float val = 1.0) @trusted nothrow;
 	/**
 	 * Stops all haptic effects of the device.
 	 * Returns: 0 on success, or a specific error code.
