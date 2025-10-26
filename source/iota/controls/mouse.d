@@ -43,7 +43,7 @@ public class Mouse : InputDevice {
 	package uint		lastButtonState;
 	version (Windows) {
 		//package uint	winButtonState;
-		package this(string _name, ubyte _devNum, HANDLE devHandle) nothrow {
+		package this(string _name, ubyte _devNum, HANDLE devHandle) @nogc nothrow {
 			this._name = _name;
 			this._devNum = _devNum;
 			this.hDevice = devHandle;
@@ -51,7 +51,7 @@ public class Mouse : InputDevice {
 			status |= StatusFlags.IsConnected;
 		}
 	} else version(OSX) {
-    	package this(string _name, ubyte _devNum) nothrow {
+    	package this(string _name, ubyte _devNum) @nogc nothrow {
     	    this._name = _name;
     	    this._devNum = _devNum;
     	    _type = InputDeviceType.Mouse;
@@ -66,7 +66,7 @@ public class Mouse : InputDevice {
 			_type = InputDeviceType.Keyboard;
 			status |= StatusFlags.IsConnected;
 		} */
-		package this(string _name, ubyte _devNum, int fd, libevdev* hDevice) {
+		package this(string _name, ubyte _devNum, int fd, libevdev* hDevice) @nogc nothrow {
 			this._name = _name;
 			this._devNum = _devNum;
 			this.fd = fd;
@@ -74,14 +74,14 @@ public class Mouse : InputDevice {
 			_type = InputDeviceType.Keyboard;
 			status |= StatusFlags.IsConnected;
 		}
-		~this() {
+		~this() @nogc nothrow {
 			import core.stdc.stdio;
 			if (hDevice) libevdev_free(hDevice);
 			if (fd) close(fd);
 			//XCloseDevice(OSWindow.mainDisplay, devHandle);
 		}
 	}
-	package this() nothrow {
+	package this() @nogc nothrow {
 		_type = InputDeviceType.Mouse;
 		status |= StatusFlags.IsConnected;
 	}

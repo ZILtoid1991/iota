@@ -5,6 +5,8 @@ import iota.controls.gamectrl;
 import std.conv : to;
 import std.bitmanip : bitfields;
 import std.string : toStringz, fromStringz, splitLines, split;
+import numem;
+
 public import core.time : MonoTime, Duration, msecs;
 version (Windows) {
 	import core.sys.windows.wtypes;
@@ -177,7 +179,7 @@ public enum TextCommandFlags {
  * Contains basic info about the input device.
  * Child classes might also contain references to OS variables and pointers.
  */
-public abstract class InputDevice {
+public abstract class InputDevice : NuObject {
 	protected string			_name;		/// The name of the device if there's any
 	/// Status flags of the device.
 	/// Bits 0-7 are common, 8-15 are special to each device/interface type.
@@ -576,7 +578,7 @@ package struct RawGCMapping {
 	ubyte flags;	///Flags related to translation, e.g. resolution, hat number
 	ubyte inNum;	///Input axis/button number, or hat state
 	ubyte outNum;	///Output axis/button number
-	this (ubyte type, ubyte flags, ubyte inNum, ubyte outnum) @safe @nogc nothrow {
+	this (ubyte type, ubyte flags, ubyte inNum, ubyte outNum) @safe @nogc nothrow {
 		this.type = type;
 		this.flags = flags;
 		this.inNum = inNum;

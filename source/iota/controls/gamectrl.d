@@ -18,7 +18,7 @@ version (Windows) {
  */
 public enum GameControllerButtons : ubyte {
 	///Initial value, or no button has been pressed.
-	init,
+	none,
 	DPadUp,
 	DPadDown,
 	DPadLeft,
@@ -77,7 +77,7 @@ public enum POVHatStates : ubyte {
 }
 ///Defines game controller axes.
 public enum GameControllerAxes : ubyte {
-	init,
+	none,
 	///X axis of the left thumbstick, but is also used for joystick X and steering wheel
 	LeftThumbstickX,
 	///Y axis of the right thumbstick, but is also used for joystick Y
@@ -98,6 +98,80 @@ public enum GameControllerAxes : ubyte {
 	TouchpadY,
 	RTouchpadX,
 	RTouchpadY,
+}
+public enum GameControllerLabels : ubyte {
+	unknown,
+	Nr0,
+	Nr1,
+	Nr2,
+	Nr3,
+	Nr4,
+	Nr5,
+	Nr6,
+	Nr7,
+	Nr8,
+	Nr9,
+	LtrA,
+	LtrB,
+	LtrC,
+	LtrD,
+	LtrE,
+	LtrF,
+	LtrG,
+	LtrH,
+	LtrI,
+	LtrJ,
+	LtrK,
+	LtrL,
+	LtrM,
+	LtrN,
+	LtrO,
+	LtrP,
+	LtrQ,
+	LtrR,
+	LtrS,
+	LtrT,
+	LtrU,
+	LtrV,
+	LtrW,
+	LtrX,
+	LtrY,
+	LtrZ,
+	SymSquare,
+	SymCircle,
+	SymCross,
+	SymTriange,
+	SymPlus,
+	SymMinus,
+	SymBrand,
+	SymHome,
+	SymStar,
+	LblStart,
+	LblSelect,
+	LblBack,
+	LblView,
+	LblOption,
+	LblRun,
+	L1,
+	L2,
+	L3,
+	L4,
+	L5,
+	R1,
+	R2,
+	R3,
+	R4,
+	R5,
+	LB,
+	LT,
+	LSB,
+	RB,
+	RT,
+	RSB,
+	DPadUp,
+	DPadDown,
+	DPadLeft,
+	DPadRight,
 }
 /**
  * Implements basic functionality common for all game controllers.
@@ -153,7 +227,7 @@ abstract class GameController : InputDevice, HapticDevice {
 public class RawInputGameController : GameController {
 	package RawGCMapping[] mapping;
 	version (Windows) {
-		package this(string _name, ubyte _devNum, HANDLE devHandle, RawGCMapping[] mapping) nothrow {
+		package this(string _name, ubyte _devNum, HANDLE devHandle, RawGCMapping[] mapping) @nogc nothrow {
 			this._name = _name;
 			this._devNum = _devNum;
 			this.hDevice = devHandle;
@@ -163,7 +237,7 @@ public class RawInputGameController : GameController {
 		}
 	} else version (linux) {
 		int[8] hatStatus;
-		package this(string _name, ubyte _devNum, int fd, libevdev* hDevice, RawGCMapping[] mapping) {
+		package this(string _name, ubyte _devNum, int fd, libevdev* hDevice, RawGCMapping[] mapping) @nogc nothrow {
 			this._name = _name;
 			this._devNum = _devNum;
 			this.fd = fd;
@@ -204,7 +278,7 @@ version (Windows) {
 		package static int			cntr;
 		package static int			devC;
 		package static XInputDevice[4]	ctrlList;
-		package this (DWORD userIndex, bool axisType) nothrow {
+		package this (DWORD userIndex, bool axisType) @nogc nothrow {
 			XINPUT_CAPABILITIES xic;
 			const DWORD result = XInputGetCapabilities(userIndex, 0, &xic);
 			if (result == ERROR_SUCCESS && ctrlList[userIndex] is null) {
@@ -505,7 +579,7 @@ version (Windows) {
 		}
 	}
 
-	version(IOTA_GAMEINPUT_ENABLE) public class GIGameController : GameController {
+	public class GIGameController : GameController {
 		package static IGameInput* gameInputHandler;
 		package static InputEvent[] processedInputEvents;
 		package static uint eventsIn, eventsOut, eventsModulo;

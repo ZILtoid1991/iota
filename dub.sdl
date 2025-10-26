@@ -8,9 +8,10 @@ dependency "bitleveld" version="*"
 dependency "collections-d" version="*"
 dependency "bindbc-opengl" version="*"
 dependency "x11d" version="*"
+dependency "numem" version="*"
 versions "GL_AllowDeprecated"
-libs "asound" "GL" "X11" "Xext" "Xi" "libevdev" platform="linux"
-libs "winmm" "gdi32" "user32" "opengl32" "xinput" "ole32" "comctl32" platform="windows"
+libs "asound" "GL" "X11" "Xext" "Xi" "evdev" platform="linux"
+libs "winmm" "gdi32" "user32" "opengl32" "xinput" "ole32" "comctl32" "GameInput" platform="windows"
 
 //OSX specific
 configuration "osx" {
@@ -25,10 +26,10 @@ configuration "osx" {
     libs "objc" platform="osx"
 }
 //GameInput specific
-configuration "gameinputEnable" {
-    versions "IOTA_GAMEINPUT_ENABLE" platform="windows"
-    libs "GameInput" platform="windows"
-}
+//configuration "gameinputEnable" {
+//    versions "IOTA_GAMEINPUT_ENABLE" platform="windows"
+//    libs "GameInput" platform="windows"
+//}
 
 //lflags "/subsystem:windows" "/entry:wmainCRTStartup" platform="windows" compiler="DMD"
 subPackage {

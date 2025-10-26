@@ -58,7 +58,7 @@ public class Keyboard : InputDevice {
 		DisableMetaKeyComb=	1<<12,	///Disables meta key shortcut passthrough to OS
 	}
 	version (Windows) {
-		package this(string _name, ubyte _devNum, HANDLE devHandle) nothrow {
+		package this(string _name, ubyte _devNum, HANDLE devHandle) @nogc nothrow {
 			this._name = _name;
 			this._devNum = _devNum;
 			this.hDevice = devHandle;
@@ -73,14 +73,14 @@ public class Keyboard : InputDevice {
 		
 		package uint		modifierTracker;
 		
-		package this(string _name, ubyte _devNum, XID devID) {
+		package this(string _name, ubyte _devNum, XID devID) @nogc nothrow {
 			this._name = _name;
 			this._devNum = _devNum;
 			//this.devHandle = XOpenDevice(OSWindow.mainDisplay, devID);
 			_type = InputDeviceType.Keyboard;
 			status |= StatusFlags.IsConnected;
 		}
-		package this(string _name, ubyte _devNum, int fd, libevdev* hDevice) {
+		package this(string _name, ubyte _devNum, int fd, libevdev* hDevice) @nogc nothrow {
 			this._name = _name;
 			this._devNum = _devNum;
 			this.fd = fd;
@@ -88,14 +88,14 @@ public class Keyboard : InputDevice {
 			_type = InputDeviceType.Keyboard;
 			status |= StatusFlags.IsConnected;
 		}
-		~this() {
+		~this() @nogc nothrow {
 			import core.stdc.stdio;
 			if (hDevice) libevdev_free(hDevice);
 			if (fd) close(fd);
 			//XCloseDevice(OSWindow.mainDisplay, devHandle);
 		}
 	}
-	package this() nothrow {
+	package this() nothrow @nogc nothrow {
 		_type = InputDeviceType.Keyboard;
 		status |= StatusFlags.IsConnected;
 	}
