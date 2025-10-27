@@ -19,6 +19,7 @@ import bindbc.opengl;
 
 /** 
  * Defines common traits and functions of a framebuffer Renderer object.
+ * DEPRECATED!
  */
 public abstract class FrameBufferRenderer {
 	//protected OSWindow		renderingSurface;
