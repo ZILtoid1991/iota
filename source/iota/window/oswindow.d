@@ -8,6 +8,7 @@ version (Windows) {
 	import std.conv : to;
 	package extern(Windows) @nogc nothrow {
 		alias  PFNWGLCREATECONTEXTATTRIBSARBPROC = HGLRC function(HDC hDC, HGLRC hShareContext, const(int)* attribList);
+
 	}
 } else version(OSX) {
 	import cocoa;
@@ -81,6 +82,10 @@ public class OSWindow {
 	 * External keys should be added to it with function `addRef()`.
 	 */
 	public static OSWindow[]	refCount;
+	///Sizes of the screen. 0: Virtual desktop width, 1: Virtual desktop height, 2: Screen width, 3: Screen height
+	package int[4]		screenSize;
+	///Screen DPI: 0: width, 1: height
+	package double[2]	screenDPI;
 	///Handle to the window. Used for both automatic reference counting and for arguments in the I/O system.
 	protected WindowH			windowHandle;
 	protected WindowBitmap		icon;
@@ -176,6 +181,7 @@ public class OSWindow {
 					counter++;
 				} while (deviceResult);
 			}
+
 		}
 	} else version (OSX) {
         protected NSWindow nsWindow;
@@ -1106,7 +1112,36 @@ public class OSWindow {
 	        }
 	    }
 	}
-
+	protected void recalculateScreenSizes() @nogc nothrow {
+		version (Windows) {
+			screenSize = [GetSystemMetrics(SM_CXVIRTUALSCREEN), GetSystemMetrics(SM_CXVIRTUALSCREEN),
+					GetSystemMetrics(SM_CXSCREEN), GetSystemMetrics(SM_CYSCREEN)];
+			screenDPI = [cast(double)GetDPIForWindow(windowHandle), cast(double)GetDPIForWindow(windowHandle)];
+		} else version (OSX) {
+			NSScreen mainScreen = NSScreen.mainScreen();
+			if (mainScreen !is null) {
+				CGRect frame = mainScreen.frame();
+				screenSize = [
+					cast(int)frame.size.width,
+					cast(int)frame.size.height,
+					cast(int)frame.size.width,
+					cast(int)frame.size.height
+				];
+				screenDPI = [double.nan, double.nan];
+			} else {
+				screenSize = [-1, -1, -1, -1];
+			}
+		} else {
+			if (mainDisplay) {
+				screenSize = [WidthOfScreen(mainDisplay), HeightOfScreen(mainDisplay),
+						WidthOfScreen(mainDisplay), HeightOfScreen(mainDisplay)];
+				screenDPI = [cast(double)WidthOfScreen(mainDisplay) / cast(double)WidthMMOfScreen(mainDisplay) * 25.4,
+						cast(double)HeightOfScreen(mainDisplay) / cast(double)HeightMMOfScreen(mainDisplay) * 25.4];
+			} else {
+				screenSize = [-1, -1, -1, -1];
+			}
+		}
+	}
 	/** 
 	 * Callback function for windowing. Can be overridden to process more messages than by default.
 	 * See Microsoft documentation for details on return value and parameters.
