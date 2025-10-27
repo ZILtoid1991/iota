@@ -58,7 +58,7 @@ public class Keyboard : InputDevice {
 		DisableMetaKeyComb=	1<<12,	///Disables meta key shortcut passthrough to OS
 	}
 	version (Windows) {
-		package this(string _name, ubyte _devNum, HANDLE devHandle) @nogc nothrow {
+		this(string _name, ubyte _devNum, HANDLE devHandle) @nogc nothrow {
 			this._name = _name;
 			this._devNum = _devNum;
 			this.hDevice = devHandle;
@@ -73,14 +73,14 @@ public class Keyboard : InputDevice {
 		
 		package uint		modifierTracker;
 		
-		package this(string _name, ubyte _devNum, XID devID) @nogc nothrow {
+		this(string _name, ubyte _devNum, XID devID) @nogc nothrow {
 			this._name = _name;
 			this._devNum = _devNum;
 			//this.devHandle = XOpenDevice(OSWindow.mainDisplay, devID);
 			_type = InputDeviceType.Keyboard;
 			status |= StatusFlags.IsConnected;
 		}
-		package this(string _name, ubyte _devNum, int fd, libevdev* hDevice) @nogc nothrow {
+		this(string _name, ubyte _devNum, int fd, libevdev* hDevice) @nogc nothrow {
 			this._name = _name;
 			this._devNum = _devNum;
 			this.fd = fd;
@@ -95,7 +95,7 @@ public class Keyboard : InputDevice {
 			//XCloseDevice(OSWindow.mainDisplay, devHandle);
 		}
 	}
-	package this() nothrow @nogc nothrow {
+	this() @nogc nothrow {
 		_type = InputDeviceType.Keyboard;
 		status |= StatusFlags.IsConnected;
 	}
@@ -318,12 +318,12 @@ public class Keyboard : InputDevice {
 		
 		
 	}
-	public override string toString() @safe const {
-		import std.conv : to;
-		version (OSX) {
-			return "{" ~ _name.to!string ~ "; devID: " ~ _devNum.to!string ~ "}";
-		} else {
-			return "{" ~ _name.to!string ~ "; devID: " ~ _devNum.to!string ~ "; devHandle: " ~ hDevice.to!string ~ "}";
-		}
-	}
+	// public override string toString() @safe const {
+	// 	import std.conv : to;
+	// 	version (OSX) {
+	// 		return "{" ~ _name.to!string ~ "; devID: " ~ _devNum.to!string ~ "}";
+	// 	} else {
+	// 		return "{" ~ _name.to!string ~ "; devID: " ~ _devNum.to!string ~ "; devHandle: " ~ hDevice.to!string ~ "}";
+	// 	}
+	// }
 }

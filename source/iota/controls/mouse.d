@@ -43,7 +43,7 @@ public class Mouse : InputDevice {
 	package uint		lastButtonState;
 	version (Windows) {
 		//package uint	winButtonState;
-		package this(string _name, ubyte _devNum, HANDLE devHandle) @nogc nothrow {
+		this(string _name, ubyte _devNum, HANDLE devHandle) @nogc nothrow {
 			this._name = _name;
 			this._devNum = _devNum;
 			this.hDevice = devHandle;
@@ -51,7 +51,7 @@ public class Mouse : InputDevice {
 			status |= StatusFlags.IsConnected;
 		}
 	} else version(OSX) {
-    	package this(string _name, ubyte _devNum) @nogc nothrow {
+    	this(string _name, ubyte _devNum) @nogc nothrow {
     	    this._name = _name;
     	    this._devNum = _devNum;
     	    _type = InputDeviceType.Mouse;
@@ -66,7 +66,7 @@ public class Mouse : InputDevice {
 			_type = InputDeviceType.Keyboard;
 			status |= StatusFlags.IsConnected;
 		} */
-		package this(string _name, ubyte _devNum, int fd, libevdev* hDevice) @nogc nothrow {
+		this(string _name, ubyte _devNum, int fd, libevdev* hDevice) @nogc nothrow {
 			this._name = _name;
 			this._devNum = _devNum;
 			this.fd = fd;
@@ -81,7 +81,7 @@ public class Mouse : InputDevice {
 			//XCloseDevice(OSWindow.mainDisplay, devHandle);
 		}
 	}
-	package this() @nogc nothrow {
+	this() @nogc nothrow {
 		_type = InputDeviceType.Mouse;
 		status |= StatusFlags.IsConnected;
 	}
@@ -94,14 +94,14 @@ public class Mouse : InputDevice {
 		return lastButtonState;
 	}
 	
-	public override string toString() @safe const {
-		import std.conv : to;
-		version (OSX) {
-			return "{" ~ _name.to!string ~ "; devID: " ~ _devNum.to!string ~ "}";
-		} else {
-			return "{" ~ _name.to!string ~ "; devID: " ~ _devNum.to!string ~ "; devHandle: " ~ hDevice.to!string ~ "}";
-		}
-	}
+	// public override string toString() @safe const {
+	// 	import std.conv : to;
+	// 	version (OSX) {
+	// 		return "{" ~ _name.to!string ~ "; devID: " ~ _devNum.to!string ~ "}";
+	// 	} else {
+	// 		return "{" ~ _name.to!string ~ "; devID: " ~ _devNum.to!string ~ "; devHandle: " ~ hDevice.to!string ~ "}";
+	// 	}
+	// }
 	/* override public int poll(ref InputEvent output) @nogc nothrow {
 		return 0;
 	} */

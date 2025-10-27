@@ -34,27 +34,34 @@ public class System : InputDevice {
 		dchar				lastChar;
 	}
 	///Sizes of the screen. 0 : Virtual desktop width, 1 : Virtual desktop height, 2 : Screen width, 3: Screen height
-	package int[4]			screenSize; 
+	package int[4]			screenSize;
 	protected size_t		winCount;	///Window counter.	
 	
 	enum SystemFlags : ushort {
 		Win_RawInput		=	1 << 8,
 	}
-	package this(uint config = 0, uint osConfig = 0) nothrow {
+	package this(uint config = 0, uint osConfig = 0) @nogc nothrow {
 		version (Windows) {
 			screenSize = [GetSystemMetrics(SM_CXVIRTUALSCREEN), GetSystemMetrics(SM_CXVIRTUALSCREEN), 
 					GetSystemMetrics(SM_CXSCREEN), GetSystemMetrics(SM_CYSCREEN)];
 		} else version(OSX) {
 			NSScreen mainScreen = NSScreen.mainScreen();
-	        if (mainScreen !is null) {
-	            CGRect frame = mainScreen.frame();
-	            screenSize = [
-	                cast(int)frame.size.width,
-	                cast(int)frame.size.height,
-	                cast(int)frame.size.width,
-	                cast(int)frame.size.height
-	            ];
-	        }
+			if (mainScreen !is null) {
+				CGRect frame = mainScreen.frame();
+				screenSize = [
+					cast(int)frame.size.width,
+					cast(int)frame.size.height,
+					cast(int)frame.size.width,
+					cast(int)frame.size.height
+				];
+			}
+		} else {
+			if (OSWindow.mainDisplay) {
+				screenSize = [WidthOfScreen(OSWindow.mainDisplay), HeightOfScreen(OSWindow.mainDisplay),
+						WidthOfScreen(OSWindow.mainDisplay), HeightOfScreen(OSWindow.mainDisplay)];
+			} else {
+				screenSize = [-1, -1, -1, -1];
+			}
 		}
 	}
 		

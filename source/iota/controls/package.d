@@ -30,6 +30,8 @@ import std.utf;
 import std.uni : toLower;
 import std.stdio;
 
+import numem;
+
 static this() {
     version(Windows) {
         mainPollingFun = &poll_win_LegacyIO;
@@ -58,7 +60,7 @@ public int initInput(uint config = 0, uint osConfig = 0, string gcmTable = null)
 	config |= IOTA_INPUTCONFIG_MANDATORY;
 	__configFlags = config;
 	__osConfigFlags = osConfig;
-	sys = new System(config, osConfig);
+	sys = nogc_new!(System)(config, osConfig);
 	devList ~= sys;
 	version (Windows) {
 		if (osConfig & OSConfigFlags.win_RawInput) {
@@ -83,7 +85,7 @@ public int initInput(uint config = 0, uint osConfig = 0, string gcmTable = null)
 					import iota.controls.backend.windows;
 					XInputEnable(256);
 					for (int i ; i < 4 ; i++) {
-						XInputDevice x = new XInputDevice(i, (config & ConfigFlags.gc_TriggerMode) != 0);
+						XInputDevice x = nogc_new!(XInputDevice)(i, (config & ConfigFlags.gc_TriggerMode) != 0);
 						if (!x.isInvalidated) {
 							devList ~= x;
 						}
@@ -117,16 +119,14 @@ public int initInput(uint config = 0, uint osConfig = 0, string gcmTable = null)
 					return InputInitializationStatus.win_RawInputError;
 				switch (dev.dwType) {
 					case RIM_TYPEMOUSE:
-						//debug writeln("Mouse: ", data[0..nameRes]);
 						Mouse m;
-						m = new Mouse(toUTF8(data[0..nameRes]), mNum++, dev.hDevice);
+						m = nogc_new!(Mouse)(toUTF8(data[0..nameRes]), mNum++, dev.hDevice);
 						devList ~= m;
 						mouse = m;
 						break;
 					case RIM_TYPEKEYBOARD:
-						//debug writeln("Keyboard: ", data[0..nameRes]);
 						Keyboard k;
-						k = new Keyboard(toUTF8(data[0..nameRes]), kbNum++, dev.hDevice);
+						k = nogc_new!(Keyboard)(toUTF8(data[0..nameRes]), kbNum++, dev.hDevice);
 						devList ~= k;
 						keyb = k;
 						break;
@@ -134,10 +134,12 @@ public int initInput(uint config = 0, uint osConfig = 0, string gcmTable = null)
 						try {
 							RawGCMapping[] mapping = parseGCM(gcmTable, toUTF8(data[0..nameRes]));
 							if (mapping.length) {
-								devList ~= new RawInputGameController(toUTF8(data[0..nameRes]), gcNum++, dev.hDevice, mapping);
+								devList ~= nogc_new!(RawInputGameController)(toUTF8(data[0..nameRes]), gcNum++, dev.hDevice, mapping);
 							}
-						} catch (Exception e) {}
-						//debug writeln("Other device: ", data[0..nameRes]);	//For now, just print whatever name we get.
+						} catch (Exception e) {
+							debug writeln(e);
+						}
+
 						break;
 				}
 				//if (keyb is null) keyb = new Keyboard();
@@ -145,8 +147,8 @@ public int initInput(uint config = 0, uint osConfig = 0, string gcmTable = null)
 				mainPollingFun = &poll_win_RawInput;
 			}
 		} else {
-			keyb = new Keyboard();
-			mouse = new Mouse();
+			keyb = nogc_new!(Keyboard)();
+			mouse = nogc_new!(Mouse)();
 			devList ~= keyb;
 			devList ~= mouse;
 			mainPollingFun = &poll_win_LegacyIO;
@@ -154,7 +156,7 @@ public int initInput(uint config = 0, uint osConfig = 0, string gcmTable = null)
 				import iota.controls.backend.windows;
 				XInputEnable(256);
 				for (int i ; i < 4 ; i++) {
-					XInputDevice x = new XInputDevice(i, (config & ConfigFlags.gc_TriggerMode) != 0);
+					XInputDevice x = nogc_new!(XInputDevice)(i, (config & ConfigFlags.gc_TriggerMode) != 0);
 					if (!x.isInvalidated) {
 						devList ~= x;
 					}
@@ -163,8 +165,8 @@ public int initInput(uint config = 0, uint osConfig = 0, string gcmTable = null)
 			}
 		}
 	} else version(OSX) {
-	    keyb = new Keyboard();
-	    mouse = new Mouse();
+	    keyb = nogc_new!Keyboard();
+	    mouse = nogc_new!Mouse();
 	    mainPollingFun = &poll_osx;
 	    devList ~= keyb;
 	    devList ~= mouse;
@@ -205,15 +207,15 @@ public int initInput(uint config = 0, uint osConfig = 0, string gcmTable = null)
 						string nameLC = toLower(name);
 						//Try to detect device type from name
 						if (canFind(nameLC, "keyboard", "keypad")) {
-							devList ~= new Keyboard(name, keybCnrt++, fd, dev);
+							devList ~= nogc_new!Keyboard(name, keybCnrt++, fd, dev);
 						} else if (canFind(nameLC, "mouse", "trackball")) {
-							devList ~= new Mouse(name, mouseCnrt++, fd, dev);
+							devList ~= nogc_new!Mouse(name, mouseCnrt++, fd, dev);
 						} else if (canFind(nameLC, "js")) {	//Likely a game controller, let's check the supplied table if exists
 							string uniqueID = cast(string)fromStringz(libevdev_get_uniq(dev));
 							RawGCMapping[] mapping;
 							if (gcmTable) mapping = parseGCM(gcmTable, uniqueID);
 							if (!mapping) mapping = defaultGCmapping.dup;
-							devList ~= new RawInputGameController(name, gcCnrt++, fd, dev, mapping);
+							devList ~= nogc_new!RawInputGameController(name, gcCnrt++, fd, dev, mapping);
 						} else {
 							libevdev_free(dev);
 							close(fd);
@@ -227,8 +229,8 @@ public int initInput(uint config = 0, uint osConfig = 0, string gcmTable = null)
 				return InputInitializationStatus.libevdev_ErrorOpeningDev;
 			}
 		} //else {
-		keyb = new Keyboard();
-		mouse = new Mouse();
+		keyb = nogc_new!Keyboard();
+		mouse = nogc_new!Mouse();
 		mainPollingFun = &poll_x11_RegularIO;
 		devList ~= keyb;
 		devList ~= mouse;

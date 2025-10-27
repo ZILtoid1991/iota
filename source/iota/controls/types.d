@@ -129,8 +129,11 @@ public enum OSConfigFlags : uint {
 	x11_InputExtensions			=	1<<5,
 	///Enables libevdev for Linux.
 	libevdev_enable				=	1<<6,
+	///Enables write for libevdev types.
 	libevdev_writeenable		=	1<<7,
+	///Restricts libevdev for game controllers only.
 	libevdev_gconly				=	1<<8,
+	///Enables the GameInput API usage on Windows.
 	win_GameInput				=	1<<9,
 }
 /** 

@@ -227,7 +227,7 @@ abstract class GameController : InputDevice, HapticDevice {
 public class RawInputGameController : GameController {
 	package RawGCMapping[] mapping;
 	version (Windows) {
-		package this(string _name, ubyte _devNum, HANDLE devHandle, RawGCMapping[] mapping) @nogc nothrow {
+		this(string _name, ubyte _devNum, HANDLE devHandle, RawGCMapping[] mapping) @nogc nothrow {
 			this._name = _name;
 			this._devNum = _devNum;
 			this.hDevice = devHandle;
@@ -237,7 +237,7 @@ public class RawInputGameController : GameController {
 		}
 	} else version (linux) {
 		int[8] hatStatus;
-		package this(string _name, ubyte _devNum, int fd, libevdev* hDevice, RawGCMapping[] mapping) @nogc nothrow {
+		this(string _name, ubyte _devNum, int fd, libevdev* hDevice, RawGCMapping[] mapping) @nogc nothrow {
 			this._name = _name;
 			this._devNum = _devNum;
 			this.fd = fd;
@@ -278,7 +278,7 @@ version (Windows) {
 		package static int			cntr;
 		package static int			devC;
 		package static XInputDevice[4]	ctrlList;
-		package this (DWORD userIndex, bool axisType) @nogc nothrow {
+		this (DWORD userIndex, bool axisType) @nogc nothrow {
 			XINPUT_CAPABILITIES xic;
 			const DWORD result = XInputGetCapabilities(userIndex, 0, &xic);
 			if (result == ERROR_SUCCESS && ctrlList[userIndex] is null) {
@@ -294,10 +294,10 @@ version (Windows) {
 				status |= StatusFlags.IsInvalidated;
 			}
 		}
-		public override string toString() const @safe pure nothrow {
-			import std.conv : to;
-			return "{XInputDevice; DevID: " ~ devNum().to!string ~ "}";
-		}
+		// public override string toString() const @safe pure nothrow {
+		// 	import std.conv : to;
+		// 	return "{XInputDevice; DevID: " ~ devNum().to!string ~ "}";
+		// }
 		package static int poll(ref InputEvent output) @system @nogc nothrow {
 			while (devC < ctrlList.length) {
 				XInputDevice dev = ctrlList[devC];
