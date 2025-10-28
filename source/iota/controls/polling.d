@@ -9,6 +9,8 @@ import iota.etc.charcode;
 import iota.controls.keybscancodes;
 import iota.controls.gamectrl;
 import core.stdc.string;
+import numem;
+import nulib.collections.vector;
 
 /** 
  * Polls all input devices, and returns the found events in a given order.
@@ -30,10 +32,16 @@ package @system @nogc nothrow int function(ref InputEvent) mainPollingFun;	///Us
 package @system @nogc nothrow int function(ref InputEvent) subPollingFun;	///Usually the secondary polling function, optional
 package InputEvent textInputCmd;
 // bool subPollingFunFinished;
-Keyboard keyb;          ///Main keyboard, or the only keyboard on APIs not supporting differentiating between keyboards.
-Mouse mouse;            ///Main mouse, or the only mouse on APIs not supporting differentiating between mice.
+Keyboard keyb;			///Main keyboard, or the only keyboard on APIs not supporting differentiating between keyboards.
+Mouse mouse;			///Main mouse, or the only mouse on APIs not supporting differentiating between mice.
 System sys;				///System device, originator of system events.
-InputDevice[] devList;	///List of input devices.
+vector!InputDevice devList;	///List of input devices.
+
+static ~this() {
+	foreach (InputDevice id ; devList) {
+		nogc_delete(id);
+	}
+}
 
 version (Windows) {
 	import core.sys.windows.windows;

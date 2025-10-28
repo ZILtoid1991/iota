@@ -207,14 +207,18 @@ abstract class GameController : InputDevice, HapticDevice {
 	 * Returns: 0 on success, or a specific error code.
 	 */
 	public int applyEnvelopEffect(uint capability, uint zone, HapticEnvelopStage[3] stages, uint repeatCount = 0,
-			Duration repeatDelay = msecs(0)) @trusted nothrow;
+			Duration repeatDelay = msecs(0)) @trusted nothrow {
+		return -10;
+	}
 	/**
 	 * Sets te maximum of all haptic effects.
 	 * Params:
 	 *   val = The gain to be set. 0.0 disables all haptic effects.
 	 * Returns: 0 on success, or a specific error code.
 	 */
-	public int setMaximumGain(float val = 1.0) @trusted nothrow;
+	public int setMaximumGain(float val = 1.0) @trusted nothrow {
+		return -10;
+	}
 	/**
 	 * Stops all haptic effects of the device.
 	 * Returns: 0 on success, or a specific error code.

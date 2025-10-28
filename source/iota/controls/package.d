@@ -8,18 +8,19 @@ public import iota.controls.mouse;
 public import iota.controls.system;
 public import iota.controls.gamectrl;
 public import iota.window.oswindow;
+import iota.controls.polling;
 
 version (Windows) {
 	import core.sys.windows.windows;
 	import core.sys.windows.wtypes;
-	import iota.controls.polling;
+
 } else version (OSX) {
 	import cocoa.foundation;
-    import iota.controls.polling : poll_osx, mainPollingFun, keyb, mouse, sys, devList;
+
 } else {
 	import iota.controls.backend.linux;
 	import core.stdc.errno;
-	import iota.controls.polling;
+
 	//import core.sys.linux.fcntl;
 }
 import core.stdc.stdlib;
@@ -31,17 +32,7 @@ import std.uni : toLower;
 import std.stdio;
 
 import numem;
-
-static this() {
-    version(Windows) {
-        mainPollingFun = &poll_win_LegacyIO;
-    } else version(OSX) {
-        mainPollingFun = &poll_osx;
-    } else {
-        mainPollingFun = &poll_x11_RegularIO;
-    }
-}
-
+import nulib.collections.vector;
 
 public enum IOTA_INPUTCONFIG_MANDATORY = 0;
 package uint __configFlags, __osConfigFlags;
@@ -61,7 +52,7 @@ public int initInput(uint config = 0, uint osConfig = 0, string gcmTable = null)
 	__configFlags = config;
 	__osConfigFlags = osConfig;
 	sys = nogc_new!(System)(config, osConfig);
-	devList ~= sys;
+	devList ~= cast(InputDevice)sys;
 	version (Windows) {
 		if (osConfig & OSConfigFlags.win_RawInput) {
 			const DWORD flags = 0;
@@ -87,7 +78,9 @@ public int initInput(uint config = 0, uint osConfig = 0, string gcmTable = null)
 					for (int i ; i < 4 ; i++) {
 						XInputDevice x = nogc_new!(XInputDevice)(i, (config & ConfigFlags.gc_TriggerMode) != 0);
 						if (!x.isInvalidated) {
-							devList ~= x;
+							devList ~= cast(InputDevice)x;
+						} else {
+							nogc_delete(x);
 						}
 					}
 					subPollingFun = &XInputDevice.poll;
@@ -121,20 +114,21 @@ public int initInput(uint config = 0, uint osConfig = 0, string gcmTable = null)
 					case RIM_TYPEMOUSE:
 						Mouse m;
 						m = nogc_new!(Mouse)(toUTF8(data[0..nameRes]), mNum++, dev.hDevice);
-						devList ~= m;
+						devList ~= cast(InputDevice)m;
 						mouse = m;
 						break;
 					case RIM_TYPEKEYBOARD:
 						Keyboard k;
 						k = nogc_new!(Keyboard)(toUTF8(data[0..nameRes]), kbNum++, dev.hDevice);
-						devList ~= k;
+						devList ~= cast(InputDevice)k;
 						keyb = k;
 						break;
 					default:	//Must be RIM_TYPEHID
 						try {
 							RawGCMapping[] mapping = parseGCM(gcmTable, toUTF8(data[0..nameRes]));
 							if (mapping.length) {
-								devList ~= nogc_new!(RawInputGameController)(toUTF8(data[0..nameRes]), gcNum++, dev.hDevice, mapping);
+								devList ~= cast(InputDevice)nogc_new!(RawInputGameController)(toUTF8(data[0..nameRes]), gcNum++, dev.hDevice,
+										mapping);
 							}
 						} catch (Exception e) {
 							debug writeln(e);
@@ -149,8 +143,8 @@ public int initInput(uint config = 0, uint osConfig = 0, string gcmTable = null)
 		} else {
 			keyb = nogc_new!(Keyboard)();
 			mouse = nogc_new!(Mouse)();
-			devList ~= keyb;
-			devList ~= mouse;
+			devList ~= cast(InputDevice)keyb;
+			devList ~= cast(InputDevice)mouse;
 			mainPollingFun = &poll_win_LegacyIO;
 			if (config & ConfigFlags.gc_Enable) {
 				import iota.controls.backend.windows;
@@ -158,18 +152,18 @@ public int initInput(uint config = 0, uint osConfig = 0, string gcmTable = null)
 				for (int i ; i < 4 ; i++) {
 					XInputDevice x = nogc_new!(XInputDevice)(i, (config & ConfigFlags.gc_TriggerMode) != 0);
 					if (!x.isInvalidated) {
-						devList ~= x;
+						devList ~= cast(InputDevice)x;
 					}
 				}
 				subPollingFun = &XInputDevice.poll;
 			}
 		}
 	} else version(OSX) {
-	    keyb = nogc_new!Keyboard();
-	    mouse = nogc_new!Mouse();
-	    mainPollingFun = &poll_osx;
-	    devList ~= keyb;
-	    devList ~= mouse;
+		keyb = nogc_new!Keyboard();
+		mouse = nogc_new!Mouse();
+		mainPollingFun = &poll_osx;
+		devList ~= cast(InputDevice)keyb;
+		devList ~= cast(InputDevice)mouse;
 	} else {
 		if (osConfig & OSConfigFlags.libevdev_enable) {
 			try {
@@ -207,9 +201,9 @@ public int initInput(uint config = 0, uint osConfig = 0, string gcmTable = null)
 						string nameLC = toLower(name);
 						//Try to detect device type from name
 						if (canFind(nameLC, "keyboard", "keypad")) {
-							devList ~= nogc_new!Keyboard(name, keybCnrt++, fd, dev);
+							devList ~= cast(InputDevice)nogc_new!Keyboard(name, keybCnrt++, fd, dev);
 						} else if (canFind(nameLC, "mouse", "trackball")) {
-							devList ~= nogc_new!Mouse(name, mouseCnrt++, fd, dev);
+							devList ~= cast(InputDevice)nogc_new!Mouse(name, mouseCnrt++, fd, dev);
 						} else if (canFind(nameLC, "js")) {	//Likely a game controller, let's check the supplied table if exists
 							string uniqueID = cast(string)fromStringz(libevdev_get_uniq(dev));
 							RawGCMapping[] mapping;
@@ -232,8 +226,8 @@ public int initInput(uint config = 0, uint osConfig = 0, string gcmTable = null)
 		keyb = nogc_new!Keyboard();
 		mouse = nogc_new!Mouse();
 		mainPollingFun = &poll_x11_RegularIO;
-		devList ~= keyb;
-		devList ~= mouse;
+		devList ~= cast(InputDevice)keyb;
+		devList ~= cast(InputDevice)mouse;
 		//}
 	}
 	return InputInitializationStatus.AllOk;
@@ -277,12 +271,8 @@ version (Windows) {
 	];
 }
 
-public int removeInvalidatedDevices() {
-	for (int i ; i < devList.length ; i++) {
-		if (devList[i].isInvalidated) {
-			devList = devList[0..i] ~ devList[i + 1..$];
-		}
-	}
+public int removeInvalidatedDevices() @nogc nothrow {
+
 	return 0;
 }
 /**
@@ -290,7 +280,7 @@ public int removeInvalidatedDevices() {
  * Returns: Zero, or a specific error code if it was unsuccessful.
  * Bugs: Does not work with XInput at the moment.
  */
-public int checkForNewDevices() {
+public int checkForNewDevices() @nogc nothrow {
 	version (Windows) {
 		import iota.controls.backend.windows;
 		if ((__configFlags & ConfigFlags.gc_Enable) && (__osConfigFlags & OSConfigFlags.win_XInput)) {
@@ -301,8 +291,8 @@ public int checkForNewDevices() {
 				XINPUT_CAPABILITIES xic;
 				const DWORD result = XInputGetCapabilities(i, 0, &xic);
 				if (result == ERROR_SUCCESS) {
-					InputDevice x = new XInputDevice(1, (__configFlags & ConfigFlags.gc_TriggerMode) != 0);
-					if (!x.isInvalidated) devList ~= x;
+					InputDevice x = nogc_new!XInputDevice(1, (__configFlags & ConfigFlags.gc_TriggerMode) != 0);
+					if (!x.isInvalidated) devList ~= cast(InputDevice)x;
 				}
 			}
 		}

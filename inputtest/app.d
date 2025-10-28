@@ -46,19 +46,19 @@ immutable help = helpString!Options();
 
 const(ubyte)[] iconData = cast(const(ubyte)[])import("icon");
 
-void printDeviceList() {
-    version(OSX) {
-        auto devList = MTLCopyAllDevices();
-        writeln("Number of devices: ", devList.count);
-        for (NSUInteger i = 0; i < devList.count; i++) {
-            auto device = cast(MTLDevice)devList.objectAtIndex(i);
-            writeln("  Device ", i, ": ", device.name.toString);
-        }
-    }
-    else {
-		writeln(devList);
-    }
-}
+// void printDeviceList() {
+//     version(OSX) {
+//         auto devList = MTLCopyAllDevices();
+//         writeln("Number of devices: ", devList.count);
+//         for (NSUInteger i = 0; i < devList.count; i++) {
+//             auto device = cast(MTLDevice)devList.objectAtIndex(i);
+//             writeln("  Device ", i, ": ", device.name.toString);
+//         }
+//     }
+//     else {
+// 		writeln(devList);
+//     }
+// }
 
 int main(string[] args) {
 	//initWindow_ext();
@@ -92,7 +92,7 @@ int main(string[] args) {
 		writeln("Input initialization error! Code: ", errCode, /* " OSCode: ", GetLastError() */);
 		return 1;
 	}
-	printDeviceList();
+	// printDeviceList();
 	bool isRunning = true;
 	keyb.setTextInput(options.textinputtest == 1);
 	while (isRunning) {
@@ -179,17 +179,17 @@ int main(string[] args) {
 					inputSurface.setCursor(StandardCursors.ResizeVert);
 					break;
 				case ScanCode.F5:
-					checkForNewDevices();
-					printDeviceList();
+					// checkForNewDevices();
+					// printDeviceList();
 					break;
 				default: break;
 				}
 			} else if (event.type == InputEventType.DeviceRemoved) {
-				removeInvalidatedDevices();
-				printDeviceList();
+				// removeInvalidatedDevices();
+				// printDeviceList();
 			} else if (event.type == InputEventType.DeviceAdded) {
-				checkForNewDevices();
-				printDeviceList();
+				// checkForNewDevices();
+				// printDeviceList();
 			}
 			writeln(event.toString());
 		}

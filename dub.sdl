@@ -9,9 +9,10 @@ dependency "collections-d" version="*"
 dependency "bindbc-opengl" version="*"
 dependency "x11d" version="*"
 dependency "numem" version="*"
+dependency "nulib" version="*"
 versions "GL_AllowDeprecated"
 libs "asound" "GL" "X11" "Xext" "Xi" "evdev" platform="linux"
-libs "winmm" "gdi32" "user32" "opengl32" "xinput" "ole32" "comctl32" "GameInput" platform="windows"
+libs "winmm" "gdi32" "user32" "opengl32" "xinput" "ole32" "comctl32" platform="windows"
 
 //OSX specific
 configuration "osx" {

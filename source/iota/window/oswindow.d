@@ -8,7 +8,7 @@ version (Windows) {
 	import std.conv : to;
 	package extern(Windows) @nogc nothrow {
 		alias  PFNWGLCREATECONTEXTATTRIBSARBPROC = HGLRC function(HDC hDC, HGLRC hShareContext, const(int)* attribList);
-
+		UINT GetDpiForWindow(HWND hwnd);
 	}
 } else version(OSX) {
 	import cocoa;
@@ -1116,7 +1116,7 @@ public class OSWindow {
 		version (Windows) {
 			screenSize = [GetSystemMetrics(SM_CXVIRTUALSCREEN), GetSystemMetrics(SM_CXVIRTUALSCREEN),
 					GetSystemMetrics(SM_CXSCREEN), GetSystemMetrics(SM_CYSCREEN)];
-			screenDPI = [cast(double)GetDPIForWindow(windowHandle), cast(double)GetDPIForWindow(windowHandle)];
+			screenDPI = [cast(double)GetDpiForWindow(windowHandle), cast(double)GetDpiForWindow(windowHandle)];
 		} else version (OSX) {
 			NSScreen mainScreen = NSScreen.mainScreen();
 			if (mainScreen !is null) {
