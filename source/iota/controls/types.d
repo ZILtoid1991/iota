@@ -527,6 +527,7 @@ public struct InputEvent {
 		ClipboardEvent		clipboard;
 		ArbPtrEvent			arbPtr;
 		uint[8]				rawData;
+		ubyte[32]			rawDataBytes;
 	}
 
 	string toString() @trusted {

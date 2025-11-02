@@ -178,6 +178,7 @@ public enum GameControllerLabels : ubyte {
  */
 abstract class GameController : InputDevice, HapticDevice {
 	protected enum TriggerAsButton = 1<<8;
+	protected float hapticGain = 1.0;
 	/**
 	 * Returns all capabilities of the haptic device.
 	 */
@@ -584,14 +585,341 @@ version (Windows) {
 	}
 
 	public class GIGameController : GameController {
-		package static IGameInput* gameInputHandler;
+		package static IGameInput gameInputHandler;
+		package static IGameInputReading reading;
 		package static InputEvent[] processedInputEvents;
-		package static uint eventsIn, eventsOut, eventsModulo;
+		package static uint eventsIn;		///Position of events going in
+		package static uint eventsOut;		///Position of events going out
+		package static uint eventsModulo;	///Max number of events in buffer minus one
+		package static GameInputCallbackToken callbackToken;
+		package static GIGameController[16] references;
+		package static ubyte currCtrl;
+		package static ubyte allCtrls;
+		package static byte pollCntr;
+		package static bool triggerMode;
+		extern (Windows) static void deviceCallback(GameInputCallbackToken callbackToken, void* context,
+				IGameInputDevice device, uint64_t timestamp, uint currentStatus, uint previousStatus) @nogc nothrow {
+			if ((currentStatus & GameInputDeviceStatus.GameInputDeviceConnected) != 0) {	//Device connected
+				for (int i ; i < allCtrls ; i++) {
+					if (references[i].deviceHandle is device) {
 
+					}
+				}
+				import numem;
+				references[allCtrls] = nogc_new!GIGameController(device);
+				processedInputEvents[eventsOut & eventsModulo].timestamp = getTimestamp();
+				processedInputEvents[eventsOut & eventsModulo].type = InputEventType.DeviceAdded;
+				processedInputEvents[eventsOut & eventsModulo].source = references[allCtrls];
+				eventsOut++;
+				allCtrls++;
+			} else if ((previousStatus & GameInputDeviceStatus.GameInputDeviceConnected) != 0) {	//Device disconnected
+				for (int i ; i < allCtrls ; i++) {
+					if (references[i].deviceHandle is device) {
+						references[i].status |= InputDevice.StatusFlags.IsInvalidated;
+						processedInputEvents[eventsOut & eventsModulo].timestamp = getTimestamp();
+						processedInputEvents[eventsOut & eventsModulo].type = InputEventType.DeviceRemoved;
+						processedInputEvents[eventsOut & eventsModulo].source = references[i];
+						eventsOut++;
+						return;
+					}
+				}
+			}
+		}
+		extern (Windows) static void sysButtonCallback(GameInputCallbackToken callbackToken, void* context,
+		IGameInputDevice device, ulong timestamp, uint currentState, uint previousState) @nogc nothrow {
+			for (int i ; i < allCtrls ; i++) {
+				if (references[i].deviceHandle is device) {
+					if ((currentState ^ previousState) == GameInputSystemButtons.GameInputSystemButtonGuide) {
+						processedInputEvents[eventsOut & eventsModulo].timestamp = getTimestamp();
+						processedInputEvents[eventsOut & eventsModulo].type = InputEventType.GCButton;
+						processedInputEvents[eventsOut & eventsModulo].source = references[i];
+						processedInputEvents[eventsOut & eventsModulo].button.id = GameControllerButtons.Home;
+						processedInputEvents[eventsOut & eventsModulo].button.dir =
+								(currentState & GameInputSystemButtons.GameInputSystemButtonGuide) != 0;
+						processedInputEvents[eventsOut & eventsModulo].button.auxF = float.nan;
+						processedInputEvents[eventsOut & eventsModulo].button.aux = 0;
+						eventsOut++;
+					}
+					if ((currentState ^ previousState) == GameInputSystemButtons.GameInputSystemButtonShare) {
+						processedInputEvents[eventsOut & eventsModulo].timestamp = getTimestamp();
+						processedInputEvents[eventsOut & eventsModulo].type = InputEventType.GCButton;
+						processedInputEvents[eventsOut & eventsModulo].source = references[i];
+						processedInputEvents[eventsOut & eventsModulo].button.id = GameControllerButtons.Share;
+						processedInputEvents[eventsOut & eventsModulo].button.dir =
+								(currentState & GameInputSystemButtons.GameInputSystemButtonShare) != 0;
+						processedInputEvents[eventsOut & eventsModulo].button.auxF = float.nan;
+						processedInputEvents[eventsOut & eventsModulo].button.aux = 0;
+						eventsOut++;
+					}
+					return;
+				}
+			}
+		}
+		static int poll(out InputEvent output) @nogc nothrow {
+			void deviceEventCommons() @nogc nothrow {
+				output.source = references[currCtrl];
+				output.timestamp = getTimestamp();
+			}
+			if (eventsIn < eventsOut) {
+				output = processedInputEvents[eventsIn & eventsModulo];
+				eventsIn++;
+				return 1;
+			}
+			if (currCtrl >= allCtrls)  currCtrl = 0;
+			HRESULT st = gameInputHandler.GetCurrentReading(GameInputKind.GameInputKindGamepad, null, &reading);
+			while (currCtrl < allCtrls) {
+				while (pollCntr < 20) {
+					switch (pollCntr) {
+					case 0:
+						if (references[currCtrl].state.leftThumbstickX != references[currCtrl].prevState.leftThumbstickX) {
+							deviceEventCommons();
+							output.type = InputEventType.GCAxis;
+							output.axis.id = GameControllerAxes.LeftThumbstickX;
+							// output.axis.raw = references[currCtrl].state.leftThumbstickX;
+							output.axis.val = references[currCtrl].state.leftThumbstickX;
+							return 1;
+						}
+						break;
+					case 1:
+						if (references[currCtrl].state.leftThumbstickY != references[currCtrl].prevState.leftThumbstickY) {
+							deviceEventCommons();
+							output.type = InputEventType.GCAxis;
+							output.axis.id = GameControllerAxes.LeftThumbstickY;
+							// output.axis.raw = references[currCtrl].state.leftThumbstickY;
+							output.axis.val = references[currCtrl].state.leftThumbstickY;
+							return 1;
+						}
+						break;
+					case 2:
+						if (references[currCtrl].state.rightThumbstickX != references[currCtrl].prevState.rightThumbstickX) {
+							deviceEventCommons();
+							output.type = InputEventType.GCAxis;
+							output.axis.id = GameControllerAxes.RightThumbstickX;
+							// output.axis.raw = references[currCtrl].state.rightThumbstickX;
+							output.axis.val = references[currCtrl].state.rightThumbstickX;
+							return 1;
+						}
+						break;
+					case 3:
+						if (references[currCtrl].state.rightThumbstickY != references[currCtrl].prevState.rightThumbstickY) {
+							deviceEventCommons();
+							output.type = InputEventType.GCAxis;
+							output.axis.id = GameControllerAxes.RightThumbstickY;
+							// output.axis.raw = references[currCtrl].state.rightThumbstickY;
+							output.axis.val = references[currCtrl].state.rightThumbstickY;
+						}
+						return 1;
+					case 4:
+						if (references[currCtrl].state.leftTrigger != references[currCtrl].prevState.leftTrigger) {
+							deviceEventCommons();
+							if (triggerMode) {
+								output.type = InputEventType.GCButton;
+								output.button.id = GameControllerButtons.LeftTrigger;
+								output.button.dir = references[currCtrl].state.leftTrigger != 0.0;
+								output.button.auxF = references[currCtrl].state.leftTrigger;
+							} else {
+								output.type = InputEventType.GCAxis;
+								output.axis.id = GameControllerAxes.LeftTrigger;
+								output.axis.val = references[currCtrl].state.leftTrigger;
+							}
+							return 1;
+						}
+						break;
+					case 5:
+						if (references[currCtrl].state.rightTrigger != references[currCtrl].prevState.rightTrigger) {
+							deviceEventCommons();
+							if (triggerMode) {
+								output.type = InputEventType.GCButton;
+								output.button.id = GameControllerButtons.RightTrigger;
+								output.button.dir = references[currCtrl].state.rightTrigger != 0.0;
+								output.button.auxF = references[currCtrl].state.rightTrigger;
+							} else {
+								output.type = InputEventType.GCAxis;
+								output.axis.id = GameControllerAxes.RightTrigger;
+								output.axis.val = references[currCtrl].state.rightTrigger;
+							}
+							return 1;
+						}
+						break;
+					case 6:
+						if ((references[currCtrl].state.buttons ^ references[currCtrl].prevState.buttons) ==
+								GameInputGamepadButtons.GameInputGamepadDPadUp) {
+							deviceEventCommons();
+							output.type = InputEventType.GCButton;
+							output.button.id = GameControllerButtons.DPadUp;
+							output.button.dir = (references[currCtrl].state.buttons & GameInputGamepadButtons.GameInputGamepadDPadUp) != 0;
+							return 1;
+						}
+						break;
+					case 7:
+						if ((references[currCtrl].state.buttons ^ references[currCtrl].prevState.buttons) ==
+								GameInputGamepadButtons.GameInputGamepadDPadDown) {
+							deviceEventCommons();
+							output.type = InputEventType.GCButton;
+							output.button.id = GameControllerButtons.DPadDown;
+							output.button.dir = (references[currCtrl].state.buttons & GameInputGamepadButtons.GameInputGamepadDPadDown) != 0;
+							return 1;
+						}
+						break;
+					case 8:
+						if ((references[currCtrl].state.buttons ^ references[currCtrl].prevState.buttons) ==
+								GameInputGamepadButtons.GameInputGamepadDPadLeft) {
+							deviceEventCommons();
+							output.type = InputEventType.GCButton;
+							output.button.id = GameControllerButtons.DPadLeft;
+							output.button.dir = (references[currCtrl].state.buttons & GameInputGamepadButtons.GameInputGamepadDPadLeft) != 0;
+							return 1;
+						}
+						break;
+					case 9:
+						if ((references[currCtrl].state.buttons ^ references[currCtrl].prevState.buttons) ==
+								GameInputGamepadButtons.GameInputGamepadDPadRight) {
+							deviceEventCommons();
+							output.type = InputEventType.GCButton;
+							output.button.id = GameControllerButtons.DPadRight;
+							output.button.dir = (references[currCtrl].state.buttons & GameInputGamepadButtons.GameInputGamepadDPadRight) != 0;
+							return 1;
+						}
+						break;
+					case 10:
+						if ((references[currCtrl].state.buttons ^ references[currCtrl].prevState.buttons) ==
+								GameInputGamepadButtons.GameInputGamepadA) {
+							deviceEventCommons();
+							output.type = InputEventType.GCButton;
+							output.button.id = GameControllerButtons.South;
+							output.button.dir = (references[currCtrl].state.buttons & GameInputGamepadButtons.GameInputGamepadA) != 0;
+							return 1;
+						}
+						break;
+					case 11:
+						if ((references[currCtrl].state.buttons ^ references[currCtrl].prevState.buttons) ==
+								GameInputGamepadButtons.GameInputGamepadB) {
+							deviceEventCommons();
+							output.type = InputEventType.GCButton;
+							output.button.id = GameControllerButtons.East;
+							output.button.dir = (references[currCtrl].state.buttons & GameInputGamepadButtons.GameInputGamepadB) != 0;
+							return 1;
+						}
+						break;
+					case 12:
+						if ((references[currCtrl].state.buttons ^ references[currCtrl].prevState.buttons) ==
+								GameInputGamepadButtons.GameInputGamepadX) {
+							deviceEventCommons();
+							output.type = InputEventType.GCButton;
+							output.button.id = GameControllerButtons.West;
+							output.button.dir = (references[currCtrl].state.buttons & GameInputGamepadButtons.GameInputGamepadX) != 0;
+							return 1;
+						}
+						break;
+					case 13:
+						if ((references[currCtrl].state.buttons ^ references[currCtrl].prevState.buttons) ==
+								GameInputGamepadButtons.GameInputGamepadY) {
+							deviceEventCommons();
+							output.type = InputEventType.GCButton;
+							output.button.id = GameControllerButtons.North;
+							output.button.dir = (references[currCtrl].state.buttons & GameInputGamepadButtons.GameInputGamepadY) != 0;
+							return 1;
+						}
+						break;
+					case 14:
+						if ((references[currCtrl].state.buttons ^ references[currCtrl].prevState.buttons) ==
+								GameInputGamepadButtons.GameInputGamepadLeftShoulder) {
+							deviceEventCommons();
+							output.type = InputEventType.GCButton;
+							output.button.id = GameControllerButtons.LeftShoulder;
+							output.button.dir = (references[currCtrl].state.buttons & GameInputGamepadButtons.GameInputGamepadLeftShoulder)
+									!= 0;
+							return 1;
+						}
+						break;
+					case 15:
+						if ((references[currCtrl].state.buttons ^ references[currCtrl].prevState.buttons) ==
+								GameInputGamepadButtons.GameInputGamepadRightShoulder) {
+							deviceEventCommons();
+							output.type = InputEventType.GCButton;
+							output.button.id = GameControllerButtons.RightShoulder;
+							output.button.dir = (references[currCtrl].state.buttons & GameInputGamepadButtons.GameInputGamepadRightShoulder)
+									!= 0;
+							return 1;
+						}
+						break;
+					case 16:
+						if ((references[currCtrl].state.buttons ^ references[currCtrl].prevState.buttons) ==
+								GameInputGamepadButtons.GameInputGamepadLeftThumbstick) {
+							deviceEventCommons();
+							output.type = InputEventType.GCButton;
+							output.button.id = GameControllerButtons.LeftThumbstick;
+							output.button.dir = (references[currCtrl].state.buttons & GameInputGamepadButtons.GameInputGamepadLeftThumbstick)
+									!= 0;
+							return 1;
+						}
+						break;
+					case 17:
+						if ((references[currCtrl].state.buttons ^ references[currCtrl].prevState.buttons) ==
+								GameInputGamepadButtons.GameInputGamepadRightThumbstick) {
+							deviceEventCommons();
+							output.type = InputEventType.GCButton;
+							output.button.id = GameControllerButtons.RightThumbstick;
+							output.button.dir = (references[currCtrl].state.buttons & GameInputGamepadButtons.GameInputGamepadRightThumbstick)
+									!= 0;
+							return 1;
+						}
+						break;
+					case 18:
+						if ((references[currCtrl].state.buttons ^ references[currCtrl].prevState.buttons) ==
+								GameInputGamepadButtons.GameInputGamepadView) {
+							deviceEventCommons();
+							output.type = InputEventType.GCButton;
+							output.button.id = GameControllerButtons.LeftNav;
+							output.button.dir = (references[currCtrl].state.buttons & GameInputGamepadButtons.GameInputGamepadView)
+									!= 0;
+							return 1;
+						}
+						break;
+					case 19:
+						if ((references[currCtrl].state.buttons ^ references[currCtrl].prevState.buttons) ==
+								GameInputGamepadButtons.GameInputGamepadMenu) {
+							deviceEventCommons();
+							output.type = InputEventType.GCButton;
+							output.button.id = GameControllerButtons.RightNav;
+							output.button.dir = (references[currCtrl].state.buttons & GameInputGamepadButtons.GameInputGamepadMenu)
+									!= 0;
+							return 1;
+						}
+						break;
+					default:
+						currCtrl++;
+						break;
+					}
+					pollCntr++;
+				}
+				pollCntr = 0;
+				currCtrl++;
+			}
+			return 0;
+		}
 		shared static ~this() {
 			if (gameInputHandler) {
 				gameInputHandler.Release();
 			}
+			import numem;
+			nu_freea(processedInputEvents);
+		}
+		package IGameInputDevice deviceHandle;
+		package GameInputGamepadState state, prevState;
+		package GameInputRumbleParams rumbleParams;
+		this(IGameInputDevice deviceHandle) @safe @nogc nothrow pure {
+			this.deviceHandle = deviceHandle;
+		}
+		public override uint[] getCapabilities() @safe nothrow {
+			return [HapticDevice.Capabilities.LeftMotor, HapticDevice.Capabilities.RightMotor,
+					HapticDevice.Capabilities.TriggerRumble];
+		}
+		public override uint[] getZones(uint capability) @safe nothrow {
+			if (capability == HapticDevice.Capabilities.TriggerRumble) {
+				return [HapticDevice.Zones.Left, HapticDevice.Zones.Right];
+			}
+			return null;
 		}
 	}
 } else version (OSX) {

@@ -85,10 +85,21 @@ public int initInput(uint config = 0, uint osConfig = 0, string gcmTable = null)
 					}
 					subPollingFun = &XInputDevice.poll;
 				}
-				version (IOTA_GAMEINPUT_ENABLE) if (osConfig & OSConfigFlags.win_GameInput) {
+				if (osConfig & OSConfigFlags.win_GameInput) {
 					import iota.controls.backend.windows;
-					const HRESULT isGIInitialized = GameInputCreate(&GIGameController.gameInputHandler);
+					HRESULT statusGameInput = GameInputCreate(&GIGameController.gameInputHandler);
+					if (!statusGameInput && GIGameController.gameInputHandler !is null) {
+						//Initialize event buffer
+						GIGameController.processedInputEvents = nu_malloca!InputEvent(256);
+						GIGameController.eventsModulo = 255;
+						GIGameController.gameInputHandler.RegisterDeviceCallback(null, GameInputKind.GameInputKindGamepad,
+								GameInputDeviceStatus.GameInputDeviceAnyStatus, GameInputEnumerationKind.GameInputAsyncEnumeration, null,
+								&GIGameController.deviceCallback, &GIGameController.callbackToken);
+						// statusGameInput = GIGameController.gameInputHandler.CreateDispatcher(&GIGameController.dispatcher);
+
+					}
 				}
+
 			}
 			if (RegisterRawInputDevices(rid.ptr, cast(UINT)rid.length, cast(UINT)(RAWINPUTDEVICE.sizeof)) == FALSE) {
 				return InputInitializationStatus.win_RawInputError;
