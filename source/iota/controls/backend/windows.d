@@ -407,16 +407,15 @@ interface IGameInputReading : IUnknown {
 	bool GetUiNavigationState(GameInputUiNavigationState* state);
 }
 alias GameInputDeviceCallback = extern(Windows) void function(GameInputCallbackToken callbackToken, void* context,
-		IGameInputDevice* device, uint64_t timestamp, GameInputDeviceStatus currentStatus,
-		GameInputDeviceStatus previousStatus);
+		IGameInputDevice device, uint64_t timestamp, uint currentStatus, uint previousStatus) @nogc nothrow;
 alias GameInputGuideButtonCallback = extern(Windows) void function(GameInputCallbackToken callbackToken, void* context,
-		IGameInputDevice* device, uint64_t timestamp, bool isPressed);
+		IGameInputDevice device, uint64_t timestamp, bool isPressed) @nogc nothrow;
 alias GameInputSystemButtonCallback = void function(GameInputCallbackToken callbackToken, void* context,
-		IGameInputDevice* device, uint64_t timestamp, uint currentState, uint previousState);
+		IGameInputDevice device, uint64_t timestamp, uint currentState, uint previousState) @nogc nothrow;
 alias GameInputKeyboardLayoutCallback = void function(GameInputCallbackToken callbackToken, void* context,
-		IGameInputDevice* device, uint64_t timestamp, uint32_t currentLayout, uint32_t previousLayout);
+		IGameInputDevice device, uint64_t timestamp, uint32_t currentLayout, uint32_t previousLayout) @nogc nothrow;
 alias GameInputReadingCallback = void function(GameInputCallbackToken callbackToken, void* context,
-		IGameInputReading* reading, bool hasOverrunOccurred);
+		IGameInputReading reading, bool hasOverrunOccurred) @nogc nothrow;
 struct GameInputArcadeStickState {
 	uint buttons;
 }
@@ -1158,4 +1157,58 @@ enum GameInputRawDeviceItemCollectionKind {
 	GameInputUsageModifierItemCollection = 6
 }
 
-
+enum GameInputErrorCodes {
+	E_GAME_MISSING_GAME_CONFIG 	=									0x87e5001F,
+	E_GAMERUNTIME_NOT_INITIALIZED =									0x89240100,
+	E_GAMERUNTIME_DLL_NOT_FOUND =									0x89240101,
+	E_GAMERUNTIME_VERSION_MISMATCH =								0x89240102,
+	E_GAMERUNTIME_WINDOW_NOT_FOREGROUND	=							0x89240103,
+	E_GAMERUNTIME_SUSPENDED =										0x89240104,
+	E_GAMERUNTIME_UNINITIALIZE_ACTIVEOBJECTS 	=					0x89240105,
+	E_GAMERUNTIME_MULTIPLAYER_NOT_CONFIGURED 	=					0x89240106,
+	E_GAMERUNTIME_OPTIONS_MISMATCH 	=								0x89240109,
+	E_GAMERUNTIME_OPTIONS_NOT_SUPPORTED =							0x8924010A,
+	E_GAMERUNTIME_GAMECONFIG_BAD_FORMAT =							0x8924010B,
+	E_GAMERUNTIME_INVALID_HANDLE 	=								0x8924010C,
+	E_GAMEUSER_MAX_USERS_ADDED 	=									0x89245100,
+	E_GAMEUSER_SIGNED_OUT 	=										0x89245101,
+	E_GAMEUSER_RESOLVE_USER_ISSUE_REQUIRED 	=						0x89245102,
+	E_GAMEUSER_DEFERRAL_NOT_AVAILABLE 	=							0x89245103,
+	E_GAMEUSER_USER_NOT_FOUND 	=									0x89245104,
+	E_GAMEUSER_NO_TOKEN_REQUIRED 	=								0x89245105,
+	E_GAMEUSER_NO_DEFAULT_USER 	=									0x89245106,
+	E_GAMEUSER_FAILED_TO_RESOLVE 	=								0x89245107,
+	E_GAMEUSER_NO_TITLE_ID 	=										0x89245108,
+	E_GAMEUSER_UNKNOWN_GAME_IDENTITY 	=							0x89245109,
+	E_GAMEUSER_NO_PACKAGE_IDENTITY 	=								0x89245110,
+	E_GAMEUSER_FAILED_TO_GET_TOKEN 	=								0x89245111,
+	E_GAMEUSER_INVALID_APP_CONFIGURATION 	=						0x89245112,
+	E_GAMEUSER_MALFORMED_MSAAPPID 	=								0x89245113,
+	E_GAMEUSER_INCONSISTENT_MSAAPPID_AND_TITLEID =					0x89245114,
+	E_GAMEPACKAGE_APP_NOT_PACKAGED 	=								0x89245200,
+	E_GAMEPACKAGE_NO_INSTALLED_LANGUAGES 	=						0x89245201,
+	E_GAMEPACKAGE_NO_STORE_ID 	=									0x89245202,
+	E_GAMEPACKAGE_INVALID_SELECTOR 	=								0x89245203,
+	E_GAMEPACKAGE_DOWNLOAD_REQUIRED 	=							0x89245204,
+	E_GAMEPACKAGE_NO_TAG_CHANGE 	=								0x89245205,
+	E_GAMEPACKAGE_DLC_NOT_SUPPORTED 	=							0x89245206,
+	E_GAMEPACKAGE_DUPLICATE_ID_VALUES 	=							0x89245207,
+	E_GAMEPACKAGE_NO_PACKAGE_IDENTIFIER 	=						0x89245208,
+	E_GAMEPACKAGE_CONFIG_NO_ROOT_NODE 	=							0x89245209,
+	E_GAMEPACKAGE_CONFIG_ZERO_VERSION 	=							0x8924520A,
+	E_GAMEPACKAGE_CONFIG_NO_MSAAPPID_NOTITLEID 	=					0x8924520B,
+	E_GAMEPACKAGE_CONFIG_DEPRECATED_PC_ENTRIES 	=					0x8924520C,
+	E_GAMEPACKAGE_CONFIG_SUM_REQUIRES_MSAAPPID 	=					0x8924520D,
+	E_GAMEPACKAGE_CONFIG_NO_CODE_CLOUD_SAVES_REQUIRES_MSAAPPID 	=	0x8924520E,
+	E_GAMEPACKAGE_CONFIG_MSAAPPID_OR_TITLEID_IS_DEFAULT 	=		0x8924520F,
+	E_GAMESTORE_LICENSE_ACTION_NOT_APPLICABLE_TO_PRODUCT 	=		0x89245300,
+	E_GAMESTORE_NETWORK_ERROR 	=									0x89245301,
+	E_GAMESTORE_SERVER_ERROR 	=									0x89245302,
+	E_GAMESTORE_INSUFFICIENT_QUANTITY 	=							0x89245303,
+	E_GAMESTORE_ALREADY_PURCHASED 	=								0x89245304,
+	E_GAMESTREAMING_NOT_INITIALIZED 	=							0x89245400,
+	E_GAMESTREAMING_CLIENT_NOT_CONNECTED 	=						0x89245401,
+	E_GAMESTREAMING_NO_DATA 	=									0x89245402,
+	E_GAMESTREAMING_NO_DATACENTER 	=								0x89245403,
+	E_GAMESTREAMING_NOT_STREAMING_CONTROLLER 	=					0x89245404,
+}
