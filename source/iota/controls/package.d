@@ -167,7 +167,7 @@ public int initInput(uint config = 0, uint osConfig = 0, string gcmTable = null)
 					GIGameController.gameInputHandler.RegisterDeviceCallback(null, GameInputKind.GameInputKindGamepad,
 							GameInputDeviceStatus.GameInputDeviceAnyStatus, GameInputEnumerationKind.GameInputAsyncEnumeration, null,
 							&GIGameController.deviceCallback, &GIGameController.callbackToken);
-					GIGameController.gameInputHandler;
+					// GIGameController.gameInputHandler;
 					// statusGameInput = GIGameController.gameInputHandler.CreateDispatcher(&GIGameController.dispatcher);
 
 				}
