@@ -72,33 +72,7 @@ public int initInput(uint config = 0, uint osConfig = 0, string gcmTable = null)
 					rid ~= RAWINPUTDEVICE(0x0001, 0x0004, flags, handle);
 					rid ~= RAWINPUTDEVICE(0x0001, 0x0008, flags, handle);
 				}
-				if (osConfig & OSConfigFlags.win_XInput) {
-					import iota.controls.backend.windows;
-					XInputEnable(256);
-					for (int i ; i < 4 ; i++) {
-						XInputDevice x = nogc_new!(XInputDevice)(i, (config & ConfigFlags.gc_TriggerMode) != 0);
-						if (!x.isInvalidated) {
-							devList ~= cast(InputDevice)x;
-						} else {
-							nogc_delete(x);
-						}
-					}
-					subPollingFun = &XInputDevice.poll;
-				}
-				if (osConfig & OSConfigFlags.win_GameInput) {
-					import iota.controls.backend.windows;
-					HRESULT statusGameInput = GameInputCreate(&GIGameController.gameInputHandler);
-					if (!statusGameInput && GIGameController.gameInputHandler !is null) {
-						//Initialize event buffer
-						GIGameController.processedInputEvents = nu_malloca!InputEvent(256);
-						GIGameController.eventsModulo = 255;
-						GIGameController.gameInputHandler.RegisterDeviceCallback(null, GameInputKind.GameInputKindGamepad,
-								GameInputDeviceStatus.GameInputDeviceAnyStatus, GameInputEnumerationKind.GameInputAsyncEnumeration, null,
-								&GIGameController.deviceCallback, &GIGameController.callbackToken);
-						// statusGameInput = GIGameController.gameInputHandler.CreateDispatcher(&GIGameController.dispatcher);
 
-					}
-				}
 
 			}
 			if (RegisterRawInputDevices(rid.ptr, cast(UINT)rid.length, cast(UINT)(RAWINPUTDEVICE.sizeof)) == FALSE) {
@@ -167,6 +141,36 @@ public int initInput(uint config = 0, uint osConfig = 0, string gcmTable = null)
 					}
 				}
 				subPollingFun = &XInputDevice.poll;
+			}
+		}
+		if (config & ConfigFlags.gc_Enable) {
+			if (osConfig & OSConfigFlags.win_XInput) {
+				import iota.controls.backend.windows;
+				XInputEnable(256);
+				for (int i ; i < 4 ; i++) {
+					XInputDevice x = nogc_new!(XInputDevice)(i, (config & ConfigFlags.gc_TriggerMode) != 0);
+					if (!x.isInvalidated) {
+						devList ~= cast(InputDevice)x;
+					} else {
+						nogc_delete(x);
+					}
+				}
+				subPollingFun = &XInputDevice.poll;
+			}
+			if (osConfig & OSConfigFlags.win_GameInput) {
+				import iota.controls.backend.windows;
+				HRESULT statusGameInput = GameInputCreate(&GIGameController.gameInputHandler);
+				if (!statusGameInput && GIGameController.gameInputHandler !is null) {
+					//Initialize event buffer
+					GIGameController.processedInputEvents = nu_malloca!InputEvent(256);
+					GIGameController.eventsModulo = 255;
+					GIGameController.gameInputHandler.RegisterDeviceCallback(null, GameInputKind.GameInputKindGamepad,
+							GameInputDeviceStatus.GameInputDeviceAnyStatus, GameInputEnumerationKind.GameInputAsyncEnumeration, null,
+							&GIGameController.deviceCallback, &GIGameController.callbackToken);
+					GIGameController.gameInputHandler;
+					// statusGameInput = GIGameController.gameInputHandler.CreateDispatcher(&GIGameController.dispatcher);
+
+				}
 			}
 		}
 	} else version(OSX) {

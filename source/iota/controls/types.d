@@ -170,6 +170,7 @@ public enum HapticDeviceStatus {
 	OutOfRange,
 	FrequencyNeeded,
 	ComplexParamsNeeded,	///Haptic capability requires to be applied through a different function call
+	UnsupportedZone,
 }
 /** 
  * Defines text edit event flags.

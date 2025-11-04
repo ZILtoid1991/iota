@@ -183,6 +183,7 @@ enum GameInputKind
 
 const IID IID_IGameInput = makeGuid!"11BE2A7E-4254-445A-9C09-FFC40F006918";
 interface IGameInput : IUnknown {
+extern(Windows) @nogc nothrow:
 	uint64_t GetCurrentTimestamp();
 	HRESULT GetCurrentReading(GameInputKind inputKind, IGameInputDevice device, IGameInputReading* reading);
 	HRESULT GetNextReading(IGameInputReading referenceReading, GameInputKind inputKind, IGameInputDevice device,
@@ -216,6 +217,7 @@ interface IGameInput : IUnknown {
 
 const IID IID_IGameInputDevice = makeGuid!"31DD86FB-4C1B-408A-868F-439B3CD47125";
 interface IGameInputDevice : IUnknown {
+extern(Windows) @nogc nothrow:
 	GameInputDeviceInfo* GetDeviceInfo();
 	GameInputDeviceStatus GetDeviceStatus();
 	void GetBatteryState(GameInputBatteryState* state);	//Note: This function is not yet implemented.
@@ -367,6 +369,7 @@ enum GameInputForceFeedbackEffectKind
 }
 const IID IID_IGameInputForceFeedbackEffect = makeGuid!"51BDA05E-F742-45D9-B085-9444AE48381D";
 interface IGameInputForceFeedbackEffect : IUnknown {
+extern(Windows) @nogc nothrow:
 	void GetDevice(IGameInputDevice* device);
 	uint32_t GetMotorIndex();
 	float GetGain();
@@ -378,11 +381,13 @@ interface IGameInputForceFeedbackEffect : IUnknown {
 }
 const IID IID_IGameInputDispatcher = makeGuid!"415EED2E-98CB-42C2-8F28-B94601074E31";
 interface IGameInputDispatcher : IUnknown {
+extern(Windows) @nogc nothrow:
 	bool Dispatch(uint64_t quotaInMicroseconds);
 	HRESULT OpenWaitHandle(HANDLE* waitHandle);
 }
 const IID IID_IGameInputReading = makeGuid!"2156947A-E1FA-4DE0-A30B-D812931DBD8D";
 interface IGameInputReading : IUnknown {
+extern(Windows) @nogc nothrow:
 	GameInputKind GetInputKind();
 	uint64_t GetSequenceNumber(GameInputKind inputKind);
 	uint64_t GetTimestamp();
@@ -1002,6 +1007,7 @@ enum GameInputRacingWheelButtons {
 }
 const IID IID_IGameInputRawDeviceReport = makeGuid!"61F08CF1-1FFC-40CA-A2B8-E1AB8BC5B6DC";
 interface IGameInputRawDeviceReport : IUnknown {	//Note: this interface is not yet implemented
+extern(Windows) @nogc nothrow:
 	void GetDevice(IGameInputDevice* device);
 	GameInputRawDeviceReportInfo* GetReportInfo();
 	size_t GetRawDataSize();

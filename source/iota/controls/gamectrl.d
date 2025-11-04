@@ -598,10 +598,10 @@ version (Windows) {
 		package static byte pollCntr;
 		package static bool triggerMode;
 		extern (Windows) static void deviceCallback(GameInputCallbackToken callbackToken, void* context,
-				IGameInputDevice device, uint64_t timestamp, uint currentStatus, uint previousStatus) @nogc nothrow {
+				IGameInputDevice device, ulong timestamp, uint currentStatus, uint previousStatus) @nogc nothrow {
 			if ((currentStatus & GameInputDeviceStatus.GameInputDeviceConnected) != 0) {	//Device connected
 				for (int i ; i < allCtrls ; i++) {
-					if (references[i].deviceHandle is device) {
+					if (references[i].deviceHandle == device) {
 
 					}
 				}
@@ -628,7 +628,7 @@ version (Windows) {
 		extern (Windows) static void sysButtonCallback(GameInputCallbackToken callbackToken, void* context,
 		IGameInputDevice device, ulong timestamp, uint currentState, uint previousState) @nogc nothrow {
 			for (int i ; i < allCtrls ; i++) {
-				if (references[i].deviceHandle is device) {
+				if (references[i].deviceHandle == device) {
 					if ((currentState ^ previousState) == GameInputSystemButtons.GameInputSystemButtonGuide) {
 						processedInputEvents[eventsOut & eventsModulo].timestamp = getTimestamp();
 						processedInputEvents[eventsOut & eventsModulo].type = InputEventType.GCButton;
@@ -896,6 +896,7 @@ version (Windows) {
 				pollCntr = 0;
 				currCtrl++;
 			}
+			currCtrl = 0;
 			return 0;
 		}
 		shared static ~this() {
@@ -910,6 +911,7 @@ version (Windows) {
 		package GameInputRumbleParams rumbleParams;
 		this(IGameInputDevice deviceHandle) @safe @nogc nothrow pure {
 			this.deviceHandle = deviceHandle;
+			rumbleParams = GameInputRumbleParams(0.0, 0.0, 0.0, 0.0);
 		}
 		public override uint[] getCapabilities() @safe nothrow {
 			return [HapticDevice.Capabilities.LeftMotor, HapticDevice.Capabilities.RightMotor,
@@ -920,6 +922,45 @@ version (Windows) {
 				return [HapticDevice.Zones.Left, HapticDevice.Zones.Right];
 			}
 			return null;
+		}
+		/**
+		 * Applies a given effect.
+		 * Params:
+		 *   capability: The capability to be used.
+		 *   zone: The zone where the effect should be used.
+		 *   val: Either the strength of the capability (between 0.0 and 1.0), or the frequency.
+		 * Returns: 0 on success, or a specific error code.
+		 */
+		public override int applyEffect(uint capability, uint zone, float val, float freq = float.nan) nothrow {
+			void _trustedWrapper() @nogc @trusted nothrow {
+				deviceHandle.SetRumbleState(&rumbleParams);
+			}
+			if (deviceHandle is null) return HapticDeviceStatus.DeviceInvalidated;
+			switch (capability) {
+			case HapticDevice.Capabilities.LeftMotor:
+				if (val < 0.0 || val > 1.0) return HapticDeviceStatus.OutOfRange;
+				rumbleParams.lowFrequency = val;
+				break;
+			case HapticDevice.Capabilities.RightMotor:
+				if (val < 0.0 || val > 1.0) return HapticDeviceStatus.OutOfRange;
+				rumbleParams.highFrequency = val;
+				break;
+			case HapticDevice.Capabilities.TriggerRumble:
+				if (val < 0.0 || val > 1.0) return HapticDeviceStatus.OutOfRange;
+				switch (zone) {
+				case HapticDevice.Zones.Left:
+					rumbleParams.leftTrigger = val;
+					break;
+				case HapticDevice.Zones.Right:
+					rumbleParams.rightTrigger = val;
+					break;
+				default: return HapticDeviceStatus.UnsupportedZone;
+				}
+				break;
+			default: return HapticDeviceStatus.UnsupportedCapability;
+			}
+			_trustedWrapper();
+			return HapticDeviceStatus.AllOk;
 		}
 	}
 } else version (OSX) {
