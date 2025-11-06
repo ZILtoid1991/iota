@@ -196,7 +196,7 @@ abstract class GameController : InputDevice, HapticDevice {
 	 *   val: Either the strength of the capability (between 0.0 and 1.0), or the frequency.
 	 * Returns: 0 on success, or a specific error code.
 	 */
-	public abstract int applyEffect(uint capability, uint zone, float val, float freq = float.nan) nothrow;
+	public abstract int applyEffect(uint capability, uint zone, float val, float freq = float.nan) @trusted nothrow;
 	/**
 	 * Applies an envelop-style effect with variable
 	 * Params:
@@ -252,11 +252,11 @@ public class RawInputGameController : GameController {
 			status |= StatusFlags.IsConnected;
 		}
 	}
-	override public uint[] getCapabilities() @safe nothrow {
+	override public const(uint)[] getCapabilities() @safe nothrow {
 		return null; // TODO: implement
 	}
 
-	override public uint[] getZones(uint capability) @safe nothrow {
+	override public const(uint)[] getZones(uint capability) @safe nothrow {
 		return null; // TODO: implement
 	}
 
@@ -533,14 +533,15 @@ version (Windows) {
 		/**
 		* Returns all capabilities of the haptic device.
 		*/
-		public override uint[] getCapabilities() @safe nothrow {
-			return [HapticDevice.Capabilities.LeftMotor, HapticDevice.Capabilities.RightMotor];
+		public override const(uint)[] getCapabilities() @safe nothrow {
+			static const(uint)[] result = [HapticDevice.Capabilities.LeftMotor, HapticDevice.Capabilities.RightMotor];
+			return result;
 		}
 		/**
 		* Returns all zones associated with the capability of the device.
 		* Returns null if zones are not applicable for the device's given capability.
 		*/
-		public override uint[] getZones(uint capability) @safe nothrow {
+		public override const(uint)[] getZones(uint capability) @safe nothrow {
 			return null;
 		}
 		/**
@@ -655,7 +656,7 @@ version (Windows) {
 				}
 			}
 		}
-		static int poll(out InputEvent output) @nogc nothrow {
+		static int poll(out InputEvent output) @system @nogc nothrow {
 			void deviceEventCommons() @nogc nothrow {
 				output.source = references[currCtrl];
 				output.timestamp = getTimestamp();
@@ -777,7 +778,7 @@ version (Windows) {
 							deviceEventCommons();
 							output.type = InputEventType.GCButton;
 							output.button.id = GameControllerButtons.DPadRight;
-							output.button.dir = (references[currCtrl].state.buttons & GameInputGamepadButtons.GameInputGamepadDPadRight) != 0;
+							output.button.dir =(references[currCtrl].state.buttons & GameInputGamepadButtons.GameInputGamepadDPadRight) != 0;
 							return 1;
 						}
 						break;
@@ -913,13 +914,15 @@ version (Windows) {
 			this.deviceHandle = deviceHandle;
 			rumbleParams = GameInputRumbleParams(0.0, 0.0, 0.0, 0.0);
 		}
-		public override uint[] getCapabilities() @safe nothrow {
-			return [HapticDevice.Capabilities.LeftMotor, HapticDevice.Capabilities.RightMotor,
+		public override const(uint)[] getCapabilities() @safe nothrow {
+			static const(uint)[] result = [HapticDevice.Capabilities.LeftMotor, HapticDevice.Capabilities.RightMotor,
 					HapticDevice.Capabilities.TriggerRumble];
+			return result;
 		}
-		public override uint[] getZones(uint capability) @safe nothrow {
+		public override const(uint)[] getZones(uint capability) @safe nothrow {
 			if (capability == HapticDevice.Capabilities.TriggerRumble) {
-				return [HapticDevice.Zones.Left, HapticDevice.Zones.Right];
+				static const(uint)[] result = [HapticDevice.Zones.Left, HapticDevice.Zones.Right];
+				return result;
 			}
 			return null;
 		}
@@ -931,10 +934,8 @@ version (Windows) {
 		 *   val: Either the strength of the capability (between 0.0 and 1.0), or the frequency.
 		 * Returns: 0 on success, or a specific error code.
 		 */
-		public override int applyEffect(uint capability, uint zone, float val, float freq = float.nan) nothrow {
-			void _trustedWrapper() @nogc @trusted nothrow {
-				deviceHandle.SetRumbleState(&rumbleParams);
-			}
+		public override int applyEffect(uint capability, uint zone, float val, float freq = float.nan) @nogc @trusted
+			nothrow {
 			if (deviceHandle is null) return HapticDeviceStatus.DeviceInvalidated;
 			switch (capability) {
 			case HapticDevice.Capabilities.LeftMotor:
@@ -959,7 +960,20 @@ version (Windows) {
 				break;
 			default: return HapticDeviceStatus.UnsupportedCapability;
 			}
-			_trustedWrapper();
+			deviceHandle.SetRumbleState(&rumbleParams);
+			return HapticDeviceStatus.AllOk;
+		}
+		/**
+		* Stops all haptic effects of the device.
+		* Returns: 0 on success, or a specific error code.
+		*/
+		public override int reset() @nogc @trusted nothrow {
+			rumbleParams.highFrequency = 0.0;
+			rumbleParams.lowFrequency = 0.0;
+			rumbleParams.leftTrigger = 0.0;
+			rumbleParams.rightTrigger = 0.0;
+			if (deviceHandle is null) return HapticDeviceStatus.DeviceInvalidated;
+			deviceHandle.SetRumbleState(&rumbleParams);
 			return HapticDeviceStatus.AllOk;
 		}
 	}
@@ -967,17 +981,18 @@ version (Windows) {
 	public class GCGameController : GameController {
 		protected GCController* controller;
 
-		public override uint[] getCapabilities() @safe nothrow {
+		public override const(uint)[] getCapabilities() @safe nothrow {
 			if (controller.haptics)
 				return [HapticDevice.Capabilities.LeftMotor, HapticDevice.Capabilities.RightMotor];
 			return null;
 		}
 
-		public override uint[] getZones(uint capability) @safe nothrow {
+		public override const(uint)[] getZones(uint capability) @safe nothrow {
 			return null;
 		}
 
-   	    public override int applyEffect(uint capability, uint zone, float val, float freq = float.nan) @trusted nothrow {
+   	    public override int applyEffect(uint capability, uint zone, float val, float freq = float.nan)
+				@trusted nothrow {
 			if (!controller.haptics)
 				return HapticDeviceStatus.UnsupportedCapability;
 

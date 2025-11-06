@@ -293,12 +293,12 @@ public interface HapticDevice {
 	/**
 	 * Returns all capabilities of the haptic device.
 	 */
-	public uint[] getCapabilities() @safe nothrow;
+	public const(uint)[] getCapabilities() @nogc @safe nothrow;
 	/**
 	 * Returns all zones associated with the capability of the device.
 	 * Returns null if zones are not applicable for the device's given capability.
 	 */
-	public uint[] getZones(uint capability) @safe nothrow;
+	public const(uint)[] getZones(uint capability) @nogc @safe nothrow;
 	/**
 	 * Applies a simple effect.
 	 * Params:
@@ -309,7 +309,7 @@ public interface HapticDevice {
 	 * Returns: 0 on success, or a specific error code.
 	 * Note: Has an automatic timeout on certain API.
 	 */
-	public int applyEffect(uint capability, uint zone, float val, float freq = float.nan) @trusted nothrow;
+	public int applyEffect(uint capability, uint zone, float val, float freq = float.nan) @nogc @trusted nothrow;
 	/**
 	 * Applies an envelop-style effect with variable
 	 * Params:
@@ -321,19 +321,19 @@ public interface HapticDevice {
 	 * Returns: 0 on success, or a specific error code.
 	 */
 	public int applyEnvelopEffect(uint capability, uint zone, HapticEnvelopStage[3] stages, uint repeatCount = 0,
-			Duration repeatDelay = msecs(0)) @trusted nothrow;
+			Duration repeatDelay = msecs(0)) @nogc @trusted nothrow;
 	/**
 	 * Sets te maximum of all haptic effects.
 	 * Params:
 	 *   val = The gain to be set. 0.0 disables all haptic effects.
 	 * Returns: 0 on success, or a specific error code.
 	 */
-	public int setMaximumGain(float val = 1.0) @trusted nothrow;
+	public int setMaximumGain(float val = 1.0) @nogc @trusted nothrow;
 	/**
 	 * Stops all haptic effects of the device.
 	 * Returns: 0 on success, or a specific error code.
 	 */
-	public int reset() @trusted nothrow;
+	public int reset() @nogc @trusted nothrow;
 }
 /** 
  * Defines a button (keyboard, game controller) event data.
