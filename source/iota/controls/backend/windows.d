@@ -2,11 +2,13 @@ module iota.controls.backend.windows;
 //Contains XInput bindings
 version (Windows):
 
-import core.sys.windows.windows;
-import core.sys.windows.wtypes;
-import core.sys.windows.basetyps;
+import nulib.system.win32.windows;
+import nulib.system.win32.wtypes;
+import nulib.system.win32.basetyps;
 import core.stdc.stdint;
 import iota.etc.backend_windows;
+import nulib.system.com.unk;
+
 
 @nogc nothrow:
 
