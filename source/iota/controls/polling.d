@@ -19,7 +19,7 @@ import nulib.collections.vector;
  * Returns: 1 if an event has been polled, 0 if no events left. Other values are error codes foind in enumerator
  * `EventPollStatus`.
  */
-public int poll(ref InputEvent output) nothrow @trusted {
+public int poll(out InputEvent output) nothrow @trusted {
 	if (mainPollingFun is null) return EventPollStatus.InputNotInitialized;
 	output.rawData = [0,0,0,0,0,0,0,0];
 	int status = 0;
@@ -28,8 +28,8 @@ public int poll(ref InputEvent output) nothrow @trusted {
 	if (subPollingFun !is null) status = subPollingFun(output);
 	return status;
 }
-package @system @nogc nothrow int function(ref InputEvent) mainPollingFun;	///Usually the main polling function, must be set
-package @system @nogc nothrow int function(ref InputEvent) subPollingFun;	///Usually the secondary polling function, optional
+package @system @nogc nothrow int function(out InputEvent) mainPollingFun;	///Usually the main polling function, must be set
+package @system @nogc nothrow int function(out InputEvent) subPollingFun;	///Usually the secondary polling function, optional
 package InputEvent textInputCmd;
 // bool subPollingFunFinished;
 Keyboard keyb;			///Main keyboard, or the only keyboard on APIs not supporting differentiating between keyboards.
@@ -38,9 +38,7 @@ System sys;				///System device, originator of system events.
 vector!InputDevice devList;	///List of input devices.
 
 static ~this() {
-	foreach (InputDevice id ; devList) {
-		nogc_delete(id);
-	}
+	devList.nogc_delete();
 }
 
 version (Windows) {
@@ -88,7 +86,7 @@ version (Windows) {
 		return null;
 	}
 	///Polls event using legacy API under Windows (no RawInput)
-	package int poll_win_LegacyIO(ref InputEvent output) nothrow @nogc {
+	package int poll_win_LegacyIO(out InputEvent output) nothrow @nogc {
 		if (textInputCmd.type != InputEventType.init) {
 			output = textInputCmd;
 			textInputCmd.type = InputEventType.init;
@@ -244,7 +242,7 @@ version (Windows) {
 		return 1;
 	}
 	///Polls inputs using the more modern RawInput API.
-	package int poll_win_RawInput(ref InputEvent output) nothrow @nogc {
+	package int poll_win_RawInput(out InputEvent output) nothrow @nogc {
 		if (textInputCmd.type != InputEventType.init) {
 			output = textInputCmd;
 			textInputCmd.type = InputEventType.init;
@@ -510,7 +508,7 @@ version (Windows) {
 	    return event;
 	}
 
-	package int poll_osx(ref InputEvent output) nothrow @nogc @system {
+	package int poll_osx(out InputEvent output) nothrow @nogc @system {
 	    NSEvent event = NSApplication.sharedApplication.nextEventMatchingMask(
 	        NSEventMask.KeyDown | NSEventMask.KeyUp | NSEventMask.FlagsChanged | 
 	        NSEventMask.LeftMouseDown | NSEventMask.LeftMouseUp | 
@@ -667,7 +665,7 @@ version (Windows) {
 	package WindowH	childReturn;	//Child return window for tracking
 
 	///X11 input handling, no input extensions, only used when xinput2 is not available
-	package int poll_x11_RegularIO(ref InputEvent output) nothrow @nogc @system {
+	package int poll_x11_RegularIO(out InputEvent output) nothrow @nogc @system {
 		if (trackedWindow) {
 			if (XQueryPointer(OSWindow.mainDisplay, trackedWindow, &rootReturn, &childReturn, &mousePosTracker[0], 
 					&mousePosTracker[1], &mousePosTracker[2], &mousePosTracker[3], cast(uint*)&mousePosTracker[4]) == 0) {
@@ -859,11 +857,11 @@ version (Windows) {
 				return 0;
 		}
 	}
-	package int poll_x11_xInputExt(ref InputEvent output) nothrow @nogc {
+	package int poll_x11_xInputExt(out InputEvent output) nothrow @nogc {
 		return 0;
 	}
 	package int evdev_devCntr;
-	package int poll_evdev(ref InputEvent output) nothrow @nogc {
+	package int poll_evdev(out InputEvent output) nothrow @nogc {
 		while (devList.length > evdev_devCntr) {
 			InputDevice currdev = devList[evdev_devCntr];
 			if (!currdev.isInvalidated && currdev.hDevice) {
@@ -949,6 +947,7 @@ version (Windows) {
 										output.button.id = key.outNum;
 										output.button.dir = event.value > 0 ? 1 : 0;
 										output.button.auxF = event.value * (1.0 / int.max);
+										return 1;
 									}
 								}
 							}

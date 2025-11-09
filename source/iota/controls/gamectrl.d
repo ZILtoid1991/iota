@@ -182,12 +182,12 @@ abstract class GameController : InputDevice, HapticDevice {
 	/**
 	 * Returns all capabilities of the haptic device.
 	 */
-	public abstract uint[] getCapabilities() @safe nothrow;
+	public abstract const(uint)[] getCapabilities() @safe nothrow;
 	/**
 	 * Returns all zones associated with the capability of the device.
 	 * Returns null if zones are not applicable for the device's given capability.
 	 */
-	public abstract uint[] getZones(uint capability) @safe nothrow;
+	public abstract const(uint)[] getZones(uint capability) @safe nothrow;
 	/**
 	 * Applies a given effect.
 	 * Params:
@@ -303,7 +303,7 @@ version (Windows) {
 		// 	import std.conv : to;
 		// 	return "{XInputDevice; DevID: " ~ devNum().to!string ~ "}";
 		// }
-		package static int poll(ref InputEvent output) @system @nogc nothrow {
+		package static int poll(out InputEvent output) @system @nogc nothrow {
 			while (devC < ctrlList.length) {
 				XInputDevice dev = ctrlList[devC];
 				if (dev is null) {
@@ -587,7 +587,7 @@ version (Windows) {
 
 	public class GIGameController : GameController {
 		package static IGameInput gameInputHandler;
-		package static IGameInputReading reading;
+		// package static IGameInputReading reading;
 		package static InputEvent[] processedInputEvents;
 		package static uint eventsIn;		///Position of events going in
 		package static uint eventsOut;		///Position of events going out
@@ -666,8 +666,16 @@ version (Windows) {
 				eventsIn++;
 				return 1;
 			}
-			if (currCtrl >= allCtrls)  currCtrl = 0;
-			HRESULT st = gameInputHandler.GetCurrentReading(GameInputKind.GameInputKindGamepad, null, &reading);
+			if (currCtrl >= allCtrls) {
+				currCtrl = 0;
+				foreach (ref GIGameController gc ; references) {
+					IGameInputReading reading;
+					HRESULT st = gameInputHandler.GetCurrentReading(GameInputKind.GameInputKindGamepad, gc.deviceHandle, &reading);
+					gc.prevState = gc.state;
+					reading.GetGamepadState(&gc.state);
+					reading.Release();
+				}
+			}
 			while (currCtrl < allCtrls) {
 				while (pollCntr < 20) {
 					switch (pollCntr) {
