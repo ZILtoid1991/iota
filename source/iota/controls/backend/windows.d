@@ -2,12 +2,12 @@ module iota.controls.backend.windows;
 //Contains XInput bindings
 version (Windows):
 
-import nulib.system.win32.windows;
-import nulib.system.win32.wtypes;
-import nulib.system.win32.basetyps;
+import core.sys.windows.windows; // import nulib.system.win32.windows;
+import core.sys.windows.wtypes; // import nulib.system.win32.wtypes;
+import core.sys.windows.basetyps; // import nulib.system.win32.basetyps;
 import core.stdc.stdint;
 import iota.etc.backend_windows;
-import nulib.system.com.unk;
+// import nulib.system.com.unk;
 
 
 @nogc nothrow:
@@ -154,6 +154,13 @@ public extern(Windows) {
 	DWORD XInputGetCapabilities(DWORD dwUserIndex, DWORD dwFlags, XINPUT_CAPABILITIES* pCapabilities);
 	DWORD XInputGetState(DWORD dwUserIndex, XINPUT_STATE* pState);
 	DWORD XInputSetState(DWORD dwUserIndex, XINPUT_VIBRATION* pVibration);
+}
+/// Made to bypass D's own Windows library, where the attributes @nogc nothrow are missing.
+extern(Windows) interface IUnknown {
+extern(Windows) @nogc nothrow:
+	HRESULT QueryInterface (REFIID riid, void **ppvObject);
+	ULONG AddRef();
+	ULONG Release();
 }
 // GameInput API begins
 
