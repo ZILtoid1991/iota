@@ -7,10 +7,30 @@ import core.sys.windows.wtypes; // import nulib.system.win32.wtypes;
 import core.sys.windows.basetyps; // import nulib.system.win32.basetyps;
 import core.stdc.stdint;
 import iota.etc.backend_windows;
+import bindbc.loader;
 // import nulib.system.com.unk;
 
+// GameInput API begins
+SharedLib giLib;
+/// Used to load the GameInput library without having to depend on Microsoft tooling too much.
+int loadGameInputDLLv0() @nogc nothrow {
+	giLib = load("GameInput.dll");
+	if (giLib == invalidHandle) return -1;
+	auto errcount = errorCount();
+	bindSymbol_stdcall(giLib, GameInputCreate, "GameInputCreate");
+	if (errcount != errorCount()) return -2;
+	return 0;
+}
+int loadGameInputDLL() @nogc nothrow {
+	giLib = load("GameInputRedist.dll");
+	if (giLib == invalidHandle) return -1;
+	auto errcount = errorCount();
+	bindSymbol_stdcall(giLib, GameInputInitialize, "GameInputInitialize");
+	if (errcount != errorCount()) return -2;
+	return 0;
+}
 
-@nogc nothrow:
+extern (Windows) @nogc nothrow:
 
 struct XINPUT_BATTERY_INFORMATION {
 	BYTE BatteryType;
@@ -162,14 +182,17 @@ extern(Windows) @nogc nothrow:
 	ULONG AddRef();
 	ULONG Release();
 }
-// GameInput API begins
 
-extern(Windows):
 
 struct APP_LOCAL_DEVICE_ID {
 	BYTE[32] value;
 }
-HRESULT GameInputCreate(IGameInput* gameInput);
+alias pGameInputCreate = extern(Windows) @nogc nothrow HRESULT function(IGameInput* gameInput);
+alias pGameInputInitialize = extern(Windows) @nogc nothrow HRESULT function(IID* riid, void** ppv);
+__gshared pGameInputCreate GameInputCreate;
+__gshared pGameInputInitialize GameInputInitialize;
+
+// HRESULT GameInputCreate(IGameInput* gameInput);
 alias GameInputCallbackToken = ulong;
 enum GameInputKind
 {
@@ -250,7 +273,7 @@ version (IOTA_WINGAMEINPUT_V0) {
 		void ReleaseExclusiveRawDeviceAccess();//Note: This function is not yet implemented.
 	}
 } else {
-	const IID IID_IGameInput = makeGuid!"40FFB7E4-6150-407A-B439-132BADC08D2D";
+	const IID IID_IGameInput = makeGuid!"20EFC1C7-5D9A-43BA-B26F-B807FA48609C";
 	interface IGameInput : IUnknown {
 	extern(Windows) @nogc nothrow:
 		uint64_t GetCurrentTimestamp();
@@ -259,41 +282,129 @@ version (IOTA_WINGAMEINPUT_V0) {
 				IGameInputReading* reading);
 		HRESULT GetPreviousReading(IGameInputReading referenceReading, GameInputKind inputKind, IGameInputDevice device,
 				IGameInputReading* reading);
-		HRESULT GetTemporalReading(uint64_t timestamp, IGameInputDevice device, IGameInputReading* reading); //Note: This function is not yet implemented.
-		HRESULT RegisterReadingCallback(IGameInputDevice device, GameInputKind inputKind, float analogThreshold,
-				void* context, GameInputReadingCallback callbackFunc, GameInputCallbackToken* callbackToken);
+		HRESULT RegisterReadingCallback(IGameInputDevice device, GameInputKind inputKind, void* context,
+				GameInputReadingCallback callbackFunc, GameInputCallbackToken* callbackToken);
 		HRESULT RegisterDeviceCallback(IGameInputDevice device, GameInputKind inputKind, uint statusFilter,
 				GameInputEnumerationKind enumerationKind, void* context, GameInputDeviceCallback callbackFunc,
 				GameInputCallbackToken* callbackToken);
 		HRESULT RegisterSystemButtonCallback(IGameInputDevice* device, uint buttonFilter, void* context,
 				GameInputSystemButtonCallback callbackFunc, GameInputCallbackToken* callbackToken);
-		// HRESULT RegisterGuideButtonCallback(IGameInputDevice device, void* context, GameInputGuideButtonCallback callbackFunc,
-				// GameInputCallbackToken* callbackToken);	//Warning: Deprecated, use system button callback instead!
 		HRESULT RegisterKeyboardLayoutCallback(IGameInputDevice device, void* context,
 				GameInputKeyboardLayoutCallback callbackFunc, GameInputCallbackToken* callbackToken);
 		void StopCallback(GameInputCallbackToken callbackToken);
-		bool UnregisterCallback(GameInputCallbackToken callbackToken, uint64_t timeoutInMicroseconds);
+		bool UnregisterCallback(GameInputCallbackToken callbackToken);
 		HRESULT CreateDispatcher(IGameInputDispatcher* dispatcher);
-		HRESULT CreateAggregateDevice(GameInputKind inputKind, IGameInputDevice* device); //Note: This function is not yet implemented.
 		HRESULT FindDeviceFromId(const APP_LOCAL_DEVICE_ID* value, IGameInputDevice* device);
-		HRESULT FindDeviceFromObject(IUnknown value, IGameInputDevice* device);
-		HRESULT FindDeviceFromPlatformHandle(HANDLE value, IGameInputDevice* device);
 		HRESULT FindDeviceFromPlatformString(LPCWSTR value, IGameInputDevice* device);
-		HRESULT EnableOemDeviceSupport(uint16_t vendorId, uint16_t productId, uint8_t interfaceNumber,
-				uint8_t collectionNumber);
-		void SetFocusPolicy(uint policy);
+		void SetFocusPolicy(GameInputFocusPolicy policy);
+		HRESULT CreateAggregateDevice(GameInputKind inputKind, APP_LOCAL_DEVICE_ID* deviceId);
+		HRESULT DisableAggregateDevice(APP_LOCAL_DEVICE_ID* deviceId);
 	}
-	const IID IID_IGameInputDevice = makeGuid!"B169652A-4A32-40D7-9FA9-905997952516";
+	const IID IID_IGameInputDevice = makeGuid!"63E2F38B-A399-4275-8AE7-D4C6E524D12A";
 	interface IGameInputDevice : IUnknown {
 	extern(Windows) @nogc nothrow:
-		GameInputDeviceInfo* GetDeviceInfo();
+		HRESULT GetDeviceInfo(GameInputDeviceInfo** info);
+		HRESULT GetHapticInfo(GameInputHapticInfo* info);
 		uint GetDeviceStatus();
 		HRESULT CreateForceFeedbackEffect(uint32_t motorIndex, const(GameInputForceFeedbackParams)* params,
 				IGameInputForceFeedbackEffect* effect);
 		bool IsForceFeedbackMotorPoweredOn(uint32_t motorIndex);
 		void SetForceFeedbackMotorGain(uint32_t motorIndex, float masterGain);
 		void SetRumbleState(const(GameInputRumbleParams)* params);
+		HRESULT DirectInputEscape(uint32_t command, const(void)* bufferIn, uint32_t bufferInSize, void* bufferOut,
+				uint32_t bufferOutSize, uint32_t* bufferOutSizeWritten);
+		HRESULT CreateInputMapper(IGameInputMapper* inputMapper);
+		HRESULT GetExtraAxisCount(GameInputKind inputKind, uint32_t* extraAxisCount);
+		HRESULT GetExtraButtonCount(GameInputKind inputKind, uint32_t* extraButtonCount);
+		HRESULT GetExtraAxisIndexes(GameInputKind inputKind, uint32_t extraAxisCount, uint8_t* extraAxisIndexes);
+		HRESULT GetExtraButtonIndexes(GameInputKind inputKind, uint32_t extraButtonCount, uint8_t* extraButtonIndexes);
+		HRESULT CreateRawDeviceReport(uint32_t reportId, GameInputRawDeviceReportKind reportKind,
+				IGameInputRawDeviceReport* report);
+		HRESULT SendRawDeviceOutput(IGameInputRawDeviceReport report);
 	}
+	const IID IID_IGameInputMapper = makeGuid!"3C600700-F16C-49CE-9BE6-6A2EF752ED5E";
+	interface IGameInputMapper : IUnknown {
+		bool GetArcadeStickButtonMappingInfo(GameInputArcadeStickButtons buttonElement, GameInputButtonMapping* mapping);
+		bool GetFlightStickAxisMappingInfo(GameInputFlightStickAxes axisElement, GameInputAxisMapping* mapping);
+		bool GetFlightStickButtonMappingInfo(GameInputFlightStickButtons buttonElement, GameInputButtonMapping* mapping);
+		bool GetGamepadAxisMappingInfo(GameInputGamepadAxes axisElement, GameInputAxisMapping* mapping);
+		bool GetGamepadButtonMappingInfo(GameInputGamepadButtons buttonElement, GameInputButtonMapping* mapping);
+		bool GetRacingWheelAxisMappingInfo(GameInputRacingWheelAxes axisElement, GameInputAxisMapping* mapping);
+		bool GetRacingWheelButtonMappingInfo(GameInputRacingWheelButtons buttonElement, GameInputButtonMapping* mapping);
+	}
+}
+static enum GAMEINPUT_HAPTIC_MAX_LOCATIONS				= 8;
+static enum GAMEINPUT_HAPTIC_MAX_AUDIO_ENDPOINT_ID_SIZE	= 256;
+const IID GAMEINPUT_HAPTIC_LOCATION_NONE = makeGuid!"00000000-0000-0000-0000-000000000000";
+const IID GAMEINPUT_HAPTIC_LOCATION_GRIP_LEFT = makeGuid!"00000000-0000-0000-0000-000000000000";
+const IID GAMEINPUT_HAPTIC_LOCATION_GRIP_RIGHT = makeGuid!"00000000-0000-0000-0000-000000000000";
+const IID GAMEINPUT_HAPTIC_LOCATION_TRIGGER_LEFT = makeGuid!"00000000-0000-0000-0000-000000000000";
+const IID GAMEINPUT_HAPTIC_LOCATION_TRIGGER_RIGHT = makeGuid!"00000000-0000-0000-0000-000000000000";
+struct GameInputHapticInfo {
+	wchar[GAMEINPUT_HAPTIC_MAX_AUDIO_ENDPOINT_ID_SIZE] audioEndpointID;
+	uint32_t locationCount;
+	GUID[GAMEINPUT_HAPTIC_MAX_LOCATIONS] locations;
+}
+struct GameInputButtonMapping {
+	GameInputElementKind controllerElementKind;
+	uint32_t             controllerIndex;
+
+	// When the button is mapped from an axis
+	bool isInverted;
+
+	// Button mapped from button only needs the index
+
+	// When the button is mapped from a switch
+	GameInputSwitchPosition switchPosition;
+}
+struct GameInputAxisMapping {
+	GameInputElementKind controllerElementKind;
+	uint32_t             controllerIndex;
+
+	// When axis is mapped from a axis
+	bool isInverted;
+
+	// When the axis is mapped from a button
+	bool     fromTwoButtons;
+	uint32_t buttonMinIndexValue;
+
+	// When the axis is mapped from a switch
+	GameInputSwitchPosition referenceDirection;
+}
+enum GameInputElementKind
+{
+	GameInputElementKindNone   = 0,
+	GameInputElementKindAxis   = 1,
+	GameInputElementKindButton = 2,
+	GameInputElementKindSwitch = 3
+}
+enum GameInputFlightStickAxes
+{
+	GameInputFlightStickAxesNone = 0x00000000,
+	GameInputFlightStickRoll     = 0x00000010,
+	GameInputFlightStickPitch    = 0x00000020,
+	GameInputFlightStickYaw      = 0x00000040,
+	GameInputFlightStickThrottle = 0x00000080,
+}
+enum GameInputGamepadAxes
+{
+    GameInputGamepadAxesNone         = 0x00000000,
+    GameInputGamepadLeftTrigger      = 0x00000001,
+    GameInputGamepadRightTrigger     = 0x00000002,
+    GameInputGamepadLeftThumbstickX  = 0x00000004,
+    GameInputGamepadLeftThumbstickY  = 0x00000008,
+    GameInputGamepadRightThumbstickX = 0x00000010,
+    GameInputGamepadRightThumbstickY = 0x00000020,
+}
+enum GameInputRacingWheelAxes
+{
+    GameInputRacingWheelAxesNone       = 0x00000000,
+    GameInputRacingWheelSteering       = 0x00000100,
+    GameInputRacingWheelThrottle       = 0x00000200,
+    GameInputRacingWheelBrake          = 0x00000400,
+    GameInputRacingWheelClutch         = 0x00000800,
+    GameInputRacingWheelHandbrake      = 0x00001000,
+    GameInputRacingWheelPatternShifter = 0x00002000,
 }
 struct GameInputRumbleParams {
 	float lowFrequency;
@@ -486,7 +597,7 @@ version (IOTA_WINGAMEINPUT_V0) {
 		bool Dispatch(uint64_t quotaInMicroseconds);
 		HRESULT OpenWaitHandle(HANDLE* waitHandle);
 	}
-	const IID IID_IGameInputReading = makeGuid!"86318E60-0B3C-40D6-BEFA-C62F2D952724";
+	const IID IID_IGameInputReading = makeGuid!"C81C4CDE-ED1A-4631-A30F-C556A6241A1F";
 	interface IGameInputReading : IUnknown {
 	extern(Windows) @nogc nothrow:
 		GameInputKind GetInputKind();
@@ -501,14 +612,12 @@ version (IOTA_WINGAMEINPUT_V0) {
 		uint32_t GetKeyCount();
 		uint32_t GetKeyState(uint32_t stateArrayCount, GameInputKeyState* stateArray);
 		bool GetMouseState(GameInputMouseState* state);
-		uint32_t GetTouchCount();
-		uint32_t GetTouchState(uint32_t stateArrayCount, GameInputTouchState* stateArray);
-		bool GetMotionState(GameInputMotionState* state);
+		bool GetSensorsState(GameInputSensorsState* state);
 		bool GetArcadeStickState(GameInputArcadeStickState* state);
 		bool GetFlightStickState(GameInputFlightStickState* state);
 		bool GetGamepadState(GameInputGamepadState* state);
 		bool GetRacingWheelState(GameInputRacingWheelState* state);
-		bool GetUiNavigationState(GameInputUiNavigationState* state);
+		bool GetRawReport(IGameInputRawDeviceReport* report);
 	}
 }
 alias GameInputDeviceCallback = extern(Windows) void function(GameInputCallbackToken callbackToken, void* context,
@@ -1061,6 +1170,34 @@ struct GameInputMotionState {
 	GameInputMotionAccuracy magnetometerAccuracy;
 	GameInputMotionAccuracy orientationAccuracy;
 }
+struct GameInputSensorsState {
+    // GameInputSensorsAccelerometer
+    float accelerationInGX;
+    float accelerationInGY;
+    float accelerationInGZ;
+
+    // GameInputSensorsGyrometer
+    float angularVelocityInRadPerSecX;
+    float angularVelocityInRadPerSecY;
+    float angularVelocityInRadPerSecZ;
+
+    // GameInputSensorsCompass
+    float headingInDegreesFromMagneticNorth;
+    GameInputSensorAccuracy headingAccuracy;
+
+    // GameInputSensorsOrientation
+    float orientationW;
+    float orientationX;
+    float orientationY;
+    float orientationZ;
+}
+enum GameInputSensorAccuracy
+{
+    GameInputSensorAccuracyUnknown      = 0x00000000,
+    GameInputSensorAccuracyUnreliable   = 0x00000001,
+    GameInputSensorAccuracyApproximate  = 0x00000002,
+    GameInputSensorAccuracyHigh         = 0x00000003
+}
 enum GameInputMotionAccuracy {
 	GameInputMotionAccuracyUnknown = -1,
 	GameInputMotionUnavailable = 0,
@@ -1105,18 +1242,30 @@ enum GameInputRacingWheelButtons {
 	GameInputRacingWheelDpadLeft = 0x00000040,
 	GameInputRacingWheelDpadRight = 0x00000080
 }
-const IID IID_IGameInputRawDeviceReport = makeGuid!"61F08CF1-1FFC-40CA-A2B8-E1AB8BC5B6DC";
-interface IGameInputRawDeviceReport : IUnknown {	//Note: this interface is not yet implemented
-extern(Windows) @nogc nothrow:
-	void GetDevice(IGameInputDevice* device);
-	GameInputRawDeviceReportInfo* GetReportInfo();
-	size_t GetRawDataSize();
-	size_t GetRawData(size_t bufferSize, void* buffer);
-	bool SetRawData(size_t bufferSize, const(void)* buffer);
-	bool GetItemValue(uint32_t itemIndex, int64_t* value);
-	bool SetItemValue(uint32_t itemIndex, int64_t value);
-	bool ResetItemValue(uint32_t itemIndex);
-	bool ResetAllItems();
+version (IOTA_WINGAMEINPUT_V0) {
+	const IID IID_IGameInputRawDeviceReport = makeGuid!"61F08CF1-1FFC-40CA-A2B8-E1AB8BC5B6DC";
+	interface IGameInputRawDeviceReport : IUnknown {	//Note: this interface is not yet implemented
+	extern(Windows) @nogc nothrow:
+		void GetDevice(IGameInputDevice* device);
+		GameInputRawDeviceReportInfo* GetReportInfo();
+		size_t GetRawDataSize();
+		size_t GetRawData(size_t bufferSize, void* buffer);
+		bool SetRawData(size_t bufferSize, const(void)* buffer);
+		bool GetItemValue(uint32_t itemIndex, int64_t* value);
+		bool SetItemValue(uint32_t itemIndex, int64_t value);
+		bool ResetItemValue(uint32_t itemIndex);
+		bool ResetAllItems();
+	}
+} else {
+	const IID IID_IGameInputRawDeviceReport = makeGuid!"05A42D89-2CB6-45A3-874D-E635723587AB";
+	interface IGameInputRawDeviceReport : IUnknown {
+	extern(Windows) @nogc nothrow:
+		void GetDevice(IGameInputDevice* device);
+		GameInputRawDeviceReportInfo* GetReportInfo();
+		size_t GetRawDataSize();
+		size_t GetRawData(size_t bufferSize, void* buffer);
+		bool SetRawData(size_t bufferSize, const(void)* buffer);
+	}
 }
 struct GameInputRawDeviceReportInfo {
 	GameInputRawDeviceReportKind kind;

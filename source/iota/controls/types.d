@@ -143,6 +143,8 @@ public enum InputInitializationStatus {
 	AllOk					=	0,
 	win_RawInputError		=	-1,
 	win_DevicesAdded		=	-2,
+	win_GIUnsupported		=	-3,		/// GameInput unsupported
+	win_GIError				=	-4,		/// GameInput error
 
 	x11_InputExtNotAvailable=	-32,
 	libevdev_ErrorOpeningDev=	-33,

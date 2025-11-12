@@ -592,17 +592,17 @@ version (Windows) {
 		package static uint eventsIn;		///Position of events going in
 		package static uint eventsOut;		///Position of events going out
 		package static uint eventsModulo;	///Max number of events in buffer minus one
-		package static GameInputCallbackToken callbackToken;
+		package static GameInputCallbackToken callbackToken, sysToken;
 		package static GIGameController[16] references;
-		package static ubyte currCtrl;
-		package static ubyte allCtrls;
-		package static byte pollCntr;
+		package static ubyte currCtrl = 0;
+		package static ubyte allCtrls = 0;
+		package static byte pollCntr = 0;
 		package static bool triggerMode;
 		extern (Windows) static void deviceCallback(GameInputCallbackToken callbackToken, void* context,
 				IGameInputDevice device, ulong timestamp, uint currentStatus, uint previousStatus) @nogc nothrow {
 			if ((currentStatus & GameInputDeviceStatus.GameInputDeviceConnected) != 0) {	//Device connected
 				for (int i ; i < allCtrls ; i++) {
-					if (references[i].deviceHandle == device) {
+					if (references[i].deviceHandle is device) {
 
 					}
 				}
@@ -611,8 +611,14 @@ version (Windows) {
 				processedInputEvents[eventsOut & eventsModulo].timestamp = getTimestamp();
 				processedInputEvents[eventsOut & eventsModulo].type = InputEventType.DeviceAdded;
 				processedInputEvents[eventsOut & eventsModulo].source = references[allCtrls];
+				import iota.controls.polling;
+				devList ~= cast(InputDevice)references[allCtrls];
 				eventsOut++;
 				allCtrls++;
+				debug {
+					import core.stdc.stdio;
+					printf("%i;%x \n", allCtrls, cast(void*)references[allCtrls-1]);
+				}
 			} else if ((previousStatus & GameInputDeviceStatus.GameInputDeviceConnected) != 0) {	//Device disconnected
 				for (int i ; i < allCtrls ; i++) {
 					if (references[i].deviceHandle is device) {
@@ -629,7 +635,7 @@ version (Windows) {
 		extern (Windows) static void sysButtonCallback(GameInputCallbackToken callbackToken, void* context,
 		IGameInputDevice device, ulong timestamp, uint currentState, uint previousState) @nogc nothrow {
 			for (int i ; i < allCtrls ; i++) {
-				if (references[i].deviceHandle == device) {
+				if (references[i].deviceHandle is device) {
 					if ((currentState ^ previousState) == GameInputSystemButtons.GameInputSystemButtonGuide) {
 						processedInputEvents[eventsOut & eventsModulo].timestamp = getTimestamp();
 						processedInputEvents[eventsOut & eventsModulo].type = InputEventType.GCButton;
@@ -668,7 +674,9 @@ version (Windows) {
 			}
 			if (currCtrl >= allCtrls) {
 				currCtrl = 0;
-				foreach (ref GIGameController gc ; references) {
+				pollCntr = 0;
+				for (int i ; i < allCtrls ; i++) {
+					GIGameController gc = references[i];
 					IGameInputReading reading;
 					HRESULT st = gameInputHandler.GetCurrentReading(GameInputKind.GameInputKindGamepad, gc.deviceHandle, &reading);
 					gc.prevState = gc.state;
@@ -678,7 +686,7 @@ version (Windows) {
 			}
 			while (currCtrl < allCtrls) {
 				while (pollCntr < 20) {
-					switch (pollCntr) {
+					switch (pollCntr++) {
 					case 0:
 						if (references[currCtrl].state.leftThumbstickX != references[currCtrl].prevState.leftThumbstickX) {
 							deviceEventCommons();
@@ -869,8 +877,8 @@ version (Windows) {
 							deviceEventCommons();
 							output.type = InputEventType.GCButton;
 							output.button.id = GameControllerButtons.RightThumbstick;
-							output.button.dir = (references[currCtrl].state.buttons & GameInputGamepadButtons.GameInputGamepadRightThumbstick)
-									!= 0;
+							output.button.dir = (references[currCtrl].state.buttons &
+									GameInputGamepadButtons.GameInputGamepadRightThumbstick) != 0;
 							return 1;
 						}
 						break;
@@ -897,15 +905,14 @@ version (Windows) {
 						}
 						break;
 					default:
-						currCtrl++;
+						// currCtrl++;
 						break;
 					}
-					pollCntr++;
 				}
 				pollCntr = 0;
 				currCtrl++;
 			}
-			currCtrl = 0;
+			//currCtrl = 0;
 			return 0;
 		}
 		shared static ~this() {
@@ -921,6 +928,8 @@ version (Windows) {
 		this(IGameInputDevice deviceHandle) @safe @nogc nothrow pure {
 			this.deviceHandle = deviceHandle;
 			rumbleParams = GameInputRumbleParams(0.0, 0.0, 0.0, 0.0);
+			state = GameInputGamepadState(0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
+			prevState = GameInputGamepadState(0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
 		}
 		public override const(uint)[] getCapabilities() @safe nothrow {
 			static const(uint)[] result = [HapticDevice.Capabilities.LeftMotor, HapticDevice.Capabilities.RightMotor,
@@ -935,12 +944,14 @@ version (Windows) {
 			return null;
 		}
 		/**
-		 * Applies a given effect.
+		 * Applies a simple effect.
 		 * Params:
 		 *   capability: The capability to be used.
 		 *   zone: The zone where the effect should be used.
-		 *   val: Either the strength of the capability (between 0.0 and 1.0), or the frequency.
+		 *   val: The strength of the capability (between 0.0 and 1.0).
+		 *   freq: The frequency if supported, float.nan otherwise.
 		 * Returns: 0 on success, or a specific error code.
+		 * Note: Has an automatic timeout on certain API.
 		 */
 		public override int applyEffect(uint capability, uint zone, float val, float freq = float.nan) @nogc @trusted
 			nothrow {

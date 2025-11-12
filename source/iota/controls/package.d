@@ -54,6 +54,50 @@ public int initInput(uint config = 0, uint osConfig = 0, string gcmTable = null)
 	sys = nogc_new!(System)(config, osConfig);
 	devList ~= cast(InputDevice)sys;
 	version (Windows) {
+		if (config & ConfigFlags.gc_Enable) {
+			if (osConfig & OSConfigFlags.win_XInput) {
+				import iota.controls.backend.windows;
+				XInputEnable(256);
+				for (int i ; i < 4 ; i++) {
+					XInputDevice x = nogc_new!(XInputDevice)(i, (config & ConfigFlags.gc_TriggerMode) != 0);
+					if (!x.isInvalidated) {
+						devList ~= cast(InputDevice)x;
+					} else {
+						nogc_delete(x);
+					}
+				}
+				subPollingFun = &XInputDevice.poll;
+			}
+			if (osConfig & OSConfigFlags.win_GameInput) {
+				import iota.controls.backend.windows;
+				HRESULT statusGameInput;
+				version (IOTA_WINGAMEINPUT_V0) {
+					if (loadGameInputDLLv0()) return InputInitializationStatus.win_GIUnsupported;
+					statusGameInput = GameInputCreate(&GIGameController.gameInputHandler);
+					if (statusGameInput || GIGameController.gameInputHandler is null) return InputInitializationStatus.win_GIError;
+				} else {
+					if (loadGameInputDLL()) return InputInitializationStatus.win_GIUnsupported;
+					statusGameInput = GameInputInitialize(&IID_IGameInput, cast(void**)&GIGameController.gameInputHandler);
+				}
+				//Initialize event buffer
+				GIGameController.processedInputEvents = nu_malloca!InputEvent(256);
+				GIGameController.eventsModulo = 255;
+				statusGameInput = GIGameController.gameInputHandler.RegisterDeviceCallback(null, GameInputKind.GameInputKindGamepad,
+						GameInputDeviceStatus.GameInputDeviceAnyStatus, GameInputEnumerationKind.GameInputBlockingEnumeration, null,
+						&GIGameController.deviceCallback, &GIGameController.callbackToken);
+				if (statusGameInput) return InputInitializationStatus.win_GIError;
+				version (IOTA_WINGAMEINPUT_V0) {
+
+				} else {
+					statusGameInput = GIGameController.gameInputHandler.RegisterSystemButtonCallback(null,
+							GameInputSystemButtons.GameInputSystemButtonGuide | GameInputSystemButtons.GameInputSystemButtonShare, null,
+							&GIGameController.sysButtonCallback, &GIGameController.sysToken);
+					if (statusGameInput) return InputInitializationStatus.win_GIError;
+				}
+				subPollingFun = &GIGameController.poll;
+				GIGameController.triggerMode = (config & ConfigFlags.gc_TriggerMode) != 0;
+			}
+		}
 		if (osConfig & OSConfigFlags.win_RawInput) {
 			const DWORD flags = 0;
 			if (osConfig & OSConfigFlags.win_DisableHotkeys) Keyboard.setMenuKeyDisabled(true);
@@ -72,8 +116,6 @@ public int initInput(uint config = 0, uint osConfig = 0, string gcmTable = null)
 					rid ~= RAWINPUTDEVICE(0x0001, 0x0004, flags, handle);
 					rid ~= RAWINPUTDEVICE(0x0001, 0x0008, flags, handle);
 				}
-
-
 			}
 			if (RegisterRawInputDevices(rid.ptr, cast(UINT)rid.length, cast(UINT)(RAWINPUTDEVICE.sizeof)) == FALSE) {
 				return InputInitializationStatus.win_RawInputError;
@@ -131,47 +173,7 @@ public int initInput(uint config = 0, uint osConfig = 0, string gcmTable = null)
 			devList ~= cast(InputDevice)keyb;
 			devList ~= cast(InputDevice)mouse;
 			mainPollingFun = &poll_win_LegacyIO;
-			if (config & ConfigFlags.gc_Enable) {
-				import iota.controls.backend.windows;
-				XInputEnable(256);
-				for (int i ; i < 4 ; i++) {
-					XInputDevice x = nogc_new!(XInputDevice)(i, (config & ConfigFlags.gc_TriggerMode) != 0);
-					if (!x.isInvalidated) {
-						devList ~= cast(InputDevice)x;
-					}
-				}
-				subPollingFun = &XInputDevice.poll;
-			}
-		}
-		if (config & ConfigFlags.gc_Enable) {
-			if (osConfig & OSConfigFlags.win_XInput) {
-				import iota.controls.backend.windows;
-				XInputEnable(256);
-				for (int i ; i < 4 ; i++) {
-					XInputDevice x = nogc_new!(XInputDevice)(i, (config & ConfigFlags.gc_TriggerMode) != 0);
-					if (!x.isInvalidated) {
-						devList ~= cast(InputDevice)x;
-					} else {
-						nogc_delete(x);
-					}
-				}
-				subPollingFun = &XInputDevice.poll;
-			}
-			if (osConfig & OSConfigFlags.win_GameInput) {
-				import iota.controls.backend.windows;
-				HRESULT statusGameInput = GameInputCreate(&GIGameController.gameInputHandler);
-				if (!statusGameInput && GIGameController.gameInputHandler !is null) {
-					//Initialize event buffer
-					GIGameController.processedInputEvents = nu_malloca!InputEvent(256);
-					GIGameController.eventsModulo = 255;
-					GIGameController.gameInputHandler.RegisterDeviceCallback(null, GameInputKind.GameInputKindGamepad,
-							GameInputDeviceStatus.GameInputDeviceAnyStatus, GameInputEnumerationKind.GameInputAsyncEnumeration, null,
-							&GIGameController.deviceCallback, &GIGameController.callbackToken);
-					// GIGameController.gameInputHandler;
-					// statusGameInput = GIGameController.gameInputHandler.CreateDispatcher(&GIGameController.dispatcher);
 
-				}
-			}
 		}
 	} else version(OSX) {
 		keyb = nogc_new!Keyboard();
