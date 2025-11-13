@@ -932,6 +932,7 @@ version (Windows) {
 			rumbleParams = GameInputRumbleParams(0.0, 0.0, 0.0, 0.0);
 			state = GameInputGamepadState(0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
 			prevState = GameInputGamepadState(0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
+			status |= StatusFlags.IsHapticCapable; // TODO: Detect haptic capabilities!
 		}
 		~this() @nogc nothrow {
 			this.deviceHandle.Release();

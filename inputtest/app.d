@@ -104,11 +104,24 @@ int main(string[] args) {
 			if (event.type == InputEventType.GCButton && event.source.isHapticCapable && options.rumbletest) {
 				if (event.button.id == GameControllerButtons.LeftTrigger) {
 					HapticDevice hd = cast(HapticDevice)event.source;
-					hd.applyEffect(HapticDevice.Capabilities.LeftMotor, 0, event.button.auxF);
+					hd.applyEffect(HapticDevice.Capabilities.TriggerRumble, HapticDevice.Zones.Left, event.button.auxF);
 				}
 				if (event.button.id == GameControllerButtons.RightTrigger) {
 					HapticDevice hd = cast(HapticDevice)event.source;
-					hd.applyEffect(HapticDevice.Capabilities.RightMotor, 0, event.button.auxF);
+					hd.applyEffect(HapticDevice.Capabilities.TriggerRumble, HapticDevice.Zones.Right, event.button.auxF);
+				}
+			} else if (event.type == InputEventType.GCAxis && event.source.isHapticCapable && options.rumbletest) {
+				switch (event.axis.id) {
+				case GameControllerAxes.LeftThumbstickX:
+					HapticDevice hd = cast(HapticDevice)event.source;
+					hd.applyEffect(HapticDevice.Capabilities.LeftMotor, 0, event.axis.val * event.axis.val);
+					break;
+				case GameControllerAxes.RightThumbstickX:
+					HapticDevice hd = cast(HapticDevice)event.source;
+					hd.applyEffect(HapticDevice.Capabilities.RightMotor, 0, event.axis.val * event.axis.val);
+					break;
+				default:
+					break;
 				}
 			} else if (event.type == InputEventType.Keyboard) {
 				switch (event.button.id) {
