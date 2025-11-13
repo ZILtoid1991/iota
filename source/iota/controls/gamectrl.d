@@ -218,7 +218,8 @@ abstract class GameController : InputDevice, HapticDevice {
 	 * Returns: 0 on success, or a specific error code.
 	 */
 	public int setMaximumGain(float val = 1.0) @trusted nothrow {
-		return -10;
+		hapticGain = val;
+		return 0;
 	}
 	/**
 	 * Stops all haptic effects of the device.
@@ -557,14 +558,14 @@ version (Windows) {
 				case HapticDevice.Capabilities.LeftMotor:
 					if (val < 0.0 || val > 1.0)
 						return HapticDeviceStatus.OutOfRange;
-					vibr.wLeftMotorSpeed = cast(ushort)(val * ushort.max);
+					vibr.wLeftMotorSpeed = cast(ushort)(val * hapticGain * ushort.max);
 					if (XInputSetState(_devNum, &vibr) == ERROR_SUCCESS)
 						return HapticDeviceStatus.AllOk;
 					return HapticDeviceStatus.DeviceInvalidated;
 				case HapticDevice.Capabilities.RightMotor:
 					if (val < 0.0 || val > 1.0)
 						return HapticDeviceStatus.OutOfRange;
-					vibr.wRightMotorSpeed = cast(ushort)(val * ushort.max);
+					vibr.wRightMotorSpeed = cast(ushort)(val * hapticGain * ushort.max);
 					if (XInputSetState(_devNum, &vibr) == ERROR_SUCCESS)
 						return HapticDeviceStatus.AllOk;
 					return HapticDeviceStatus.DeviceInvalidated;
@@ -925,11 +926,15 @@ version (Windows) {
 		package IGameInputDevice deviceHandle;
 		package GameInputGamepadState state, prevState;
 		package GameInputRumbleParams rumbleParams;
-		this(IGameInputDevice deviceHandle) @safe @nogc nothrow pure {
+		this(IGameInputDevice deviceHandle) @trusted @nogc nothrow {
 			this.deviceHandle = deviceHandle;
+			this.deviceHandle.AddRef();
 			rumbleParams = GameInputRumbleParams(0.0, 0.0, 0.0, 0.0);
 			state = GameInputGamepadState(0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
 			prevState = GameInputGamepadState(0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
+		}
+		~this() @nogc nothrow {
+			this.deviceHandle.Release();
 		}
 		public override const(uint)[] getCapabilities() @safe nothrow {
 			static const(uint)[] result = [HapticDevice.Capabilities.LeftMotor, HapticDevice.Capabilities.RightMotor,
@@ -959,20 +964,20 @@ version (Windows) {
 			switch (capability) {
 			case HapticDevice.Capabilities.LeftMotor:
 				if (val < 0.0 || val > 1.0) return HapticDeviceStatus.OutOfRange;
-				rumbleParams.lowFrequency = val;
+				rumbleParams.lowFrequency = val * hapticGain;
 				break;
 			case HapticDevice.Capabilities.RightMotor:
 				if (val < 0.0 || val > 1.0) return HapticDeviceStatus.OutOfRange;
-				rumbleParams.highFrequency = val;
+				rumbleParams.highFrequency = val * hapticGain;
 				break;
 			case HapticDevice.Capabilities.TriggerRumble:
 				if (val < 0.0 || val > 1.0) return HapticDeviceStatus.OutOfRange;
 				switch (zone) {
 				case HapticDevice.Zones.Left:
-					rumbleParams.leftTrigger = val;
+					rumbleParams.leftTrigger = val * hapticGain;
 					break;
 				case HapticDevice.Zones.Right:
-					rumbleParams.rightTrigger = val;
+					rumbleParams.rightTrigger = val * hapticGain;
 					break;
 				default: return HapticDeviceStatus.UnsupportedZone;
 				}
