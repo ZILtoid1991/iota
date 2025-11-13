@@ -10,8 +10,8 @@ Input-output (audio, controls, etc) library for D. Intended as a D language nati
 |Keyboard                  |Legacy: Works; Raw: Works           |X11: works; evdev: in progress      |Implemented              |
 |Mouse                     |Legacy: Works; Raw: Works           |X11: works; evdev: in progress      |Implemented              |
 |Mouse cursors             |Working                             |Working                             |Implemented              |
-|Pen Tablet                |Not yet implemented                 |Not yet implemented                 |Not yet implemented                 |
-|Game controllers          |XInput: working; Raw: in progress   |Evdev: in progress                  |Implemented              |
+|Pen Tablet                |Not yet implemented                 |Not yet implemented                 |Not yet implemented      |
+|Game controllers          |XInput: working; Raw: in progress; GameInput: limited to gamepads |Evdev: in progress |N/A         |
 |Windowing                 |Working                             |X11: Working                        |Implemented              |
 |Fullscreen window support |Working (video modes untested)      |X11: Working                        |Implemented              |
 |OpenGL output             |Working                             |Working                             |Implemented              |
@@ -55,6 +55,8 @@ Note: Must be deinitialized manually.
 Keyboard and mouse works without much issues while using the legacy API. A known bug is that it sometimes generates an additional empty event if the Alt key is pressed (because some people thought it's a good idea to dedicate a whole modifier key for the menubar), this can be mitigated by supplying the window a `WindowCfgFlags.IgnoreMenuKey`. Menubars are not implemented currently.
 
 XInput is implemented and works.
+
+GameInput works, but capability is currently limited to Xbox One gamepads.
 
 #### Raw input
 
