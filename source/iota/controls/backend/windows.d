@@ -578,6 +578,55 @@ version (IOTA_WINGAMEINPUT_V0) {
 		bool GetRacingWheelState(GameInputRacingWheelState* state);
 		bool GetUiNavigationState(GameInputUiNavigationState* state);
 	}
+	struct GameInputDeviceInfo {
+		uint32_t infoSize;
+		uint16_t vendorId;
+		uint16_t productId;
+		uint16_t revisionNumber;
+		uint8_t interfaceNumber;
+		uint8_t collectionNumber;
+		GameInputUsage usage;
+		GameInputVersion hardwareVersion;
+		GameInputVersion firmwareVersion;
+		APP_LOCAL_DEVICE_ID deviceId;
+		APP_LOCAL_DEVICE_ID deviceRootId;
+		GameInputDeviceFamily deviceFamily;
+		uint capabilities;
+		GameInputKind supportedInput;
+		uint supportedRumbleMotors;
+		uint32_t inputReportCount;
+		uint32_t outputReportCount;
+		uint32_t featureReportCount;
+		uint32_t controllerAxisCount;
+		uint32_t controllerButtonCount;
+		uint32_t controllerSwitchCount;
+		uint32_t touchPointCount;
+		uint32_t touchSensorCount;
+		uint32_t forceFeedbackMotorCount;
+		uint32_t hapticFeedbackMotorCount;
+		uint32_t deviceStringCount;
+		uint32_t deviceDescriptorSize;
+		const(GameInputRawDeviceReportInfo)* inputReportInfo;
+		const(GameInputRawDeviceReportInfo)* outputReportInfo;
+		const(GameInputRawDeviceReportInfo)* featureReportInfo;
+		const(GameInputControllerAxisInfo)* controllerAxisInfo;
+		const(GameInputControllerButtonInfo)* controllerButtonInfo;
+		const(GameInputControllerSwitchInfo)* controllerSwitchInfo;
+		const(GameInputKeyboardInfo)* keyboardInfo;
+		const(GameInputMouseInfo)* mouseInfo;
+		const(GameInputTouchSensorInfo)* touchSensorInfo;
+		const(GameInputMotionInfo)* motionInfo;
+		const(GameInputArcadeStickInfo)* arcadeStickInfo;
+		const(GameInputFlightStickInfo)* flightStickInfo;
+		const(GameInputGamepadInfo)* gamepadInfo;
+		const(GameInputRacingWheelInfo)* racingWheelInfo;
+		const(GameInputUiNavigationInfo)* uiNavigationInfo;
+		const(GameInputForceFeedbackMotorInfo)* forceFeedbackMotorInfo;
+		const(GameInputHapticFeedbackMotorInfo)* hapticFeedbackMotorInfo;
+		const(GameInputString)* displayName;
+		const(GameInputString)* deviceStrings;
+		const(void)* deviceDescriptorData;
+	}
 } else {
 	const IID IID_IGameInputForceFeedbackEffect = makeGuid!"51BDA05E-F742-45D9-B085-9444AE48381D";
 	interface IGameInputForceFeedbackEffect : IUnknown {
@@ -619,6 +668,60 @@ version (IOTA_WINGAMEINPUT_V0) {
 		bool GetRacingWheelState(GameInputRacingWheelState* state);
 		bool GetRawReport(IGameInputRawDeviceReport* report);
 	}
+	struct GameInputDeviceInfo {
+		uint16_t				vendorId;
+		uint16_t				productId;
+		uint16_t				revisionNumber;
+		GameInputUsage			usage;
+		GameInputVersion		hardwareVersion;
+		GameInputVersion		firmwareVersion;
+		APP_LOCAL_DEVICE_ID		deviceId;
+		APP_LOCAL_DEVICE_ID		deviceRootId;
+		GameInputDeviceFamily	deviceFamily;
+		uint					supportedInput;
+		uint					supportedRumbleMotors;
+		uint					supportedSystemButtons;
+		GUID					containerId;
+		const char*				displayName;
+		const char*				pnpPath;
+
+		const GameInputKeyboardInfo* keyboardInfo;
+		const GameInputMouseInfo*    mouseInfo;
+		const GameInputSensorsInfo*  sensorsInfo;
+
+		const GameInputControllerInfo*  controllerInfo;
+		const GameInputArcadeStickInfo* arcadeStickInfo;
+		const GameInputFlightStickInfo* flightStickInfo;
+		const GameInputGamepadInfo*     gamepadInfo;
+		const GameInputRacingWheelInfo* racingWheelInfo;
+
+		uint32_t                               forceFeedbackMotorCount;
+		const GameInputForceFeedbackMotorInfo* forceFeedbackMotorInfo;
+
+		uint32_t                            inputReportCount;
+		const GameInputRawDeviceReportInfo* inputReportInfo;
+
+		uint32_t                            outputReportCount;
+		const GameInputRawDeviceReportInfo* outputReportInfo;
+	}
+}
+struct GameInputSensorsInfo {
+	uint supportedSensors;
+}
+enum GameInputSensorsKind {
+	GameInputSensorsNone			= 0x00000000,
+	GameInputSensorsAccelerometer	= 0x00000001,
+	GameInputSensorsGyrometer		= 0x00000002,
+	GameInputSensorsCompass			= 0x00000004,
+	GameInputSensorsOrientation		= 0x00000008
+}
+struct GameInputControllerInfo {
+	uint32_t								controllerAxisCount;
+	const GameInputLabel*					controllerAxisLabels;
+	uint32_t								controllerButtonCount;
+	const GameInputLabel*					controllerButtonLabels;
+	uint32_t								controllerSwitchCount;
+	const GameInputControllerSwitchInfo*	controllerSwitchInfo;
 }
 alias GameInputDeviceCallback = extern(Windows) void function(GameInputCallbackToken callbackToken, void* context,
 		IGameInputDevice device, uint64_t timestamp, uint currentStatus, uint previousStatus) @nogc nothrow;
@@ -722,55 +825,7 @@ struct GameInputMotionInfo {
 	float maxAngularVelocity;
 	float maxMagneticFieldStrength;
 }
-struct GameInputDeviceInfo {
-	uint32_t infoSize;
-	uint16_t vendorId;
-	uint16_t productId;
-	uint16_t revisionNumber;
-	uint8_t interfaceNumber;
-	uint8_t collectionNumber;
-	GameInputUsage usage;
-	GameInputVersion hardwareVersion;
-	GameInputVersion firmwareVersion;
-	APP_LOCAL_DEVICE_ID deviceId;
-	APP_LOCAL_DEVICE_ID deviceRootId;
-	GameInputDeviceFamily deviceFamily;
-	uint capabilities;
-	GameInputKind supportedInput;
-	uint supportedRumbleMotors;
-	uint32_t inputReportCount;
-	uint32_t outputReportCount;
-	uint32_t featureReportCount;
-	uint32_t controllerAxisCount;
-	uint32_t controllerButtonCount;
-	uint32_t controllerSwitchCount;
-	uint32_t touchPointCount;
-	uint32_t touchSensorCount;
-	uint32_t forceFeedbackMotorCount;
-	uint32_t hapticFeedbackMotorCount;
-	uint32_t deviceStringCount;
-	uint32_t deviceDescriptorSize;
-	const(GameInputRawDeviceReportInfo)* inputReportInfo;
-	const(GameInputRawDeviceReportInfo)* outputReportInfo;
-	const(GameInputRawDeviceReportInfo)* featureReportInfo;
-	const(GameInputControllerAxisInfo)* controllerAxisInfo;
-	const(GameInputControllerButtonInfo)* controllerButtonInfo;
-	const(GameInputControllerSwitchInfo)* controllerSwitchInfo;
-	const(GameInputKeyboardInfo)* keyboardInfo;
-	const(GameInputMouseInfo)* mouseInfo;
-	const(GameInputTouchSensorInfo)* touchSensorInfo;
-	const(GameInputMotionInfo)* motionInfo;
-	const(GameInputArcadeStickInfo)* arcadeStickInfo;
-	const(GameInputFlightStickInfo)* flightStickInfo;
-	const(GameInputGamepadInfo)* gamepadInfo;
-	const(GameInputRacingWheelInfo)* racingWheelInfo;
-	const(GameInputUiNavigationInfo)* uiNavigationInfo;
-	const(GameInputForceFeedbackMotorInfo)* forceFeedbackMotorInfo;
-	const(GameInputHapticFeedbackMotorInfo)* hapticFeedbackMotorInfo;
-	const(GameInputString)* displayName;
-	const(GameInputString)* deviceStrings;
-	const(void)* deviceDescriptorData;
-}
+
 struct GameInputControllerAxisInfo {
 	GameInputKind mappedInputKinds;
 	GameInputLabel label;

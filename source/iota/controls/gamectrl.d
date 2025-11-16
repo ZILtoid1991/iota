@@ -1,6 +1,8 @@
 module iota.controls.gamectrl;
 
 public import iota.controls.types;
+import core.atomic;
+import iota.etc.stdlib;
 // import iota.controls;
 
 version (Windows) {
@@ -99,79 +101,49 @@ public enum GameControllerAxes : ubyte {
 	RTouchpadX,
 	RTouchpadY,
 }
-public enum GameControllerLabels : ubyte {
-	unknown,
-	Nr0,
-	Nr1,
-	Nr2,
-	Nr3,
-	Nr4,
-	Nr5,
-	Nr6,
-	Nr7,
-	Nr8,
-	Nr9,
-	LtrA,
-	LtrB,
-	LtrC,
-	LtrD,
-	LtrE,
-	LtrF,
-	LtrG,
-	LtrH,
-	LtrI,
-	LtrJ,
-	LtrK,
-	LtrL,
-	LtrM,
-	LtrN,
-	LtrO,
-	LtrP,
-	LtrQ,
-	LtrR,
-	LtrS,
-	LtrT,
-	LtrU,
-	LtrV,
-	LtrW,
-	LtrX,
-	LtrY,
-	LtrZ,
-	SymSquare,
-	SymCircle,
-	SymCross,
-	SymTriange,
-	SymPlus,
-	SymMinus,
-	SymBrand,
-	SymHome,
-	SymStar,
-	LblStart,
-	LblSelect,
-	LblBack,
-	LblView,
-	LblOption,
-	LblRun,
-	L1,
-	L2,
-	L3,
-	L4,
-	L5,
-	R1,
-	R2,
-	R3,
-	R4,
-	R5,
-	LB,
-	LT,
-	LSB,
-	RB,
-	RT,
-	RSB,
-	DPadUp,
-	DPadDown,
-	DPadLeft,
-	DPadRight,
+/**
+ *
+ */
+public enum GameControllerButtonLabels : uint {
+	SymSquare		=	0xF000_0080,
+	SymCircle		=	0xF000_0081,
+	SymCross		=	0xF000_0082,
+	SymTriange		=	0xF000_0083,
+	SymPlus			=	0xF000_0084,
+	SymMinus		=	0xF000_0085,
+	SymBrand		=	0xF000_0086,
+	SymHome			=	0xF000_0087,
+	SymStar			=	0xF000_0088,
+	LblStart		=	0xF000_0090,
+	LblSelect		=	0xF000_0091,
+	LblBack			=	0xF000_0092,
+	LblView			=	0xF000_0093,
+	LblOption		=	0xF000_0094,
+	LblRun			=	0xF000_0095,
+	LblShare		=	0xF000_0100,
+	L1				=	0xF000_0096,
+	L2				=	0xF000_0097,
+	L3				=	0xF000_0098,
+	L4				=	0xF000_0099,
+	L5				=	0xF000_009A,
+	R1				=	0xF000_009B,
+	R2				=	0xF000_009C,
+	R3				=	0xF000_009D,
+	R4				=	0xF000_009E,
+	R5				=	0xF000_009F,
+	LB				=	0xF000_00A0,
+	LT				=	0xF000_00A1,
+	LSB				=	0xF000_00A2,
+	RB				=	0xF000_00A3,
+	RT				=	0xF000_00A4,
+	RSB				=	0xF000_00A5,
+	DPadUp			=	0xF000_00FC,
+	DPadDown		=	0xF000_00FD,
+	DPadLeft		=	0xF000_00FE,
+	DPadRight		=	0xF000_00FF,
+}
+public struct GameControllerLayoutData {
+
 }
 /**
  * Implements basic functionality common for all game controllers.
@@ -585,14 +557,12 @@ version (Windows) {
 			return HapticDeviceStatus.DeviceInvalidated;
 		}
 	}
-
+	/**
+	* Implements the GameInput API for Windows.
+	*/
 	public class GIGameController : GameController {
 		package static IGameInput gameInputHandler;
-		// package static IGameInputReading reading;
-		package static InputEvent[] processedInputEvents;
-		package static uint eventsIn;		///Position of events going in
-		package static uint eventsOut;		///Position of events going out
-		package static uint eventsModulo;	///Max number of events in buffer minus one
+		package static PostBox pb;
 		package static GameInputCallbackToken callbackToken, sysToken;
 		package static GIGameController[16] references;
 		package static ubyte currCtrl = 0;
@@ -601,66 +571,50 @@ version (Windows) {
 		package static bool triggerMode;
 		extern (Windows) static void deviceCallback(GameInputCallbackToken callbackToken, void* context,
 				IGameInputDevice device, ulong timestamp, uint currentStatus, uint previousStatus) @nogc nothrow {
+			PostBox* lpb = cast(PostBox*)context;
 			if ((currentStatus & GameInputDeviceStatus.GameInputDeviceConnected) != 0) {	//Device connected
-				for (int i ; i < allCtrls ; i++) {
-					if (references[i].deviceHandle is device) {
-
-					}
-				}
 				import numem;
-				references[allCtrls] = nogc_new!GIGameController(device);
-				processedInputEvents[eventsOut & eventsModulo].timestamp = getTimestamp();
-				processedInputEvents[eventsOut & eventsModulo].type = InputEventType.DeviceAdded;
-				processedInputEvents[eventsOut & eventsModulo].source = references[allCtrls];
-				import iota.controls.polling;
-				devList ~= cast(InputDevice)references[allCtrls];
-				eventsOut++;
-				allCtrls++;
-				debug {
-					import core.stdc.stdio;
-					printf("%i;%x \n", allCtrls, cast(void*)references[allCtrls-1]);
-				}
+				InputEvent output;
+				output.source = cast(InputDevice)nogc_new!GIGameController(device);
+				output.timestamp = timestamp;
+				output.type = InputEventType.DeviceAdded;
+				lpb.processedInputEvents[lpb.eventsOut & lpb.eventsModulo] = output;
+				lpb.eventsOut++;
 			} else if ((previousStatus & GameInputDeviceStatus.GameInputDeviceConnected) != 0) {	//Device disconnected
-				for (int i ; i < allCtrls ; i++) {
-					if (references[i].deviceHandle is device) {
-						references[i].status |= InputDevice.StatusFlags.IsInvalidated;
-						processedInputEvents[eventsOut & eventsModulo].timestamp = getTimestamp();
-						processedInputEvents[eventsOut & eventsModulo].type = InputEventType.DeviceRemoved;
-						processedInputEvents[eventsOut & eventsModulo].source = references[i];
-						eventsOut++;
-						return;
-					}
-				}
+				InputEvent output;
+				output.timestamp = timestamp;
+				output.type = InputEventType.DeviceRemoved;
+				output.arbPtr.data = cast(void*)device;
+				lpb.processedInputEvents[lpb.eventsOut & lpb.eventsModulo] = output;
+				lpb.eventsOut++;
 			}
 		}
 		extern (Windows) static void sysButtonCallback(GameInputCallbackToken callbackToken, void* context,
 		IGameInputDevice device, ulong timestamp, uint currentState, uint previousState) @nogc nothrow {
-			for (int i ; i < allCtrls ; i++) {
-				if (references[i].deviceHandle is device) {
-					if ((currentState ^ previousState) == GameInputSystemButtons.GameInputSystemButtonGuide) {
-						processedInputEvents[eventsOut & eventsModulo].timestamp = getTimestamp();
-						processedInputEvents[eventsOut & eventsModulo].type = InputEventType.GCButton;
-						processedInputEvents[eventsOut & eventsModulo].source = references[i];
-						processedInputEvents[eventsOut & eventsModulo].button.id = GameControllerButtons.Home;
-						processedInputEvents[eventsOut & eventsModulo].button.dir =
-								(currentState & GameInputSystemButtons.GameInputSystemButtonGuide) != 0;
-						processedInputEvents[eventsOut & eventsModulo].button.auxF = float.nan;
-						processedInputEvents[eventsOut & eventsModulo].button.aux = 0;
-						eventsOut++;
-					}
-					if ((currentState ^ previousState) == GameInputSystemButtons.GameInputSystemButtonShare) {
-						processedInputEvents[eventsOut & eventsModulo].timestamp = getTimestamp();
-						processedInputEvents[eventsOut & eventsModulo].type = InputEventType.GCButton;
-						processedInputEvents[eventsOut & eventsModulo].source = references[i];
-						processedInputEvents[eventsOut & eventsModulo].button.id = GameControllerButtons.Share;
-						processedInputEvents[eventsOut & eventsModulo].button.dir =
-								(currentState & GameInputSystemButtons.GameInputSystemButtonShare) != 0;
-						processedInputEvents[eventsOut & eventsModulo].button.auxF = float.nan;
-						processedInputEvents[eventsOut & eventsModulo].button.aux = 0;
-						eventsOut++;
-					}
-					return;
-				}
+			PostBox* lpb = cast(PostBox*)context;
+			if ((currentState ^ previousState) == GameInputSystemButtons.GameInputSystemButtonGuide) {
+				InputEvent output;
+				output.timestamp = timestamp;
+				output.type = InputEventType.GCButton;
+				output.button.id = GameControllerButtons.Home;
+				output.button.dir = (currentState & GameInputSystemButtons.GameInputSystemButtonGuide) != 0;
+				output.button.auxF = float.nan;
+				output.button.aux = 0;
+				output.arbPtr.data0 = cast(void*)device;
+				lpb.processedInputEvents[lpb.eventsOut & lpb.eventsModulo] = output;
+				lpb.eventsOut++;
+			}
+			if ((currentState ^ previousState) == GameInputSystemButtons.GameInputSystemButtonShare) {
+				InputEvent output;
+				output.timestamp = timestamp;
+				output.type = InputEventType.GCButton;
+				output.button.id = GameControllerButtons.Home;
+				output.button.dir = (currentState & GameInputSystemButtons.GameInputSystemButtonGuide) != 0;
+				output.button.auxF = float.nan;
+				output.button.aux = 0;
+				output.arbPtr.data0 = cast(void*)device;
+				lpb.processedInputEvents[lpb.eventsOut & lpb.eventsModulo] = output;
+				lpb.eventsOut++;
 			}
 		}
 		static int poll(out InputEvent output) @system @nogc nothrow {
@@ -668,9 +622,42 @@ version (Windows) {
 				output.source = references[currCtrl];
 				output.timestamp = getTimestamp();
 			}
-			if (eventsIn < eventsOut) {
-				output = processedInputEvents[eventsIn & eventsModulo];
-				eventsIn++;
+			if (pb.eventsOut != pb.eventsIn) {
+				output = pb.processedInputEvents[pb.eventsIn & pb.eventsModulo];
+				pb.eventsIn++;
+				switch (output.type) {
+				case InputEventType.GCButton:
+					for (int i ; i < allCtrls ; i++) {
+						if (cast(void*)references[i].deviceHandle == output.arbPtr.data0) {
+							output.source = cast(InputDevice)references[i];
+							output.arbPtr.data0 = null;
+							return 1;
+						}
+					}
+					output.arbPtr.data0 = null;
+					return 1;
+				case InputEventType.DeviceAdded:
+					references[allCtrls] = cast(GIGameController)output.source;
+					import iota.controls.polling;
+					devList ~= output.source;
+					allCtrls++;
+					return 1;
+				case InputEventType.DeviceRemoved:
+					for (int i ; i < allCtrls ; i++) {
+						if (cast(void*)references[i].deviceHandle == output.arbPtr.data0) {
+							references[i].status |= InputDevice.StatusFlags.IsInvalidated;
+							output.source = cast(InputDevice)references[i];
+							output.arbPtr.data = null;
+							for (int j = i ; j < 14 ; j++) {
+								references[j] = references[j+1];
+							}
+							allCtrls--;
+							return 1;
+						}
+					}
+					return 1;
+				default: break;
+				}
 				return 1;
 			}
 			if (currCtrl >= allCtrls) {
@@ -921,7 +908,7 @@ version (Windows) {
 				gameInputHandler.Release();
 			}
 			import numem;
-			nu_freea(processedInputEvents);
+			nu_freea(pb.processedInputEvents);
 		}
 		package IGameInputDevice deviceHandle;
 		package GameInputGamepadState state, prevState;
@@ -932,7 +919,10 @@ version (Windows) {
 			rumbleParams = GameInputRumbleParams(0.0, 0.0, 0.0, 0.0);
 			state = GameInputGamepadState(0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
 			prevState = GameInputGamepadState(0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
-			status |= StatusFlags.IsHapticCapable; // TODO: Detect haptic capabilities!
+			GameInputDeviceInfo* info;
+			this.deviceHandle.GetDeviceInfo(&info);
+			_name = fromCSTR(info.displayName);
+			if (info.supportedRumbleMotors) status |= StatusFlags.IsHapticCapable;
 		}
 		~this() @nogc nothrow {
 			this.deviceHandle.Release();
