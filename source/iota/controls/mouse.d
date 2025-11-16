@@ -50,6 +50,10 @@ public class Mouse : InputDevice {
 			_type = InputDeviceType.Mouse;
 			status |= StatusFlags.IsConnected;
 		}
+		~this() @nogc nothrow {
+			import numem;
+			if (_name) nu_freea(_name);
+		}
 	} else version(OSX) {
     	this(string _name, ubyte _devNum) @nogc nothrow {
     	    this._name = _name;
@@ -57,6 +61,10 @@ public class Mouse : InputDevice {
     	    _type = InputDeviceType.Mouse;
     	    status |= StatusFlags.IsConnected;
     	}
+    	~this() @nogc nothrow {
+			import numem;
+			if (_name) nu_freea(_name);
+		}
 	} else {
 		/* package XDevice*	devHandle;
 		package this(string _name, ubyte _devNum, XID devID) nothrow {
@@ -76,8 +84,10 @@ public class Mouse : InputDevice {
 		}
 		~this() @nogc nothrow {
 			import core.stdc.stdio;
+			import numem;
 			if (hDevice) libevdev_free(hDevice);
 			if (fd) close(fd);
+			if (_name) nu_freea(_name);
 			//XCloseDevice(OSWindow.mainDisplay, devHandle);
 		}
 	}

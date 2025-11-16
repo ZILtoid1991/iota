@@ -65,9 +65,17 @@ public class Keyboard : InputDevice {
 			_type = InputDeviceType.Keyboard;
 			status |= StatusFlags.IsConnected;
 		}
+		~this() @nogc nothrow {
+			import numem;
+			if (_name) nu_freea(_name);
+		}
 	} else version (OSX) {
 		package uint modifierTracker;
 		package bool ignoreLockLights;
+		~this() @nogc nothrow {
+			import numem;
+			if (_name) nu_freea(_name);
+		}
 	} else {
 		//package XDevice*	devHandle;
 		
@@ -92,6 +100,7 @@ public class Keyboard : InputDevice {
 			import core.stdc.stdio;
 			if (hDevice) libevdev_free(hDevice);
 			if (fd) close(fd);
+			if (_name) nu_freea(_name);
 			//XCloseDevice(OSWindow.mainDisplay, devHandle);
 		}
 	}

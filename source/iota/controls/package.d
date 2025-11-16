@@ -9,6 +9,7 @@ public import iota.controls.system;
 public import iota.controls.gamectrl;
 public import iota.window.oswindow;
 import iota.controls.polling;
+import iota.etc.charcode;
 
 version (Windows) {
 	import core.sys.windows.windows;
@@ -24,6 +25,7 @@ version (Windows) {
 	//import core.sys.linux.fcntl;
 }
 import core.stdc.stdlib;
+import core.atomic;
 //import core.stdc.stdio;
 import std.conv : to;
 import std.string : toStringz, fromStringz, splitLines, split;
@@ -80,18 +82,18 @@ public int initInput(uint config = 0, uint osConfig = 0, string gcmTable = null)
 					statusGameInput = GameInputInitialize(&IID_IGameInput, cast(void**)&GIGameController.gameInputHandler);
 				}
 				//Initialize event buffer
-				GIGameController.processedInputEvents = nu_malloca!InputEvent(256);
-				GIGameController.eventsModulo = 255;
+				GIGameController.pb.processedInputEvents = nu_malloca!InputEvent(256);
+				GIGameController.pb.eventsModulo = 255;
 				statusGameInput = GIGameController.gameInputHandler.RegisterDeviceCallback(null, GameInputKind.GameInputKindGamepad,
-						GameInputDeviceStatus.GameInputDeviceAnyStatus, GameInputEnumerationKind.GameInputBlockingEnumeration, null,
-						&GIGameController.deviceCallback, &GIGameController.callbackToken);
+						GameInputDeviceStatus.GameInputDeviceAnyStatus, GameInputEnumerationKind.GameInputBlockingEnumeration,
+						&GIGameController.pb, &GIGameController.deviceCallback, &GIGameController.callbackToken);
 				if (statusGameInput) return InputInitializationStatus.win_GIError;
 				version (IOTA_WINGAMEINPUT_V0) {
 
 				} else {
 					statusGameInput = GIGameController.gameInputHandler.RegisterSystemButtonCallback(null,
-							GameInputSystemButtons.GameInputSystemButtonGuide | GameInputSystemButtons.GameInputSystemButtonShare, null,
-							&GIGameController.sysButtonCallback, &GIGameController.sysToken);
+							GameInputSystemButtons.GameInputSystemButtonGuide | GameInputSystemButtons.GameInputSystemButtonShare,
+							&GIGameController.pb, &GIGameController.sysButtonCallback, &GIGameController.sysToken);
 					if (statusGameInput) return InputInitializationStatus.win_GIError;
 				}
 				subPollingFun = &GIGameController.poll;
@@ -140,22 +142,22 @@ public int initInput(uint config = 0, uint osConfig = 0, string gcmTable = null)
 				switch (dev.dwType) {
 					case RIM_TYPEMOUSE:
 						Mouse m;
-						m = nogc_new!(Mouse)(toUTF8(data[0..nameRes]), mNum++, dev.hDevice);
+						m = nogc_new!(Mouse)(fromUTF16toUTF8(cast(wstring)data[0..nameRes]), mNum++, dev.hDevice);
 						devList ~= cast(InputDevice)m;
 						mouse = m;
 						break;
 					case RIM_TYPEKEYBOARD:
 						Keyboard k;
-						k = nogc_new!(Keyboard)(toUTF8(data[0..nameRes]), kbNum++, dev.hDevice);
+						k = nogc_new!(Keyboard)(fromUTF16toUTF8(cast(wstring)data[0..nameRes]), kbNum++, dev.hDevice);
 						devList ~= cast(InputDevice)k;
 						keyb = k;
 						break;
 					default:	//Must be RIM_TYPEHID
 						try {
-							RawGCMapping[] mapping = parseGCM(gcmTable, toUTF8(data[0..nameRes]));
+							RawGCMapping[] mapping = parseGCM(gcmTable, null);
 							if (mapping.length) {
-								devList ~= cast(InputDevice)nogc_new!(RawInputGameController)(toUTF8(data[0..nameRes]), gcNum++, dev.hDevice,
-										mapping);
+								devList ~= cast(InputDevice)nogc_new!(RawInputGameController)(fromUTF16toUTF8(cast(wstring)data[0..nameRes]),
+										gcNum++, dev.hDevice, mapping);
 							}
 						} catch (Exception e) {
 							debug writeln(e);
@@ -287,9 +289,29 @@ version (Windows) {
 		RawGCMapping(RawGCMappingType.Axis, 0, 5, GameControllerAxes.RightTrigger),
 	];
 }
-
+/**
+ * Goes through all the devices in the list, then removes them from the lists.
+ * Returns: 0 on success, or a specific error code.
+ */
 public int removeInvalidatedDevices() @nogc nothrow {
-
+	try {
+		int numRemovedDevices;
+		for (int i ; i < devList.length ; i++) {
+			if (devList[i].isInvalidated) {
+				devList[i].nogc_delete();
+				numRemovedDevices++;
+				for (int j = i ; j + 1 < devList.length ; j++) {
+					devList[j] = devList[j + 1];
+				}
+			}
+		}
+		if (numRemovedDevices) devList.resize(devList.length - numRemovedDevices);
+	} catch (NuException e) {
+		e.free();
+		return -1;
+	} catch (Exception e) {
+		return -2;
+	}
 	return 0;
 }
 /**
