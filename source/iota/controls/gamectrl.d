@@ -568,6 +568,9 @@ version (Windows) {
 		package static ubyte currCtrl = 0;
 		package static ubyte allCtrls = 0;
 		package static byte pollCntr = 0;
+		package static byte sensPollCntr = 0;
+		package static byte extraBtnPollCntr = 0;
+		package static byte extraAxisPollCntr = 0;
 		package static bool triggerMode;
 		extern (Windows) static void deviceCallback(GameInputCallbackToken callbackToken, void* context,
 				IGameInputDevice device, ulong timestamp, uint currentStatus, uint previousStatus) @nogc nothrow {
@@ -669,6 +672,8 @@ version (Windows) {
 					HRESULT st = gameInputHandler.GetCurrentReading(GameInputKind.GameInputKindGamepad, gc.deviceHandle, &reading);
 					gc.prevState = gc.state;
 					reading.GetGamepadState(&gc.state);
+					gc.prevMstate = gc.mstate;
+					reading.GetSensorsState(&gc.mstate);
 					reading.Release();
 				}
 			}
@@ -897,7 +902,14 @@ version (Windows) {
 						break;
 					}
 				}
+				while (sensPollCntr < references[currCtrl].sensPollMax) {
+					switch (sensPollCntr++) {
+					default:
+						break;
+					}
+				}
 				pollCntr = 0;
+				sensPollCntr = 0;
 				currCtrl++;
 			}
 			//currCtrl = 0;
@@ -912,17 +924,26 @@ version (Windows) {
 		}
 		package IGameInputDevice deviceHandle;
 		package GameInputGamepadState state, prevState;
+		package GameInputSensorsState mstate, prevMstate;
 		package GameInputRumbleParams rumbleParams;
+		package ubyte sensPollMax;
 		this(IGameInputDevice deviceHandle) @trusted @nogc nothrow {
 			this.deviceHandle = deviceHandle;
 			this.deviceHandle.AddRef();
 			rumbleParams = GameInputRumbleParams(0.0, 0.0, 0.0, 0.0);
 			state = GameInputGamepadState(0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
 			prevState = GameInputGamepadState(0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
+			mstate = GameInputSensorsState(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+					GameInputSensorAccuracy.GameInputSensorAccuracyUnknown, 0.0, 0.0, 0.0, 0.0);
+			prevMstate = GameInputSensorsState(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+					GameInputSensorAccuracy.GameInputSensorAccuracyUnknown, 0.0, 0.0, 0.0, 0.0);
 			GameInputDeviceInfo* info;
 			this.deviceHandle.GetDeviceInfo(&info);
 			_name = fromCSTR(info.displayName);
 			if (info.supportedRumbleMotors) status |= StatusFlags.IsHapticCapable;
+			if (info.sensorsInfo) {
+				if (info.sensorsInfo.supportedSensors) sensPollMax = 11;
+			}
 		}
 		~this() @nogc nothrow {
 			this.deviceHandle.Release();
