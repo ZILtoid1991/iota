@@ -11,6 +11,7 @@ public import core.time : MonoTime, Duration, msecs;
 version (Windows) {
 	import core.sys.windows.wtypes;
 	import core.sys.windows.windows;
+
 } else version (linux) {
 	import iota.controls.backend.linux;
 }
@@ -285,9 +286,14 @@ public interface HapticDevice {
 	///Defines capabilities of haptic devices.
 	public enum Capabilities {
 		init,
+		///Low-frequency motor on many devices.
 		LeftMotor,
+		///High-frequency motor on many devices.
 		RightMotor,
+		///Rumble motor placed into triggers, e.g. Xbox.
 		TriggerRumble,
+		///HD rumble and similar voice coil based haptics, often treated as audio stream devices by the OS.
+		VibrotactileHaptics,
 	}
 	///Defines potential zones of haptic capabilities.
 	public enum Zones {
@@ -339,6 +345,15 @@ public interface HapticDevice {
 	 * Returns: 0 on success, or a specific error code.
 	 */
 	public int reset() @nogc @trusted nothrow;
+	/**
+	 * Getter for any backend information, that might be tied to a haptic capability, such as audio stream IDs.
+	 * Params:
+	 *   capability = The capability that the user wants info on.
+	 *   zone = The zone tied to said capability.
+	 * Returns: A pointer to a struct if capability has some kind of backend information, such as a pointer to a GUID,
+	 * or null otherwise.
+	 */
+	public void* getCapabilityBackendInfo(uint capability, uint zone) @nogc nothrow;
 }
 /** 
  * Defines a button (keyboard, game controller) event data.

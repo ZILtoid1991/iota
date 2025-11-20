@@ -4,6 +4,7 @@ public import iota.controls.types;
 import core.atomic;
 import iota.etc.stdlib;
 // import iota.controls;
+import numem;
 
 version (Windows) {
 	import core.sys.windows.windows;
@@ -198,6 +199,17 @@ abstract class GameController : InputDevice, HapticDevice {
 	 * Returns: 0 on success, or a specific error code.
 	 */
 	public abstract int reset() nothrow;
+	/**
+	 * Getter for any backend information, that might be tied to a haptic capability, such as audio stream IDs.
+	 * Params:
+	 *   capability = The capability that the user wants info on.
+	 *   zone = The zone tied to said capability.
+	 * Returns: A pointer to a struct if capability has some kind of backend information, such as a pointer to a GUID,
+	 * or null otherwise.
+	 */
+	public void* getCapabilityBackendInfo(uint capability, uint zone) @nogc nothrow {
+		return null;
+	}
 }
 /**
  * Game controller class meant to be used with RawInput and libendev.
@@ -224,6 +236,9 @@ public class RawInputGameController : GameController {
 			_type = InputDeviceType.GameController;
 			status |= StatusFlags.IsConnected;
 		}
+	}
+	~this() @nogc nothrow {
+		nu_freea(_name);
 	}
 	override public const(uint)[] getCapabilities() @safe nothrow {
 		return null; // TODO: implement
@@ -919,7 +934,6 @@ version (Windows) {
 			if (gameInputHandler) {
 				gameInputHandler.Release();
 			}
-			import numem;
 			nu_freea(pb.processedInputEvents);
 		}
 		package IGameInputDevice deviceHandle;
@@ -947,6 +961,7 @@ version (Windows) {
 		}
 		~this() @nogc nothrow {
 			this.deviceHandle.Release();
+			nu_freea(_name);
 		}
 		public override const(uint)[] getCapabilities() @safe nothrow {
 			static const(uint)[] result = [HapticDevice.Capabilities.LeftMotor, HapticDevice.Capabilities.RightMotor,
