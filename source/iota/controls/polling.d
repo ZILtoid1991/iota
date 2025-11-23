@@ -864,7 +864,7 @@ version (Windows) {
 	package int poll_evdev(out InputEvent output) nothrow @nogc {
 		while (devList.length > evdev_devCntr) {
 			InputDevice currdev = devList[evdev_devCntr];
-			if (!currdev.isInvalidated && currdev.hDevice) {
+			if (!currdev.isInvalidated && currdev.hDevice && libevdev_has_event_pending(currdev.hDevice) > 0) {
 				input_event event;
 				while (libevdev_next_event(currdev.hDevice, libevdev_read_flag.LIBEVDEV_READ_FLAG_NORMAL, &event) ==
 						libevdev_read_status.LIBEVDEV_READ_STATUS_SUCCESS) {
