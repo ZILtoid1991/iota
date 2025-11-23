@@ -39,7 +39,8 @@ public int initDriver(DriverType type = OS_PREFERRED_DRIVER) @trusted {
 						cast(void**)&immEnum);
 				switch (lastErrorCode) {
 					case S_OK: return initDriverWASAPI();
-					case REGDB_E_CLASSNOTREG, E_NOINTERFACE, CLASS_E_NOAGGREGATION: return AudioInitializationStatus.DriverNotAvailable;
+					case REGDB_E_CLASSNOTREG, E_NOINTERFACE, CLASS_E_NOAGGREGATION:
+							return AudioInitializationStatus.DriverNotAvailable;
 					case E_POINTER: return AudioInitializationStatus.InternalError;
 					default: return AudioInitializationStatus.Unknown;
 				}
