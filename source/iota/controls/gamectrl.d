@@ -97,6 +97,11 @@ public enum GameControllerAxes : ubyte {
 	RotateX,
 	RotateY,
 	RotateZ,
+	OrientationW,
+	OrientationX,
+	OrientationY,
+	OrientationZ,
+	Compass,
 	TouchpadX,
 	TouchpadY,
 	RTouchpadX,
@@ -574,6 +579,9 @@ version (Windows) {
 	}
 	/**
 	* Implements the GameInput API for Windows.
+	* Function `getCapabilityBackendInfo` will return a pointer to a `GameInputHapticInfo` struct, if supplied with
+	* the `HapticDevice.Capabilities.VibrotactileHaptics` enumerator on capabilities, which allows the user to stream
+	* audio to the haptic elements.
 	*/
 	public class GIGameController : GameController {
 		package static IGameInput gameInputHandler;
@@ -583,9 +591,6 @@ version (Windows) {
 		package static ubyte currCtrl = 0;
 		package static ubyte allCtrls = 0;
 		package static byte pollCntr = 0;
-		package static byte sensPollCntr = 0;
-		package static byte extraBtnPollCntr = 0;
-		package static byte extraAxisPollCntr = 0;
 		package static bool triggerMode;
 		extern (Windows) static void deviceCallback(GameInputCallbackToken callbackToken, void* context,
 				IGameInputDevice device, ulong timestamp, uint currentStatus, uint previousStatus) @nogc nothrow {
@@ -645,14 +650,16 @@ version (Windows) {
 				pb.eventsIn++;
 				switch (output.type) {
 				case InputEventType.GCButton:
-					for (int i ; i < allCtrls ; i++) {
-						if (cast(void*)references[i].deviceHandle == output.arbPtr.data0) {
-							output.source = cast(InputDevice)references[i];
-							output.arbPtr.data0 = null;
-							return 1;
+					if (output.source is null) {
+						for (int i ; i < allCtrls ; i++) {
+							if (cast(void*)references[i].deviceHandle == output.arbPtr.data0) {
+								output.source = cast(InputDevice)references[i];
+								output.arbPtr.data0 = null;
+								return 1;
+							}
 						}
+						output.arbPtr.data0 = null;
 					}
-					output.arbPtr.data0 = null;
 					return 1;
 				case InputEventType.DeviceAdded:
 					references[allCtrls] = cast(GIGameController)output.source;
@@ -685,11 +692,12 @@ version (Windows) {
 					GIGameController gc = references[i];
 					IGameInputReading reading;
 					HRESULT st = gameInputHandler.GetCurrentReading(GameInputKind.GameInputKindGamepad, gc.deviceHandle, &reading);
-					gc.prevState = gc.state;
-					reading.GetGamepadState(&gc.state);
-					gc.prevMstate = gc.mstate;
-					reading.GetSensorsState(&gc.mstate);
-					reading.Release();
+					if (reading !is null) {
+						gc.prevState = gc.state;
+						reading.GetGamepadState(&gc.state);
+						reading.Release();
+					}
+
 				}
 			}
 			while (currCtrl < allCtrls) {
@@ -913,18 +921,11 @@ version (Windows) {
 						}
 						break;
 					default:
-						// currCtrl++;
-						break;
-					}
-				}
-				while (sensPollCntr < references[currCtrl].sensPollMax) {
-					switch (sensPollCntr++) {
-					default:
+						// reserved for future extensions.
 						break;
 					}
 				}
 				pollCntr = 0;
-				sensPollCntr = 0;
 				currCtrl++;
 			}
 			//currCtrl = 0;
@@ -940,7 +941,7 @@ version (Windows) {
 		package GameInputGamepadState state, prevState;
 		package GameInputSensorsState mstate, prevMstate;
 		package GameInputRumbleParams rumbleParams;
-		package ubyte sensPollMax;
+		package GameInputHapticInfo hapticInfo;
 		this(IGameInputDevice deviceHandle) @trusted @nogc nothrow {
 			this.deviceHandle = deviceHandle;
 			this.deviceHandle.AddRef();
@@ -953,25 +954,37 @@ version (Windows) {
 					GameInputSensorAccuracy.GameInputSensorAccuracyUnknown, 0.0, 0.0, 0.0, 0.0);
 			GameInputDeviceInfo* info;
 			this.deviceHandle.GetDeviceInfo(&info);
+			this.deviceHandle.GetHapticInfo(&hapticInfo);
+			_devNum = allCtrls;
+			// debug {
+			// 	import core.stdc.stdio;
+			// 	if (info.controllerInfo)
+			// 		printf("%u;%u;%u\n", info.controllerInfo.controllerAxisCount, info.controllerInfo.controllerButtonCount,
+			// 				info.controllerInfo.controllerSwitchCount);
+			// }
 			_name = fromCSTR(info.displayName);
+			// _name = fromCSTR(info.pnpPath);
 			if (info.supportedRumbleMotors) status |= StatusFlags.IsHapticCapable;
-			if (info.sensorsInfo) {
-				if (info.sensorsInfo.supportedSensors) sensPollMax = 11;
-			}
+			if (hapticInfo.locationCount) status |= StatusFlags.IsHapticCapable;
 		}
 		~this() @nogc nothrow {
 			this.deviceHandle.Release();
 			nu_freea(_name);
 		}
 		public override const(uint)[] getCapabilities() @safe nothrow {
-			static const(uint)[] result = [HapticDevice.Capabilities.LeftMotor, HapticDevice.Capabilities.RightMotor,
+			static const(uint)[] result0 = [HapticDevice.Capabilities.LeftMotor, HapticDevice.Capabilities.RightMotor,
 					HapticDevice.Capabilities.TriggerRumble];
-			return result;
+			static const(uint)[] result1 = [HapticDevice.Capabilities.VibrotactileHaptics];
+			if (isHapticCapable()) return result0;
+			else if (hapticInfo.locationCount) return result1;
+			return null;
 		}
 		public override const(uint)[] getZones(uint capability) @safe nothrow {
-			if (capability == HapticDevice.Capabilities.TriggerRumble) {
-				static const(uint)[] result = [HapticDevice.Zones.Left, HapticDevice.Zones.Right];
-				return result;
+			if (isHapticCapable() && !hapticInfo.locationCount) {
+				if (capability == HapticDevice.Capabilities.TriggerRumble) {
+					static const(uint)[] result = [HapticDevice.Zones.Left, HapticDevice.Zones.Right];
+					return result;
+				}
 			}
 			return null;
 		}
@@ -1026,6 +1039,41 @@ version (Windows) {
 			if (deviceHandle is null) return HapticDeviceStatus.DeviceInvalidated;
 			deviceHandle.SetRumbleState(&rumbleParams);
 			return HapticDeviceStatus.AllOk;
+		}
+		/**
+		 * Getter for any backend information, that might be tied to a haptic capability, such as audio stream IDs.
+		 * Params:
+		 *   capability = The capability that the user wants info on.
+		 *   zone = The zone tied to said capability.
+		 * Returns: A pointer to a struct if capability has some kind of backend information, such as a pointer to a GUID,
+		 * or null otherwise.
+		 */
+		public override void* getCapabilityBackendInfo(uint capability, uint zone) @nogc nothrow {
+			switch (capability) {
+			case HapticDevice.Capabilities.VibrotactileHaptics:
+				if (hapticInfo.locationCount) return &hapticInfo;
+				break;
+			default: break;
+			}
+			return null;
+		}
+		/**
+		 * Tests for any local capabilities (extra buttons, motion sensing, etc.), then puts any events occuring into the postbox.
+		 * Params:
+		 *   localPB = The postbox in which detected events will be put.
+		 * Returns: The number of elements put into the postbox.
+		 */
+		package int testLocal(PostBox* localPB) @nogc nothrow {
+			return 0;
+		}
+		/**
+		 * When called, extra readings will be done for the controller if needed
+		 * Params:
+		 *   reading = The `IGameInputReading` interface needed to retrieve any further readings.
+		 * Returns: 0 on success.
+		 */
+		package int getExtraReadings(IGameInputReading reading) @nogc nothrow {
+			return 0;
 		}
 	}
 } else version (OSX) {

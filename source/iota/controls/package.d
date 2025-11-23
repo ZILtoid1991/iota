@@ -10,6 +10,7 @@ public import iota.controls.gamectrl;
 public import iota.window.oswindow;
 import iota.controls.polling;
 import iota.etc.charcode;
+import iota.etc.stdlib;
 
 version (Windows) {
 	import core.sys.windows.windows;
@@ -84,7 +85,8 @@ public int initInput(uint config = 0, uint osConfig = 0, string gcmTable = null)
 				//Initialize event buffer
 				GIGameController.pb.processedInputEvents = nu_malloca!InputEvent(256);
 				GIGameController.pb.eventsModulo = 255;
-				statusGameInput = GIGameController.gameInputHandler.RegisterDeviceCallback(null, GameInputKind.GameInputKindGamepad,
+				statusGameInput = GIGameController.gameInputHandler.RegisterDeviceCallback(null,
+						GameInputKind.GameInputKindGamepad | GameInputKind.GameInputKindController,
 						GameInputDeviceStatus.GameInputDeviceAnyStatus, GameInputEnumerationKind.GameInputBlockingEnumeration,
 						&GIGameController.pb, &GIGameController.deviceCallback, &GIGameController.callbackToken);
 				if (statusGameInput) return InputInitializationStatus.win_GIError;
@@ -204,7 +206,7 @@ public int initInput(uint config = 0, uint osConfig = 0, string gcmTable = null)
 							continue;
 							//return InputInitializationStatus.libevdev_ErrorOpeningDev;
 						}
-						string name = cast(string)fromStringz(libevdev_get_name(dev));
+						string name = fromCSTR(libevdev_get_name(dev));
 						// uint typeID = libevdev_has_event_type(dev, EV_SYN);
 						// typeID |= libevdev_has_event_type(dev, EV_KEY)<<0x01;
 						// typeID |= libevdev_has_event_type(dev, EV_REL)<<0x02;
