@@ -98,6 +98,7 @@ public class Keyboard : InputDevice {
 		}
 		~this() @nogc nothrow {
 			import core.stdc.stdio;
+			import numem;
 			if (hDevice) libevdev_free(hDevice);
 			if (fd) close(fd);
 			if (_name) nu_freea(_name);

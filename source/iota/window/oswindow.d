@@ -1133,10 +1133,10 @@ public class OSWindow {
 			}
 		} else {
 			if (mainDisplay) {
-				screenSize = [WidthOfScreen(mainDisplay), HeightOfScreen(mainDisplay),
-						WidthOfScreen(mainDisplay), HeightOfScreen(mainDisplay)];
-				screenDPI = [cast(double)WidthOfScreen(mainDisplay) / cast(double)WidthMMOfScreen(mainDisplay) * 25.4,
-						cast(double)HeightOfScreen(mainDisplay) / cast(double)HeightMMOfScreen(mainDisplay) * 25.4];
+				auto scr = DefaultScreenOfDisplay(mainDisplay);
+				screenSize = [WidthOfScreen(scr), HeightOfScreen(scr), WidthOfScreen(scr), HeightOfScreen(scr)];
+				screenDPI = [cast(double)WidthOfScreen(scr) / cast(double)WidthMMOfScreen(scr) * 25.4,
+						cast(double)HeightOfScreen(scr) / cast(double)HeightMMOfScreen(scr) * 25.4];
 			} else {
 				screenSize = [-1, -1, -1, -1];
 			}

@@ -198,6 +198,7 @@ public int initInput(uint config = 0, uint osConfig = 0, string gcmTable = null)
 						//writeln(fromStringz(ntStr));
 						int fd = open(ntStr, O_NONBLOCK | (osConfig & OSConfigFlags.libevdev_writeenable) ? O_RDWR : O_READONLY);
 						if (fd < 0) {
+							// writeln(fromStringz(ntStr), " could not be opened!");
 							continue;
 						}
 						libevdev* dev;
@@ -207,25 +208,13 @@ public int initInput(uint config = 0, uint osConfig = 0, string gcmTable = null)
 							//return InputInitializationStatus.libevdev_ErrorOpeningDev;
 						}
 						string name = fromCSTR(libevdev_get_name(dev));
-						// uint typeID = libevdev_has_event_type(dev, EV_SYN);
-						// typeID |= libevdev_has_event_type(dev, EV_KEY)<<0x01;
-						// typeID |= libevdev_has_event_type(dev, EV_REL)<<0x02;
-						// typeID |= libevdev_has_event_type(dev, EV_ABS)<<0x03;
-						// typeID |= libevdev_has_event_type(dev, EV_MSC)<<0x04;
-						// typeID |= libevdev_has_event_type(dev, EV_SW)<<0x05;
-						// typeID |= libevdev_has_event_type(dev, EV_LED)<<0x11;
-						// typeID |= libevdev_has_event_type(dev, EV_SND)<<0x12;
-						// typeID |= libevdev_has_event_type(dev, EV_REP)<<0x14;
-						// typeID |= libevdev_has_event_type(dev, EV_FF)<<0x15;
-						// typeID |= libevdev_has_event_type(dev, EV_PWR)<<0x16;
-						// typeID |= libevdev_has_event_type(dev, EV_FF_STATUS)<<0x17;
-						string nameLC = toLower(name);
+						string nameLC = toLower(entry);
 						//Try to detect device type from name
 						if (canFind(nameLC, "keyboard", "keypad")) {
 							devList ~= cast(InputDevice)nogc_new!Keyboard(name, keybCnrt++, fd, dev);
 						} else if (canFind(nameLC, "mouse", "trackball")) {
 							devList ~= cast(InputDevice)nogc_new!Mouse(name, mouseCnrt++, fd, dev);
-						} else if (canFind(nameLC, "js")) {	//Likely a game controller, let's check the supplied table if exists
+						} else if (/+canFind(nameLC, "js") && +/(config & ConfigFlags.gc_Enable)) {	//Likely a game controller, let's check the supplied table if exists
 							string uniqueID = cast(string)fromStringz(libevdev_get_uniq(dev));
 							RawGCMapping[] mapping;
 							if (gcmTable) mapping = parseGCM(gcmTable, uniqueID);
@@ -235,6 +224,7 @@ public int initInput(uint config = 0, uint osConfig = 0, string gcmTable = null)
 							libevdev_free(dev);
 							close(fd);
 						}
+						// writeln(fromStringz(ntStr), " has been opened");
 					}
 				}
 				//if (!(keybCnrt + mouseCnrt + gcCnrt)) return InputInitializationStatus.libevdev_AccessDenied;

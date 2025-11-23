@@ -57,8 +57,8 @@ public class System : InputDevice {
 			}
 		} else {
 			if (OSWindow.mainDisplay) {
-				screenSize = [WidthOfScreen(OSWindow.mainDisplay), HeightOfScreen(OSWindow.mainDisplay),
-						WidthOfScreen(OSWindow.mainDisplay), HeightOfScreen(OSWindow.mainDisplay)];
+				auto scr = DefaultScreenOfDisplay(OSWindow.mainDisplay);
+				screenSize = [WidthOfScreen(scr), HeightOfScreen(scr), WidthOfScreen(scr), HeightOfScreen(scr)];
 			} else {
 				screenSize = [-1, -1, -1, -1];
 			}
