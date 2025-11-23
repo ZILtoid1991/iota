@@ -11,7 +11,7 @@ Input-output (audio, controls, etc) library for D. Intended as a D language nati
 |Mouse                     |Legacy: Works; Raw: Works           |X11: works; evdev: in progress      |Implemented              |
 |Mouse cursors             |Working                             |Working                             |Implemented              |
 |Pen Tablet                |Not yet implemented                 |Not yet implemented                 |Not yet implemented      |
-|Game controllers          |XInput: working; Raw: in progress; GameInput: limited to gamepads |Evdev: in progress |N/A         |
+|Game controllers          |XInput: working; Raw: in progress; GameInput: limited |Evdev: in progress |N/A         |
 |Windowing                 |Working                             |X11: Working                        |Implemented              |
 |Fullscreen window support |Working (video modes untested)      |X11: Working                        |Implemented              |
 |OpenGL output             |Working                             |Working                             |Implemented              |
@@ -26,7 +26,7 @@ Wayland is not supported yet as XWayland provides sufficient compatibility so fa
 
 Only WASAPI output is supported at the moment, but it seems to work correctly. Buffer overflow protection is done through spinning in a loop alongside with the wait. It's not nice, but works, and eliminates possible issues from inconsistent buffer sizes.
 
-Deinitialization is automatic through destructors and bug free. Windows-specific error-codes are handled as should.
+Deinitialization is automatic through destructors and mostly bug free. Windows-specific error-codes are handled as should. Device disconnection does not work. Selecting any audio device besides the default one (-1) does not work
 
 ### Linux
 
@@ -56,7 +56,7 @@ Keyboard and mouse works without much issues while using the legacy API. A known
 
 XInput is implemented and works.
 
-GameInput works, but capability is currently limited to Xbox One gamepads.
+GameInput works, but capability is currently limited to Xbox One gamepads. Some further capabilities are only supported via exposing some low-level stuff, such as the Dualsense vibrohaptics, which are handled as audio stream devices, but sensors and other things will need more work.
 
 #### Raw input
 
