@@ -653,6 +653,7 @@ version (Windows) {
 	import x11.extensions.XInput;
 	import x11.extensions.XInput2;
 	import core.stdc.inttypes : wchar_t;
+	import core.stdc.errno;
 	import iota.controls.backend.linux;
 	
 	package int chrCntr;
@@ -866,8 +867,15 @@ version (Windows) {
 			InputDevice currdev = devList[evdev_devCntr];
 			if (!currdev.isInvalidated && currdev.hDevice && libevdev_has_event_pending(currdev.hDevice) > 0) {
 				input_event event;
-				while (libevdev_next_event(currdev.hDevice, libevdev_read_flag.LIBEVDEV_READ_FLAG_NORMAL, &event) ==
-						libevdev_read_status.LIBEVDEV_READ_STATUS_SUCCESS) {
+				int status;
+				while ((status = libevdev_next_event(currdev.hDevice, libevdev_read_flag.LIBEVDEV_READ_FLAG_NORMAL,
+						&event)) != -EAGAIN) {
+				tryAgain:
+					if (status == libevdev_read_status.LIBEVDEV_READ_STATUS_SYNC && event.type == EV_SYN) {
+						status = libevdev_next_event(currdev.hDevice, libevdev_read_flag.LIBEVDEV_READ_FLAG_SYNC,
+								&event);
+						goto tryAgain;
+					}
 					output.source = currdev;
 					version (iota_ostimestamp) output.timestamp = event.time.tv_usec + (event.time.tv_sec * 1_000_000);
 					else output.timestamp = getTimestamp();

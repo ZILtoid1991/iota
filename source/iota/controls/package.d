@@ -229,17 +229,20 @@ public int initInput(uint config = 0, uint osConfig = 0, string gcmTable = null)
 				}
 				//if (!(keybCnrt + mouseCnrt + gcCnrt)) return InputInitializationStatus.libevdev_AccessDenied;
 				subPollingFun = &poll_evdev;
+
 			} catch (Exception e) {
 				//debug writeln(e);
 				return InputInitializationStatus.libevdev_ErrorOpeningDev;
 			}
-		} //else {
+		} /+else {
+			mainPollingFun = &poll_x11_RegularIO;
+		}+/
 		keyb = nogc_new!Keyboard();
 		mouse = nogc_new!Mouse();
 		mainPollingFun = &poll_x11_RegularIO;
 		devList ~= cast(InputDevice)keyb;
 		devList ~= cast(InputDevice)mouse;
-		//}
+
 	}
 	return InputInitializationStatus.AllOk;
 }
