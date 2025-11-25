@@ -46,6 +46,12 @@ static enum SYN_DROPPED				=	3;
 static enum SYN_MAX					=	0xf;
 static enum SYN_CNT					=	(SYN_MAX+1);
 
+static enum ABS_MT_SLOT				=	0x2f;
+static enum ABS_MT_POSITION_X		=	0x35;
+static enum ABS_MT_POSITION_Y		=	0x36;
+static enum ABS_MT_TRACKING_ID		=	0x39;
+static enum ABS_MT_PRESSURE			=	0x3a;
+
 extern(C) @nogc nothrow:
 
 struct input_event {
@@ -162,6 +168,81 @@ struct ff_effect {
 		ff_rumble_effect rumble;
 	}
 	U u;
+}
+
+enum EvdevMouseButtons {
+	LEFT		=	0x110,
+	RIGHT		=	0x111,
+	MIDDLE		=	0x112,
+	SIDE		=	0x113,
+	EXTRA		=	0x114,
+	FORWARD		=	0x115,
+	BACK		=	0x116,
+	TASK		=	0x117,
+}
+
+enum EvdevGamepadButtons {
+	SOUTH		=	0x130,
+	A			=	SOUTH,
+	EAST		=	0x131,
+	B			=	EAST,
+	C			=	0x132,
+	NORTH		=	0x133,
+	X			=	NORTH,
+	WEST		=	0x134,
+	Y			=	WEST,
+	Z			=	0x135,
+	TL			=	0x136,
+	TR			=	0x137,
+	TL2			=	0x138,
+	TR2			=	0x139,
+	SELECT		=	0x13a,
+	START		=	0x13b,
+	MODE		=	0x13c,
+	THUMBL		=	0x13d,
+	THUMBR		=	0x13e,
+}
+
+enum EvdevRelAxes {
+	X			=	0x00,
+	Y			=	0x01,
+	Z			=	0x02,
+	RX			=	0x03,
+	RY			=	0x04,
+	RZ			=	0x05,
+	HWHEEL		=	0x06,
+	DIAL		=	0x07,
+	WHEEL		=	0x08,
+	MISC		=	0x09,
+	MAX			=	0x0f,
+	CNT			=	MAX + 1
+}
+
+enum EvdevAbsAxes {
+	X			=	0x00,
+	Y			=	0x01,
+	Z			=	0x02,
+	RX			=	0x03,
+	RY			=	0x04,
+	RZ			=	0x05,
+	THROTTLE	=	0x06,
+	RUDDER		=	0x07,
+	WHEEL		=	0x08,
+	GAS			=	0x09,
+	BRAKE		=	0x0a,
+	HAT0X		=	0x10,
+	HAT0Y		=	0x11,
+	HAT1X		=	0x12,
+	HAT1Y		=	0x13,
+	HAT2X		=	0x14,
+	HAT2Y		=	0x15,
+	HAT3X		=	0x16,
+	HAT3Y		=	0x17,
+	PRESSURE	=	0x18,
+	DISTANCE	=	0x19,
+	TILT_X		=	0x1a,
+	TILT_Y		=	0x1b,
+	TOOL_WIDTH	=	0x1c,
 }
 
 static enum FF_RUMBLE		=	0x50;
@@ -336,3 +417,5 @@ int libevdev_get_repeat(const(libevdev)* dev, int* delay, int* period);
 
 int open(scope const(char)* filename, int flags, ...);
 int close(int fd);
+sizediff_t read(int fd, void* buf, size_t count);
+sizediff_t write(int fd, const(void)* buf, size_t count);

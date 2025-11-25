@@ -864,117 +864,119 @@ version (Windows) {
 	package int evdev_devCntr;
 	package input_event[] evdevBuffer;
 	package int evdev_inC, evdev_outC, evdev_modulo;
+	package bool evdev_tr, evdev_hat;
 	package int poll_evdev(out InputEvent output) nothrow @nogc {
 		while (devList.length > evdev_devCntr) {
 			InputDevice currdev = devList[evdev_devCntr];
-			if (!currdev.isInvalidated && currdev.hDevice && libevdev_has_event_pending(currdev.hDevice) > 0) {
+			if (!currdev.isInvalidated && currdev.hDevice) {
 				input_event event;
-				int status;
-				while ((status = libevdev_next_event(currdev.hDevice, libevdev_read_flag.LIBEVDEV_READ_FLAG_NORMAL,
-						&event)) != -EAGAIN) {
-				tryAgain:
-					if (status == libevdev_read_status.LIBEVDEV_READ_STATUS_SYNC && event.type == EV_SYN) {
-						status = libevdev_next_event(currdev.hDevice, libevdev_read_flag.LIBEVDEV_READ_FLAG_SYNC,
-								&event);
-						goto tryAgain;
-					}
+				sizediff_t status;
+				void flushEvent() nothrow @nogc {
 					output.source = currdev;
-					version (iota_ostimestamp) output.timestamp = event.time.tv_usec + (event.time.tv_sec * 1_000_000);
-					else output.timestamp = getTimestamp();
 					switch (currdev.type) {
 					case InputDeviceType.Keyboard:
-						switch (event.type) {
+						input_event event0 = evdevBuffer[(evdev_outC++) & evdev_modulo];
+						switch (event0.type) {
 						case EV_KEY, EV_REP:
 							output.type = InputEventType.Keyboard;
-							output.button.id = translateKeyCode(event.code);
-							output.button.dir = cast(ubyte)event.value;
-							output.button.repeat = event.type == EV_REP ? 1 : 0;
-							return 1;
+							output.button.id = translateKeyCode(event0.code);
+							output.button.dir = cast(ubyte)event0.value;
+							output.button.repeat = event0.type == EV_REP ? 1 : 0;
+							break;
 						default:
 							break;
 						}
 						break;
-					/+
 					case InputDeviceType.Mouse:
-						switch (event.type) {
-						case EV_BTN:
-
-							break;
-						default:
-							break;
+						output.type = InputEventType.HPMouse;
+						while (evdev_inC != evdev_outC) {
+							input_event event0 = evdevBuffer[(evdev_outC++) & evdev_modulo];
+							switch (event0.type) {
+							case EV_BTN:
+								if (event0.value > 0) output.mouseHP.buttons |= 1 << (event0.code - EvdevMouseButtons.LEFT);
+								break;
+							case EV_REL:
+								switch (event0.code) {
+								case EvdevRelAxes.X:
+									output.mouseHP.xD = event0.value;
+									break;
+								case EvdevRelAxes.Y:
+									output.mouseHP.yD = event0.value;
+									break;
+								case EvdevRelAxes.WHEEL:
+									output.mouseHP.vScroll = event0.value > 0 ? ubyte.max : ubyte.min;
+									break;
+								case EvdevRelAxes.HWHEEL:
+									output.mouseHP.hScroll = event0.value > 0 ? ubyte.max : ubyte.min;
+									break;
+								default: break;
+								}
+								break;
+							default:
+								break;
+							}
 						}
-						break;+/
+						break;
 					case InputDeviceType.GameController:
+						input_event event0 = evdevBuffer[(evdev_outC++) & evdev_modulo];
 						RawInputGameController gc = cast(RawInputGameController)currdev;
-						switch (event.type) {
-						case EV_SW, EV_KEY:	//Button press event
+						switch (event0.type) {
+						case EV_SW, EV_KEY, EV_BTN:
 							foreach (RawGCMapping key ; gc.mapping) {
 								if (key.type == RawGCMappingType.Button) {
-									if (key.inNum == event.code - EVDEV_FIRST_GC_BTN) {
+									if (key.inNum == event0.code) {
 										output.type = InputEventType.GCButton;
-										output.button.id = key.outNum;
-										output.button.dir = event.value > 0 ? 1 : 0;
+										output.button.id = cast(ubyte)key.outNum;
+										output.button.dir = event0.value > 0 ? 1 : 0;
 										output.button.auxF = float.nan;
-										return 1;
+										return;
 									}
 								}
 							}
 							break;
-
-						case EV_ABS:	//Axis/hat event
-							if (event.code >= EVDEV_FIRST_HAT) {
-								foreach (RawGCMapping key ; gc.mapping) {
-									if (key.type == RawGCMappingType.Hat && key.inNum == event.code) {
-										output.type = InputEventType.GCButton;
-										output.button.id = key.outNum;
-										output.button.auxF = float.nan;
-										int* prevHatStatus = &gc.hatStatus[event.code - EVDEV_FIRST_HAT];
-										if (*prevHatStatus == event.value) {
-											break;
+						case EV_ABS:
+							foreach (RawGCMapping key ; gc.mapping) {
+								if (key.inNum == event0.code) {
+									if (key.type == RawGCMappingType.Hat) {
+										if (evdev_hat) {
+											output.type = InputEventType.GCButton;
+											output.button.id = cast(ubyte)key.outNum;
 										} else {
-											if (key.flags && (*prevHatStatus <= 0 && event.value <= 0)) {
-												output.button.dir = event.value ? 1 : 0;
-											} else if (!key.flags && (*prevHatStatus >= 0 && event.value >= 0)) {
-												output.button.dir = event.value ? 1 : 0;
-											} else {
-												continue;
-											}
+											output.type = InputEventType.GCHat;
+											// output.button.dir = ;
 										}
-										*prevHatStatus = event.value;
-										return 1;
-									}
-								}
-							} else {
-								foreach (RawGCMapping key ; gc.mapping) {
-									if (key.type == RawGCMappingType.Axis && key.inNum == event.code) {
-										output.type = InputEventType.GCAxis;
-										output.axis.id = key.outNum;
-										output.axis.raw = event.value;
-										output.axis.val = event.value * (1.0 / int.max);
-										return 1;
-									} else if (key.type == RawGCMappingType.AxisToButton && key.inNum == event.code) {
+									} else if (key.type == RawGCMappingType.Axis && key.flags == 1 && evdev_tr) {
 										output.type = InputEventType.GCButton;
-										output.button.id = key.outNum;
-										output.button.dir = event.value > 0 ? 1 : 0;
-										output.button.auxF = event.value * (1.0 / int.max);
-										return 1;
+									} else {
+										output.type = InputEventType.GCAxis;
+
 									}
+									return;
 								}
+
 							}
 							break;
-							//output.type = InputEventType.GCAxis;
-							//output.axis.id = event.code;
-							//output.axis.raw = event.value;
-							//output.axis.val = event.value * (1.0 / int.max);
-							//return 1;
 						default:
 							break;
 						}
 						break;
-					default:
-						break;
+					default: break;
 					}
 				}
+				if (evdev_inC != evdev_outC) {
+					flushEvent();
+					return 1;
+				}
+				while ((status = read(currdev.hDevice, &event, input_event.sizeof)) == input_event.sizeof) {
+					if (event.type == EV_SYN) {
+						flushEvent();
+						return 1;
+					} else {
+						evdevBuffer[evdev_inC & evdev_modulo] = event;
+						evdev_inC++;
+					}
+				}
+
 			}
 			evdev_devCntr++;
 		}

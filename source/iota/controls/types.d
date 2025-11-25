@@ -114,6 +114,7 @@ public enum ConfigFlags : uint {
 	gc_Enable					=	1<<2,
 	///Emulate mouse with touchscreen.
 	touchScreen_EmulateMouse	=	1<<3,
+	gc_DPadMode					=	1<<4,
 }
 /** 
  * Operating system specific flags
@@ -621,17 +622,17 @@ public struct InputEvent {
 	}
 }
 package struct RawGCMapping {
-	ubyte type;		///Type identifier
-	ubyte flags;	///Flags related to translation, e.g. resolution, hat number
-	ubyte inNum;	///Input axis/button number, or hat state
-	ubyte outNum;	///Output axis/button number
-	this (ubyte type, ubyte flags, ubyte inNum, ubyte outNum) @safe @nogc nothrow {
+	ushort type;		///Type identifier
+	ushort flags;	///Flags related to translation, e.g. resolution, hat number, hat direction
+	ushort inNum;	///Input axis/button number, or hat state
+	ushort outNum;	///Output axis/button number
+	this (ushort type, ushort flags, ushort inNum, ushort outNum) @safe @nogc nothrow {
 		this.type = type;
 		this.flags = flags;
 		this.inNum = inNum;
 		this.outNum = outNum;
 	}
-	this (string src, ubyte outNum, bool isButtonTarget = false) @safe @nogc nothrow {
+	this (string src, ushort outNum, bool isButtonTarget = false) @safe @nogc nothrow {
 		switch (src[0]) {
 		case 'a':
 			if (isButtonTarget) type = RawGCMappingType.AxisToButton;
@@ -656,9 +657,9 @@ package enum RawGCMappingType : ubyte {
 	init,
 	Button,
 	Axis,
-	Trigger,
+	// Trigger,
 	Hat,
-	AxisToButton,
+	// AxisToButton,
 }
 package struct PostBox {
 	InputEvent[] processedInputEvents;
