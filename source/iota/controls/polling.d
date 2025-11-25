@@ -862,6 +862,8 @@ version (Windows) {
 		return 0;
 	}
 	package int evdev_devCntr;
+	package input_event[] evdevBuffer;
+	package int evdev_inC, evdev_outC, evdev_modulo;
 	package int poll_evdev(out InputEvent output) nothrow @nogc {
 		while (devList.length > evdev_devCntr) {
 			InputDevice currdev = devList[evdev_devCntr];
