@@ -227,6 +227,7 @@ abstract class GameController : InputDevice, HapticDevice {
  */
 public class RawInputGameController : GameController {
 	package RawGCMapping[] mapping;
+	package byte[8] hatStatus;
 	version (Windows) {
 		this(string _name, ubyte _devNum, HANDLE devHandle, RawGCMapping[] mapping) @nogc nothrow {
 			this._name = _name;
@@ -237,7 +238,6 @@ public class RawInputGameController : GameController {
 			status |= StatusFlags.IsConnected;
 		}
 	} else version (linux) {
-		int[8] hatStatus;
 		this(string _name, ubyte _devNum, int fd, libevdev* hDevice, RawGCMapping[] mapping) @nogc nothrow {
 			this._name = _name;
 			this._devNum = _devNum;

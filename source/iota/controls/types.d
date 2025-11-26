@@ -657,9 +657,9 @@ package enum RawGCMappingType : ubyte {
 	init,
 	Button,
 	Axis,
-	// Trigger,
+	Trigger,
 	Hat,
-	// AxisToButton,
+	AxisToButton,
 }
 package struct PostBox {
 	InputEvent[] processedInputEvents;

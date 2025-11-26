@@ -218,7 +218,7 @@ public int initInput(uint config = 0, uint osConfig = 0, string gcmTable = null)
 							string uniqueID = cast(string)fromStringz(libevdev_get_uniq(dev));
 							RawGCMapping[] mapping;
 							if (gcmTable) mapping = parseGCM(gcmTable, uniqueID);
-							if (!mapping) mapping = defaultGCmapping.dup;
+							if (!mapping) nogc_copy(mapping, defaultGCmapping);
 							devList ~= nogc_new!RawInputGameController(name, gcCnrt++, fd, dev, mapping);
 						} else {
 							libevdev_free(dev);
@@ -271,19 +271,21 @@ version (Windows) {
 		RawGCMapping(RawGCMappingType.Button, 0, EvdevGamepadButtons.THUMBR, GameControllerButtons.RightThumbstick),
 		RawGCMapping(RawGCMappingType.Button, 0, 0x13F, GameControllerButtons.Share),	//???
 
-		RawGCMapping(RawGCMappingType.Hat, GameControllerButtons.DPadRight, EvdevAbsAxes.HAT0X,
-				GameControllerButtons.DPadLeft),
-		// RawGCMapping(RawGCMappingType.Hat, 0, EvdevAbsAxes.HAT0X, GameControllerButtons.DPadRight),
-		RawGCMapping(RawGCMappingType.Hat, GameControllerButtons.DPadUp, EvdevAbsAxes.HAT0Y, GameControllerButtons.DPadDown),
-		// RawGCMapping(RawGCMappingType.Hat, 0, EvdevAbsAxes.HAT0Y, GameControllerButtons.DPadUp),
+		RawGCMapping(RawGCMappingType.Hat, GameControllerButtons.DPadDown, EvdevAbsAxes.HAT0X, GameControllerButtons.DPadUp),
+		RawGCMapping(RawGCMappingType.Hat, GameControllerButtons.DPadLeft,EvdevAbsAxes.HAT0Y,GameControllerButtons.DPadRight),
 
 		RawGCMapping(RawGCMappingType.Axis, 0, EvdevAbsAxes.X, GameControllerAxes.LeftThumbstickX),
 		RawGCMapping(RawGCMappingType.Axis, 0, EvdevAbsAxes.Y, GameControllerAxes.LeftThumbstickY),
-		RawGCMapping(RawGCMappingType.Axis, 1, EvdevAbsAxes.Z, GameControllerAxes.LeftTrigger),
+		RawGCMapping(RawGCMappingType.Trigger, GameControllerButtons.LeftTrigger, EvdevAbsAxes.Z,
+				GameControllerAxes.LeftTrigger),
 		RawGCMapping(RawGCMappingType.Axis, 0, EvdevAbsAxes.RX, GameControllerAxes.RightThumbstickX),
 		RawGCMapping(RawGCMappingType.Axis, 0, EvdevAbsAxes.RY, GameControllerAxes.RightThumbstickY),
-		RawGCMapping(RawGCMappingType.Axis, 1, EvdevAbsAxes.RZ, GameControllerAxes.RightTrigger),
+		RawGCMapping(RawGCMappingType.Trigger, GameControllerButtons.RightTrigger, EvdevAbsAxes.RZ,
+				GameControllerAxes.RightTrigger),
 	];
+	package InputDeviceType getEvdevDeviceType(int fd) @nogc nothrow {
+		return InputDeviceType.init;
+	}
 }
 /**
  * Goes through all the devices in the list, then removes them from the lists.

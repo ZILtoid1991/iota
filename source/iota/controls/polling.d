@@ -865,6 +865,11 @@ version (Windows) {
 	package input_event[] evdevBuffer;
 	package int evdev_inC, evdev_outC, evdev_modulo;
 	package bool evdev_tr, evdev_hat;
+	package byte clampDPadRange(int i) @safe @nogc pure nothrow {
+		if (i > 0) return 1;
+		else if (i == 0) return 0;
+		return -1;
+	}
 	package int poll_evdev(out InputEvent output) nothrow @nogc {
 		while (devList.length > evdev_devCntr) {
 			InputDevice currdev = devList[evdev_devCntr];
@@ -938,22 +943,37 @@ version (Windows) {
 							foreach (RawGCMapping key ; gc.mapping) {
 								if (key.inNum == event0.code) {
 									if (key.type == RawGCMappingType.Hat) {
+										const hatNum = EVDEV_FIRST_HAT - event0.code;
+										const prevState = gc.hatStatus[hatNum];
+										gc.hatStatus[hatNum] = clampDPadRange(event0.value);
 										if (evdev_hat) {
 											output.type = InputEventType.GCButton;
-											output.button.id = cast(ubyte)key.outNum;
+											output.button.dir = prevState == 0 ? 1 : 0;
+											output.button.id = prevState + gc.hatStatus[hatNum] > 0 ? key.outNum : key.flags;
+											output.button.auxF = float.nan;
 										} else {
 											output.type = InputEventType.GCHat;
-											// output.button.dir = ;
+											output.button.aux = 1;
+											output.button.id = hatNum>>1;
+											output.button.dir |= gc.hatStatus[hatNum & 0x0E] > 0 ? POVHatStates.E : 0;
+											output.button.dir |= gc.hatStatus[hatNum & 0x0E] < 0 ? POVHatStates.W : 0;
+											output.button.dir |= gc.hatStatus[(hatNum & 0x0E) | 1] > 0 ? POVHatStates.N : 0;
+											output.button.dir |= gc.hatStatus[(hatNum & 0x0E) | 1] < 0 ? POVHatStates.S : 0;
+											output.button.auxF = float.nan;
 										}
-									} else if (key.type == RawGCMappingType.Axis && key.flags == 1 && evdev_tr) {
+									} else if (key.type == RawGCMappingType.Trigger && evdev_tr) {
 										output.type = InputEventType.GCButton;
+										output.button.dir = event0.value > 0;
+										output.button.id = key.flags;
+										output.button.auxF = event0.value / 255.0;
 									} else {
 										output.type = InputEventType.GCAxis;
-
+										output.axis.id = key.outNum;
+										output.axis.raw = event0.value;
+										output.axis.val = event0.value / (key.type == RawGCMappingType.Trigger ? 255.0 : 32_767.0);
 									}
 									return;
 								}
-
 							}
 							break;
 						default:
