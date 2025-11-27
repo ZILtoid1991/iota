@@ -250,6 +250,7 @@ public class RawInputGameController : GameController {
 	}
 	~this() @nogc nothrow {
 		nu_freea(_name);
+		nu_freea(mapping);
 	}
 	override public const(uint)[] getCapabilities() @safe nothrow {
 		return null; // TODO: implement
