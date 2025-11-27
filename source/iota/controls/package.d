@@ -208,23 +208,26 @@ public int initInput(uint config = 0, uint osConfig = 0, string gcmTable = null)
 							//return InputInitializationStatus.libevdev_ErrorOpeningDev;
 						}
 						string name = fromCSTR(libevdev_get_name(dev));
-						string nameLC = toLower(entry);
-						//Try to detect device type from name
-						if (canFind(nameLC, "keyboard", "keypad")) {
+						const InputDeviceType type = getEvdevDeviceType(dev);
+						switch (type) {
+						case InputDeviceType.Keyboard:
 							devList ~= cast(InputDevice)nogc_new!Keyboard(name, keybCnrt++, fd, dev);
-						} else if (canFind(nameLC, "mouse", "trackball")) {
+							break;
+						case InputDeviceType.Mouse:
 							devList ~= cast(InputDevice)nogc_new!Mouse(name, mouseCnrt++, fd, dev);
-						} else if (/+canFind(nameLC, "js") && +/(config & ConfigFlags.gc_Enable)) {	//Likely a game controller, let's check the supplied table if exists
+							break;
+						case InputDeviceType.GameController:
 							string uniqueID = cast(string)fromStringz(libevdev_get_uniq(dev));
 							RawGCMapping[] mapping;
 							if (gcmTable) mapping = parseGCM(gcmTable, uniqueID);
 							if (!mapping) nogc_copy(mapping, defaultGCmapping);
 							devList ~= nogc_new!RawInputGameController(name, gcCnrt++, fd, dev, mapping);
-						} else {
+							break;
+						default:	//Failed to infer type, close handle and all that stuff
 							libevdev_free(dev);
 							close(fd);
+							break;
 						}
-						// writeln(fromStringz(ntStr), " has been opened");
 					}
 				}
 				//if (!(keybCnrt + mouseCnrt + gcCnrt)) return InputInitializationStatus.libevdev_AccessDenied;
@@ -283,7 +286,23 @@ version (Windows) {
 		RawGCMapping(RawGCMappingType.Trigger, GameControllerButtons.RightTrigger, EvdevAbsAxes.RZ,
 				GameControllerAxes.RightTrigger),
 	];
-	package InputDeviceType getEvdevDeviceType(int fd) @nogc nothrow {
+	/// Tries to infer the device type from libevdev capabilities.
+	/// Params:
+	///   dev = Pointer to the libevdev type
+	/// Returns: an InputDeviceType enumerator type with the value corresponding with the closest device type.
+	package InputDeviceType getEvdevDeviceType(libevdev* dev) @nogc nothrow {
+		int eventFlags;
+		eventFlags |= libevdev_has_event_type(dev, EV_REP)<<0;
+		eventFlags |= libevdev_has_event_code(dev, EV_KEY, 28)<<1;
+		eventFlags |= libevdev_has_event_code(dev, EV_KEY, EvdevMouseButtons.LEFT)<<2;
+		eventFlags |= libevdev_has_event_code(dev, EV_REL, EvdevRelAxes.X)<<3;
+		eventFlags |= libevdev_has_event_code(dev, EV_REL, EvdevRelAxes.Y)<<4;
+		eventFlags |= libevdev_has_event_code(dev, EV_KEY, EvdevGamepadButtons.A)<<5;
+		eventFlags |= libevdev_has_event_code(dev, EV_ABS, EvdevAbsAxes.PRESSURE)<<6;
+		if (eventFlags & 0x03) return InputDeviceType.Keyboard;
+		if (eventFlags & 0x1C) return InputDeviceType.Mouse;
+		if (eventFlags & 0x20) return InputDeviceType.GameController;
+		if (eventFlags & 0x40) return InputDeviceType.Pen;
 		return InputDeviceType.init;
 	}
 }

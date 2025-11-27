@@ -897,7 +897,7 @@ version (Windows) {
 						while (evdev_inC != evdev_outC) {
 							input_event event0 = evdevBuffer[(evdev_outC++) & evdev_modulo];
 							switch (event0.type) {
-							case EV_BTN:
+							case EV_KEY:
 								if (event0.value > 0) output.mouseHP.buttons |= 1 << (event0.code - EvdevMouseButtons.LEFT);
 								break;
 							case EV_REL:
@@ -926,7 +926,7 @@ version (Windows) {
 						input_event event0 = evdevBuffer[(evdev_outC++) & evdev_modulo];
 						RawInputGameController gc = cast(RawInputGameController)currdev;
 						switch (event0.type) {
-						case EV_SW, EV_KEY, EV_BTN:
+						case EV_SW, EV_KEY:
 							foreach (RawGCMapping key ; gc.mapping) {
 								if (key.type == RawGCMappingType.Button) {
 									if (key.inNum == event0.code) {
