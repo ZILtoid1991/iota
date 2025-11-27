@@ -192,6 +192,12 @@ public int initInput(uint config = 0, uint osConfig = 0, string gcmTable = null)
 				import std.algorithm;
 				auto devPaths = dirEntries("/dev/input/", SpanMode.shallow);
 				ubyte keybCnrt, mouseCnrt, gcCnrt;
+				if (!evdevBuffer) {
+					evdevBuffer = nu_malloca!input_event(256);
+					evdev_modulo = 255;
+				}
+				if (config & ConfigFlags.gc_TriggerMode) evdev_tr = true;
+				if (config & ConfigFlags.gc_DPadMode) evdev_hat = true;
 				foreach (DirEntry entry ; devPaths) {
 					if (!entry.isDir && entry.name[$-4..$] != "mice") {
 						auto ntStr = toStringz(entry);
@@ -220,7 +226,7 @@ public int initInput(uint config = 0, uint osConfig = 0, string gcmTable = null)
 							string uniqueID = cast(string)fromStringz(libevdev_get_uniq(dev));
 							RawGCMapping[] mapping;
 							if (gcmTable) mapping = parseGCM(gcmTable, uniqueID);
-							if (!mapping) nogc_copy(mapping, defaultGCmapping);
+							if (!mapping) nogc_copy(mapping, cast(RawGCMapping[])defaultGCmapping);
 							devList ~= nogc_new!RawInputGameController(name, gcCnrt++, fd, dev, mapping);
 							break;
 						default:	//Failed to infer type, close handle and all that stuff

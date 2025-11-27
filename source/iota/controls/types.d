@@ -582,7 +582,7 @@ public struct InputEvent {
 				to!string(timestamp) ~ " ; Type: " ~ to!string(type) ~ 
 				" ; Rest: {";
 		switch (type) {
-			case InputEventType.Keyboard, InputEventType.GCButton:
+			case InputEventType.Keyboard, InputEventType.GCButton, InputEventType.GCHat:
 				result ~= button.toString();
 				break;
 			case InputEventType.TextInput:

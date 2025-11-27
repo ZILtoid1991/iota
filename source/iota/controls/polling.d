@@ -909,10 +909,10 @@ version (Windows) {
 									output.mouseHP.yD = event0.value;
 									break;
 								case EvdevRelAxes.WHEEL:
-									output.mouseHP.vScroll = event0.value > 0 ? ubyte.max : ubyte.min;
+									output.mouseHP.vScroll = event0.value > 0 ? byte.max : byte.min;
 									break;
 								case EvdevRelAxes.HWHEEL:
-									output.mouseHP.hScroll = event0.value > 0 ? ubyte.max : ubyte.min;
+									output.mouseHP.hScroll = event0.value > 0 ? byte.max : byte.min;
 									break;
 								default: break;
 								}
@@ -987,7 +987,7 @@ version (Windows) {
 					flushEvent();
 					return 1;
 				}
-				while ((status = read(currdev.hDevice, &event, input_event.sizeof)) == input_event.sizeof) {
+				while ((status = read(currdev.fd, &event, input_event.sizeof)) == input_event.sizeof) {
 					if (event.type == EV_SYN) {
 						flushEvent();
 						return 1;
