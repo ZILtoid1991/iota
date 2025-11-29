@@ -186,18 +186,18 @@ public int initInput(uint config = 0, uint osConfig = 0, string gcmTable = null)
 		devList ~= cast(InputDevice)keyb;
 		devList ~= cast(InputDevice)mouse;
 	} else {
-		if (osConfig & OSConfigFlags.libevdev_enable) {
+		if ((osConfig & OSConfigFlags.libevdev_enable) || (osConfig & OSConfigFlags.libevdev_gconly)) {
 			try {
 				import std.file : dirEntries, SpanMode, DirEntry;
 				import std.algorithm;
 				auto devPaths = dirEntries("/dev/input/", SpanMode.shallow);
 				ubyte keybCnrt, mouseCnrt, gcCnrt;
-				if (!evdevBuffer) {
-					evdevBuffer = nu_malloca!input_event(256);
-					evdev_modulo = 255;
+				if (!EvdevThread.postBox.buffer.length) {
+					EvdevThread.postBox.buffer = nu_malloca!(EvdevThread.JoinedEvdevEvent)(1024);
+					EvdevThread.postBox.modulo = 1023;
 				}
-				if (config & ConfigFlags.gc_TriggerMode) evdev_tr = true;
-				if (config & ConfigFlags.gc_DPadMode) evdev_hat = true;
+				if (config & ConfigFlags.gc_TriggerMode) EvdevThread.evdev_tr = true;
+				if (config & ConfigFlags.gc_DPadMode) EvdevThread.evdev_hat = true;
 				foreach (DirEntry entry ; devPaths) {
 					if (!entry.isDir && entry.name[$-4..$] != "mice") {
 						auto ntStr = toStringz(entry);
@@ -214,12 +214,14 @@ public int initInput(uint config = 0, uint osConfig = 0, string gcmTable = null)
 							//return InputInitializationStatus.libevdev_ErrorOpeningDev;
 						}
 						string name = fromCSTR(libevdev_get_name(dev));
-						const InputDeviceType type = getEvdevDeviceType(dev);
+						const InputDeviceType type = InputDeviceType.GameController; //getEvdevDeviceType(dev);
 						switch (type) {
 						case InputDeviceType.Keyboard:
+							if (osConfig & OSConfigFlags.libevdev_gconly) goto default;
 							devList ~= cast(InputDevice)nogc_new!Keyboard(name, keybCnrt++, fd, dev);
 							break;
 						case InputDeviceType.Mouse:
+							if (osConfig & OSConfigFlags.libevdev_gconly) goto default;
 							devList ~= cast(InputDevice)nogc_new!Mouse(name, mouseCnrt++, fd, dev);
 							break;
 						case InputDeviceType.GameController:
@@ -236,9 +238,10 @@ public int initInput(uint config = 0, uint osConfig = 0, string gcmTable = null)
 						}
 					}
 				}
+				if (EvdevThread.threadObj is null) EvdevThread.threadObj = nogc_new!EvdevThread(&EvdevThread.postBox, &devList);
 				//if (!(keybCnrt + mouseCnrt + gcCnrt)) return InputInitializationStatus.libevdev_AccessDenied;
-				subPollingFun = &poll_evdev;
-
+				subPollingFun = &EvdevThread.poll;
+				EvdevThread.threadObj.start();
 			} catch (Exception e) {
 				//debug writeln(e);
 				return InputInitializationStatus.libevdev_ErrorOpeningDev;

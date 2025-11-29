@@ -69,7 +69,7 @@ public enum InputEventType {
 	WindowMove,
 	InputLangChange,
 	ApplExit,
-	Debug_DataDump,	///RawInput data dump 
+	Debug_DataDump,	///RawInput/evdev data dump
 	// MacOS specific
 	GestureBegin = 32,
 	GestureEnd = 33,
@@ -161,11 +161,11 @@ public enum InputInitializationStatus {
 public enum EventPollStatus {
 	Done			=	0,
 	HasMore			=	1,
-	DeviceInvalidated,
-	DeviceError,
-	NoDevsFound,
-	win_RawInputError,
-	InputNotInitialized,
+	DeviceInvalidated=	2,
+	DeviceError		=	-1,
+	NoDevsFound		=	-2,
+	win_RawInputError=	-3,
+	InputNotInitialized=-4,
 }
 /**
  * Defines return codes for haptic events.
