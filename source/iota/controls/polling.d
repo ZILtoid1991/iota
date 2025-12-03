@@ -1128,11 +1128,11 @@ version (Windows) {
 			while (runThread) {
 				if (devCntr >= localDevList.length) devCntr = 0;
 				InputDevice currdev = (*localDevList)[devCntr];
-				if (currdev.isInvalidated && currdev.hDevice) {
+				if (!currdev.isInvalidated && currdev.hDevice) {
 					input_event event;
 					sizediff_t status;
 					while ((status = read(currdev.fd, &event, input_event.sizeof)) == input_event.sizeof) {
-						localPB.buffer[localPB.inC++] = JoinedEvdevEvent(currdev, event);
+						localPB.buffer[(localPB.inC++) & localPB.modulo] = JoinedEvdevEvent(currdev, event);
 						if (event.type == EV_SYN) break;
 					}
 				}
