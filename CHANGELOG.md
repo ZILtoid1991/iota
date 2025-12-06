@@ -1,3 +1,8 @@
+# 0.4.0-beta.5
+
+* Libevdev support now works with select game controllers.
+* GameInput support added on Windows.
+
 # 0.4.0-beta.4
 
 * Added wrappers for `wglCreateContextAttribsARB` and `glXCreateContextAttribsARB`.
