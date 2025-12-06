@@ -11,22 +11,28 @@ dependency "x11d" version="*" platform="linux"
 dependency "numem" version="*"
 dependency "nulib" version="*"
 dependency "nulib:os_win32" version="*" platform="windows"
+dependency "objc_meta" version="*" platform="osx"
+dependency "d-metal-binding" version="*" platform="osx"
+dependency "avaudioengine" version="*" platform="osx"
 versions "GL_AllowDeprecated"
 libs "asound" "GL" "X11" "Xext" "Xi" "evdev" platform="linux"
 libs "winmm" "gdi32" "user32" "opengl32" "xinput" "ole32" "comctl32" platform="windows"
+libs "objc" platform="osx"
+sourcePaths "cocoa/" "carbon/" "objc/" "source/" platform="osx"
+lflags "-framework" "CoreData" "-framework" "CoreGraphics" "-framework" "Cocoa" "-framework" "Foundation" "-framework" "AppKit" "-framework" "Metal" "-framework" "MetalKit" "-framework" "OpenGL" "-framework" "AVFoundation" "-framework" "GameController" platform="osx"
 
 //OSX specific
-configuration "osx" {
-    toolchainRequirements ldc=">=1.30.0" platform="osx"
-    compiler "ldc2" platform="osx"
-    architecture "aarch64" platform="osx"
-    dependency "objc_meta" version="*" platform="osx"
-    dependency "d-metal-binding" version="*" platform="osx"
-    dependency "avaudioengine" version="*" platform="osx"
-    sourcePaths "cocoa/" "carbon/" "objc/" "source/" platform="osx"
-    lflags "-framework" "CoreData" "-framework" "CoreGraphics" "-framework" "Cocoa" "-framework" "Foundation" "-framework" "AppKit" "-framework" "Metal" "-framework" "MetalKit" "-framework" "OpenGL" "-framework" "AVFoundation" "-framework" "GameController" platform="osx"
-    libs "objc" platform="osx"
-}
+//configuration "osx" {
+//    toolchainRequirements ldc=">=1.30.0" platform="osx"
+//    compiler "ldc2" platform="osx"
+//    architecture "aarch64" platform="osx"
+//    dependency "objc_meta" version="*" platform="osx"
+//    dependency "d-metal-binding" version="*" platform="osx"
+//    dependency "avaudioengine" version="*" platform="osx"
+//    sourcePaths "cocoa/" "carbon/" "objc/" "source/" platform="osx"
+//    lflags "-framework" "CoreData" "-framework" "CoreGraphics" "-framework" "Cocoa" "-framework" "Foundation" "-framework" "AppKit" "-framework" "Metal" "-framework" "MetalKit" "-framework" "OpenGL" "-framework" "AVFoundation" "-framework" "GameController" platform="osx"
+//    libs "objc" platform="osx"
+//}
 //GameInput specific
 //configuration "gameinputEnable" {
 //    versions "IOTA_GAMEINPUT_ENABLE" platform="windows"
