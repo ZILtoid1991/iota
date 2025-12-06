@@ -228,7 +228,7 @@ public int initInput(uint config = 0, uint osConfig = 0, string gcmTable = null)
 							string uniqueID = cast(string)fromStringz(libevdev_get_uniq(dev));
 							RawGCMapping[] mapping;
 							if (gcmTable) mapping = parseGCM(gcmTable, uniqueID);
-							if (!mapping) nogc_copy(mapping, cast(RawGCMapping[])defaultGCmapping);
+							if (!mapping) mapping = mutCopy(defaultGCmapping);
 							devList ~= nogc_new!RawInputGameController(name, gcCnrt++, fd, dev, mapping);
 							break;
 						default:	//Failed to infer type, close handle and all that stuff

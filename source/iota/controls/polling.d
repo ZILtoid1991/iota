@@ -1048,20 +1048,20 @@ version (Windows) {
 								}
 							}
 						}
-						debug {
-							output.type = InputEventType.Button;
-							output.button.id = key.outNum;
-							output.button.aux = ubyte.max;
-							output.button.dir = e.event.value > 0;
-							output.button.auxF = float.nan;
-							return 1;
-						}
+						// debug {
+						// 	output.type = InputEventType.GCButton;
+						// 	output.button.id = e.event.code;
+						// 	output.button.aux = ubyte.max;
+						// 	output.button.dir = e.event.value > 0;
+						// 	output.button.auxF = float.nan;
+						// 	return 1;
+						// }
 						break;
 					case EV_ABS:
 						foreach (RawGCMapping key ; gc.mapping) {
 							if (key.inNum == e.event.code) {
 								if (key.type == RawGCMappingType.Hat) {
-									const hatNum = EVDEV_FIRST_HAT - e.event.code;
+									const hatNum = e.event.code - EVDEV_FIRST_HAT;
 									const prevState = gc.hatStatus[hatNum];
 									gc.hatStatus[hatNum] = clampDPadRange(e.event.value);
 									if (evdev_hat) {
@@ -1083,24 +1083,24 @@ version (Windows) {
 									output.type = InputEventType.GCButton;
 									output.button.dir = e.event.value > 0;
 									output.button.id = key.flags;
-									output.button.auxF = (e.event.value + 32_767) / 65_535;
+									output.button.auxF = e.event.value * (1.0 / 255.0);
 								} else {
 									output.type = InputEventType.GCAxis;
 									output.axis.id = key.outNum;
 									output.axis.raw = e.event.value;
-									output.axis.val = key.type == e.event.value / 32_767.0;
+									output.axis.val = e.event.value * (key.type == RawGCMappingType.Trigger ? (1.0 / 255.0) : (1.0 / 32_767.0));
 								}
 								return 1;
 							}
 						}
 						break;
 					default:
-						debug {
-							output.type = InputEventType.Debug_DataDump;
-							output.arbPtr.data = &postBox.buffer[(postBox.outC - 1) & postBox.modulo];
-							output.arbPtr.length = JoinedEvdevEvent.sizeof;
-							return 1;
-						}
+						// debug {
+						// 	import core.stdc.string;
+						// 	output.type = InputEventType.Debug_DataDump2;
+						// 	memcpy(output.rawData.ptr, &e.event, input_event.sizeof);
+						// 	return 1;
+						// }
 						break;
 					}
 					break;

@@ -69,7 +69,8 @@ public enum InputEventType {
 	WindowMove,
 	InputLangChange,
 	ApplExit,
-	Debug_DataDump,	///RawInput/evdev data dump
+	Debug_DataDump,	///RawInput data dump
+	Debug_DataDump2,///Evdev data dump
 	// MacOS specific
 	GestureBegin = 32,
 	GestureEnd = 33,
@@ -418,7 +419,7 @@ public struct AxisEvent {
 	float		val;	///Current value of the axis (either -1.0 to 1.0 or 0.0 to 1.0)
 	int			raw;	///Raw value from the controller if available
 	string toString() @safe pure const {
-		return "ID: " ~ to!string(id)  ~ " ; val: " ~ to!string(val) ~ " ; ";
+		return "ID: " ~ to!string(id)  ~ " ; val: " ~ to!string(val) ~ " ; raw: " ~ to!string(raw);
 	}
 }
 /**
@@ -614,7 +615,10 @@ public struct InputEvent {
 				result ~= textCmd.toString();
 				break;
 			default:
-				result ~= rawData.to!string();
+				foreach (ubyte key ; rawDataBytes) {
+					if (key <= 15) result ~= '0';
+					result ~= key.to!string(16);
+				}
 				break;
 		}
 		result ~= "}";
