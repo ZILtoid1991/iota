@@ -1031,18 +1031,17 @@ version (Windows) {
 		static int poll(out InputEvent output) @nogc nothrow {
 			while (postBox.inC != postBox.outC) {
 				JoinedEvdevEvent e = postBox.buffer[postBox.outC++ & postBox.modulo];
+				output.source = e.device;
 				switch (e.device.type) {
 				case InputDeviceType.GameController:
 					RawInputGameController gc = cast(RawInputGameController)e.device;
-
 					switch (e.event.type) {
 					case EV_SW, EV_KEY:
-						output.source = e.device;
 						foreach (RawGCMapping key ; gc.mapping) {
 							if (key.type == RawGCMappingType.Button) {
 								if (key.inNum == e.event.code) {
 									output.type = InputEventType.GCButton;
-									output.button.id = cast(ubyte)key.outNum;
+									output.button.id = key.outNum;
 									output.button.dir = e.event.value > 0;
 									output.button.auxF = float.nan;
 									return 1;
@@ -1050,9 +1049,11 @@ version (Windows) {
 							}
 						}
 						debug {
-							output.type = InputEventType.Debug_DataDump;
-							output.arbPtr.data = &postBox.buffer[(postBox.outC - 1) & postBox.modulo];
-							output.arbPtr.length = JoinedEvdevEvent.sizeof;
+							output.type = InputEventType.Button;
+							output.button.id = key.outNum;
+							output.button.aux = ubyte.max;
+							output.button.dir = e.event.value > 0;
+							output.button.auxF = float.nan;
 							return 1;
 						}
 						break;
@@ -1082,12 +1083,12 @@ version (Windows) {
 									output.type = InputEventType.GCButton;
 									output.button.dir = e.event.value > 0;
 									output.button.id = key.flags;
-									output.button.auxF = e.event.value / 255.0;
+									output.button.auxF = (e.event.value + 32_767) / 65_535;
 								} else {
 									output.type = InputEventType.GCAxis;
 									output.axis.id = key.outNum;
 									output.axis.raw = e.event.value;
-									output.axis.val = e.event.value / (key.type == RawGCMappingType.Trigger ? 255.0 : 32_767.0);
+									output.axis.val = key.type == e.event.value / 32_767.0;
 								}
 								return 1;
 							}
