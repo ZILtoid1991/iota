@@ -11,7 +11,7 @@ Input-output (audio, controls, etc) library for D. Intended as a D language nati
 |Mouse                     |Legacy: Works; Raw: Works           |X11: works; evdev: in progress      |Implemented              |
 |Mouse cursors             |Working                             |Working                             |Implemented              |
 |Pen Tablet                |Not yet implemented                 |Not yet implemented                 |Not yet implemented      |
-|Game controllers          |XInput: working; Raw: in progress; GameInput: limited |Evdev: in progress |N/A         |
+|Game controllers          |XInput: working; Raw: in progress; GameInput: limited |Evdev: limited |N/A         |
 |Windowing                 |Working                             |X11: Working                        |Implemented              |
 |Fullscreen window support |Working (video modes untested)      |X11: Working                        |Implemented              |
 |OpenGL output             |Working                             |Working                             |Implemented              |
@@ -70,7 +70,12 @@ I/O without extensions now works, XInput2 support will be added once I find or s
 
 #### Evdev
 
-Libevdev support has added, but does not work currently, it hangs.
+Libevdev support is somewhat limited.
+
+- No input device detection, only game controllers are supported at the moment. It is recommended that you disable any devices for your program that are not game controllers.
+- Analog range is adjusted for XBox controllers, at least Dualsense controller analog range is not supported.
+- Haptics not supported at the moment.
+- SDL-like gameinputdb parsing is not fully implemented at the moment.
 
 ## Windowing
 
