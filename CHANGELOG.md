@@ -1,7 +1,7 @@
 # 0.4.0-beta.5
 
 * Libevdev support now works with select game controllers.
-* GameInput support added on Windows.
+* GameInput support added on Windows.file:///home/user/Downloads/marksman-linux-x64
 
 # 0.4.0-beta.4
 
