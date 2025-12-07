@@ -3,6 +3,9 @@ import iota.controls.gamectrl;
 import iota.controls.types;
 import std.string : toStringz, fromStringz, splitLines, split;
 
+/**
+ * Defines a mapping between the OS API and the directmedia layer.
+ */
 package struct RawGCMapping {
 	ushort type;		///Type identifier
 	ushort flags;	///Flags related to translation, e.g. resolution, hat number, hat direction
