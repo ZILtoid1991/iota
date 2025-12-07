@@ -1029,6 +1029,7 @@ version (Windows) {
 		static EvdevThread threadObj;
 
 		static int poll(out InputEvent output) @nogc nothrow {
+			import iota.controls.gcmapping;
 			while (postBox.inC != postBox.outC) {
 				JoinedEvdevEvent e = postBox.buffer[postBox.outC++ & postBox.modulo];
 				output.source = e.device;
@@ -1088,7 +1089,19 @@ version (Windows) {
 									output.type = InputEventType.GCAxis;
 									output.axis.id = key.outNum;
 									output.axis.raw = e.event.value;
-									output.axis.val = e.event.value * (key.type == RawGCMappingType.Trigger ? (1.0 / 255.0) : (1.0 / 32_767.0));
+									// output.axis.val = e.event.value * key.type == RawGCMappingType.Trigger ? (1.0 / 255.0) : (1.0 / 32_767.0);
+									switch (key.type) {
+									case RawGCMappingType.Trigger:
+										output.axis.val = e.event.value * (1.0 / 255.0);
+										break;
+									case RawGCMappingType.Axis8Bit:
+										output.axis.val = e.event.value * (1.0 / 255.0) * 2.0 - 1.0;
+										break;
+									default:
+										output.axis.val = e.event.value * (1.0 / 32_767.0);
+										break;
+									}
+
 								}
 								return 1;
 							}

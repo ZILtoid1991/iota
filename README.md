@@ -72,9 +72,10 @@ I/O without extensions now works, XInput2 support will be added once I find or s
 
 Libevdev support is somewhat limited.
 
-- No input device detection, only game controllers are supported at the moment. It is recommended that you disable any devices for your program that are not game controllers.
-- Analog range is adjusted for XBox controllers, at least Dualsense controller analog range is not supported.
+- No input device detection due to missing feature from the library, only game controllers are supported at the moment. It is recommended that you disable any devices for your program that are not game controllers.
+- Analog range is adjusted for XBox controllers, at least Dualsense controller analog range is not supported due to missing feature from the library.
 - Haptics not supported at the moment.
+- More than one input device block each other -> more threads will be needed.
 - SDL-like gameinputdb parsing is not fully implemented at the moment.
 
 ## Windowing

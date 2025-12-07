@@ -1,3 +1,8 @@
+# 0.4.0-beta.6
+
+* Fixed issues that did not allow LDC2 to compile it.
+* Added some temporary hack to be able to fix the axis on certain controllers.
+
 # 0.4.0-beta.5
 
 * Libevdev support now works with select game controllers.

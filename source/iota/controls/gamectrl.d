@@ -228,7 +228,7 @@ abstract class GameController : InputDevice, HapticDevice {
  * Game controller class meant to be used with RawInput and libendev.
  */
 public class RawInputGameController : GameController {
-	package RawGCMapping[] mapping;
+	public RawGCMapping[] mapping;
 	package byte[8] hatStatus;
 	version (Windows) {
 		this(string _name, ubyte _devNum, HANDLE devHandle, RawGCMapping[] mapping) @nogc nothrow {

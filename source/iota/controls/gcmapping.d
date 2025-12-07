@@ -42,6 +42,7 @@ package enum RawGCMappingType : ubyte {
 	Trigger,
 	Hat,
 	AxisToButton,
+	Axis8Bit,
 }
 /**
  * Parses SDL-compatible Game Controller mapping data.
