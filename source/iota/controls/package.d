@@ -11,6 +11,7 @@ public import iota.window.oswindow;
 import iota.controls.polling;
 import iota.etc.charcode;
 import iota.etc.stdlib;
+import iota.controls.gcmapping;
 
 version (Windows) {
 	import core.sys.windows.windows;

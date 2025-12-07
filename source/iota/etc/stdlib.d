@@ -2,6 +2,8 @@ module iota.etc.stdlib;
 
 import numem;
 import core.stdc.string;
+public import core.attribute;
+
 
 string fromCSTR(const(char)* cstr) @nogc nothrow {
 	size_t len = strlen(cstr);

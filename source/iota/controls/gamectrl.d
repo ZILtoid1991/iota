@@ -1,6 +1,7 @@
 module iota.controls.gamectrl;
 
 public import iota.controls.types;
+import iota.controls.gcmapping;
 import core.atomic;
 import iota.etc.stdlib;
 // import iota.controls;
@@ -175,9 +176,10 @@ abstract class GameController : InputDevice, HapticDevice {
 	/**
 	 * Applies a given effect.
 	 * Params:
-	 *   capability: The capability to be used.
-	 *   zone: The zone where the effect should be used.
-	 *   val: Either the strength of the capability (between 0.0 and 1.0), or the frequency.
+	 *   capability = The capability to be used.
+	 *   zone = The zone where the effect should be used.
+	 *   val = Either the strength of the capability (between 0.0 and 1.0), or the frequency.
+	 *   freq = The frequency if supported, float.nan otherwise.
 	 * Returns: 0 on success, or a specific error code.
 	 */
 	public abstract int applyEffect(uint capability, uint zone, float val, float freq = float.nan) @trusted nothrow;
@@ -547,9 +549,10 @@ version (Windows) {
 		/**
 		* Applies a given effect.
 		* Params:
-		*   capability: The capability to be used.
-		*   zone: The zone where the effect should be used.
-		*   val: Either the strength of the capability (between 0.0 and 1.0), or the frequency.
+		*   capability = The capability to be used.
+		*   zone = The zone where the effect should be used.
+		*   val = The strength of the capability (between 0.0 and 1.0).
+		*   freq = The frequency if supported, float.nan otherwise.
 		* Returns: 0 on success, or a specific error code.
 		*/
 		public override int applyEffect(uint capability, uint zone, float val, float freq = float.nan) @trusted nothrow {
@@ -938,7 +941,7 @@ version (Windows) {
 			//currCtrl = 0;
 			return 0;
 		}
-		shared static ~this() {
+		shared static ~this() @standalone {
 			if (gameInputHandler) {
 				gameInputHandler.Release();
 			}
@@ -974,7 +977,7 @@ version (Windows) {
 			if (info.supportedRumbleMotors) status |= StatusFlags.IsHapticCapable;
 			if (hapticInfo.locationCount) status |= StatusFlags.IsHapticCapable;
 		}
-		~this() @nogc nothrow {
+		~this() @nogc nothrow @standalone {
 			this.deviceHandle.Release();
 			nu_freea(_name);
 		}
@@ -998,10 +1001,10 @@ version (Windows) {
 		/**
 		 * Applies a simple effect.
 		 * Params:
-		 *   capability: The capability to be used.
-		 *   zone: The zone where the effect should be used.
-		 *   val: The strength of the capability (between 0.0 and 1.0).
-		 *   freq: The frequency if supported, float.nan otherwise.
+		 *   capability = The capability to be used.
+		 *   zone = The zone where the effect should be used.
+		 *   val = The strength of the capability (between 0.0 and 1.0).
+		 *   freq = The frequency if supported, float.nan otherwise.
 		 * Returns: 0 on success, or a specific error code.
 		 * Note: Has an automatic timeout on certain API.
 		 */

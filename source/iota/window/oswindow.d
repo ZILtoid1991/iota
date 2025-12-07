@@ -42,6 +42,7 @@ public import iota.window.types;
 public import iota.window.exception;
 public import iota.etc.vers;
 public import iota.window.fbdev;
+import iota.etc.stdlib;
 import std.algorithm.mutation : remove;
 import std.utf : toUTF16z, toUTF8;
 import std.string : toStringz;
