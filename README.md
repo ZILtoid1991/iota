@@ -76,6 +76,7 @@ Libevdev support is somewhat limited.
 - Analog range is adjusted for XBox controllers, at least Dualsense controller analog range is not supported due to missing feature from the library.
 - Haptics not supported at the moment.
 - More than one input device block each other -> more threads will be needed.
+- There's still some chance of hanging after the application was terminated -> better method of shutting down threads will be needed.
 - SDL-like gameinputdb parsing is not fully implemented at the moment.
 
 ## Windowing
