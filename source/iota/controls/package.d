@@ -219,18 +219,21 @@ public int initInput(uint config = 0, uint osConfig = 0, string gcmTable = null)
 						switch (type) {
 						case InputDeviceType.Keyboard:
 							if (osConfig & OSConfigFlags.libevdev_gconly) goto default;
-							devList ~= cast(InputDevice)nogc_new!Keyboard(name, keybCnrt++, fd, dev);
+							InputDevice d = cast(InputDevice)nogc_new!Keyboard(name, keybCnrt++, fd, dev);
+							devList ~= d;
 							break;
 						case InputDeviceType.Mouse:
 							if (osConfig & OSConfigFlags.libevdev_gconly) goto default;
-							devList ~= cast(InputDevice)nogc_new!Mouse(name, mouseCnrt++, fd, dev);
+							InputDevice d = cast(InputDevice)nogc_new!Mouse(name, mouseCnrt++, fd, dev);
+							devList ~= d;
 							break;
 						case InputDeviceType.GameController:
 							string uniqueID = cast(string)fromStringz(libevdev_get_uniq(dev));
 							RawGCMapping[] mapping;
 							if (gcmTable) mapping = parseGCM(gcmTable, uniqueID);
 							if (!mapping) mapping = mutCopy(defaultGCmapping);
-							devList ~= nogc_new!RawInputGameController(name, gcCnrt++, fd, dev, mapping);
+							InputDevice d = nogc_new!RawInputGameController(name, gcCnrt++, fd, dev, mapping);
+							devList ~= d;
 							break;
 						default:	//Failed to infer type, close handle and all that stuff
 							libevdev_free(dev);
@@ -239,7 +242,7 @@ public int initInput(uint config = 0, uint osConfig = 0, string gcmTable = null)
 						}
 					}
 				}
-				if (EvdevThread.threadObj is null) EvdevThread.threadObj = nogc_new!EvdevThread(&EvdevThread.postBox, &devList);
+				//if (EvdevThread.threadObj is null) EvdevThread.threadObj = nogc_new!EvdevThread(&EvdevThread.postBox, &devList);
 				//if (!(keybCnrt + mouseCnrt + gcCnrt)) return InputInitializationStatus.libevdev_AccessDenied;
 				subPollingFun = &EvdevThread.poll;
 				EvdevThread.threadObj.start();
@@ -322,6 +325,22 @@ version (Windows) {
  */
 public int removeInvalidatedDevices() @nogc nothrow {
 	try {
+		version (Windows) {
+
+		} else version (OSX) {
+
+		} else {
+			int numRemovedThreads;
+			for (int i ; i < EvdevThread.evdevReaders.length ; i++) {
+				if (EvdevThread.evdevReaders[i].device.isInvalidated) {
+					EvdevThread.evdevReaders[i].nogc_delete();
+					numRemovedThreads++;
+					for (int j = i ; j + 1 < EvdevThread.evdevReaders.length ; j++) {
+						EvdevThread.evdevReaders[j] = EvdevThread.evdevReaders[j + 1];
+					}
+				}
+			}
+		}
 		int numRemovedDevices;
 		for (int i ; i < devList.length ; i++) {
 			if (devList[i].isInvalidated) {
