@@ -31,7 +31,7 @@ public enum ScanCode : uint {
 	X				=	27,
 	Y				=	28,
 	Z				=	29,
-
+	//numbers begin
 	n1				=	30,
 	n2				=	31,
 	n3				=	32,
@@ -42,7 +42,7 @@ public enum ScanCode : uint {
 	n8				=	37,
 	n9				=	38,
 	n0				=	39,
-
+	//numbers end
 	ENTER			=	40,
 	ESCAPE			=	41,
 	BACKSPACE		=	42,
@@ -96,7 +96,7 @@ public enum ScanCode : uint {
 	NP_MINUS		=	86,
 	NP_PLUS			=	87,
 	NP_ENTER		=	88,
-
+	//numpad numbers begin
 	np1				=	89,
 	np2				=	90,
 	np3				=	91,
@@ -107,7 +107,7 @@ public enum ScanCode : uint {
 	np8				=	96,
 	np9				=	97,
 	np0				=	98,
-
+	//numpad numbers end
 	NP_PERIOD		=	99,
 
 	NONUSBACKSLASH	=	100,
@@ -454,8 +454,8 @@ version(Windows) package uint translateSC(uint input, uint aux) @nogc @safe pure
 			return 0xFF_FF;
 	}
 } else version(OSX) {
-    package ushort translateKeyCode(const uint code) @nogc @safe pure nothrow {
-        switch(code) {
+	package int translateKeyCode(const uint code) @nogc @safe pure nothrow {
+        /+switch(code) {
             case 0x00: return ScanCode.A;
             case 0x0B: return ScanCode.B;
             case 0x08: return ScanCode.C;
@@ -576,8 +576,20 @@ version(Windows) package uint translateSC(uint input, uint aux) @nogc @safe pure
             case 0x36: return ScanCode.RGUI;
 
             default: return ScanCode.init;
-        }
-    }
+        }+/
+		immutable ubyte[128] table = [
+		// 0    1    2    3    4    5    6    7    8    9    a    b    c    d    e    f
+		0x04,0x16,0x07,0x09,0x0b,0x0a,0x1d,0x1b,0x06,0x19,0x32,0x05,0x14,0x1a,0x08,0x15,//0
+		0x1c,0x17,0x1e,0x1f,0x20,0x21,0x23,0x22,0x2e,0x26,0x24,0x2d,0x25,0x27,0x30,0x12,//1
+		0x18,0x2f,0x0c,0x13,0x28,0x0f,0x0d,0x34,0x0e,0x33,0x31,0x36,0x38,0x11,0x10,0x37,//2
+		0x2b,0x2c,0x35,0x2a,0x00,0x29,0xe7,0xe3,0xe1,0x39,0xe2,0xe0,0xe5,0xe6,0xe4,0x00,//3
+		0x6c,0x63,0x00,0x55,0x00,0x57,0x00,0x53,0x00,0x00,0x00,0x54,0x58,0x00,0x56,0x6d,//4
+		0x6e,0x00,0x62,0x59,0x5a,0x5b,0x5c,0x5d,0x5e,0x5f,0x6f,0x60,0x61,0x89,0x87,0x8c,//5
+		0x3e,0x3f,0x40,0x3c,0x41,0x42,0x8a,0x44,0x88,0x68,0x6b,0x69,0x00,0x43,0x00,0x45,//6
+		0x00,0x6a,0x49,0x4a,0x4b,0x4c,0x3d,0x4d,0x3b,0x4e,0x3a,0x50,0x4f,0x51,0x52,0x00,//7
+		];
+		return table[code & 0x7F];
+	}
 } else {
 	///Translates KeySyms to USB HID ScanCodes
 	///(Temporary, only use if other methods fail)
@@ -720,6 +732,7 @@ version(Windows) package uint translateSC(uint input, uint aux) @nogc @safe pure
 	/// Translates X11 keycodes to USB HID scancodes, using reverse-engineered lookup tables from the Linux kernel.
 	/// Should be the same across all kernels since version 2.6, with only some minor changes regarding to lesser known
 	/// and used scancodes.
+	/// Should also work with libevdev
 	package uint translateKeyCode(const uint code) @nogc @safe pure nothrow {	
 		/+
 	  0,  0,  0,  0, 30, 48, 46, 32, 18, 33, 34, 35, 23, 36, 37, 38,//0
