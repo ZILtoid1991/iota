@@ -9,6 +9,7 @@ import iota.etc.charcode;
 import iota.controls.keybscancodes;
 import iota.controls.gamectrl;
 import core.stdc.string;
+import core.stdc.stdio;
 import numem;
 import nulib.collections.vector;
 import std.math;
@@ -886,7 +887,11 @@ version (Windows) {
 		static bool evdev_tr, evdev_hat;
 		static int threadCrnt;
 		package static vector!EvdevThread evdevReaders;
-
+		static void startAllThreads() @nogc nothrow {
+			foreach (EvdevThread et ; evdevReaders) {
+				et.start();
+			}
+		}
 
 		static int poll(out InputEvent output) @nogc nothrow {
 			import iota.controls.gcmapping;
@@ -928,7 +933,7 @@ version (Windows) {
 										if (key.type == RawGCMappingType.Hat) {
 											const hatNum = event.code - EVDEV_FIRST_HAT;
 											const prevState = gc.hatStatus[hatNum];
-											gc.hatStatus[hatNum] = clampDPadRange(e.event.value);
+											gc.hatStatus[hatNum] = clampDPadRange(event.value);
 											if (evdev_hat) {
 												output.type = InputEventType.GCButton;
 												output.button.dir = prevState == 0 ? 1 : 0;
@@ -946,9 +951,9 @@ version (Windows) {
 											}
 										} else if (key.type == RawGCMappingType.Trigger && evdev_tr) {
 											output.type = InputEventType.GCButton;
-											output.button.dir = e.event.value > 0;
+											output.button.dir = event.value > 0;
 											output.button.id = key.flags;
-											output.button.auxF = e.event.value * (1.0 / 255.0);
+											output.button.auxF = event.value * (1.0 / 255.0);
 										} else {
 											output.type = InputEventType.GCAxis;
 											output.axis.id = key.outNum;
@@ -974,7 +979,7 @@ version (Windows) {
 								// debug {
 								// 	import core.stdc.string;
 								// 	output.type = InputEventType.Debug_DataDump2;
-								// 	memcpy(output.rawData.ptr, &e.event, input_event.sizeof);
+								// 	memcpy(output.rawData.ptr, &event, input_event.sizeof);
 								// 	return 1;
 								// }
 								break;
@@ -1030,7 +1035,7 @@ version (Windows) {
 		package InputDevice device;
 		package input_event[] buffer;
 		package int inC, outC, modulo;
-		this(InputDevice device, int bufferSize) @nogc @safe nothrow {
+		this(InputDevice device, int bufferSize) @nogc @trusted nothrow {
 			this.device = device;
 			assert(isPowerOf2(bufferSize) && bufferSize, "EvDev read buffer size is not power of two!");
 			buffer = nu_malloca!input_event(bufferSize);
@@ -1051,11 +1056,11 @@ version (Windows) {
 		}
 		void threadMain() @nogc nothrow {
 			while (runThread) {
-				if (device.isInvalidated && device.hDevice) {
+				if (!device.isInvalidated && device.hDevice) {
 					input_event event;
 					sizediff_t status;
-					while ((status = read(currdev.fd, &event, input_event.sizeof)) == input_event.sizeof) {
-						buffer[(inC++) & modulo] = JoinedEvdevEvent(currdev, event);
+					while ((status = read(device.fd, &event, input_event.sizeof)) == input_event.sizeof) {
+						buffer[(inC++) & modulo] = event;
 						if (event.type == EV_SYN) break;
 					}
 				}

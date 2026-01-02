@@ -193,10 +193,7 @@ public int initInput(uint config = 0, uint osConfig = 0, string gcmTable = null)
 				import std.algorithm;
 				auto devPaths = dirEntries("/dev/input/", SpanMode.shallow);
 				ubyte keybCnrt, mouseCnrt, gcCnrt;
-				if (!EvdevThread.postBox.buffer.length) {
-					EvdevThread.postBox.buffer = nu_malloca!(EvdevThread.JoinedEvdevEvent)(1024);
-					EvdevThread.postBox.modulo = 1023;
-				}
+
 				if (config & ConfigFlags.gc_TriggerMode) EvdevThread.evdev_tr = true;
 				if (config & ConfigFlags.gc_DPadMode) EvdevThread.evdev_hat = true;
 				foreach (DirEntry entry ; devPaths) {
@@ -215,17 +212,19 @@ public int initInput(uint config = 0, uint osConfig = 0, string gcmTable = null)
 							//return InputInitializationStatus.libevdev_ErrorOpeningDev;
 						}
 						string name = fromCSTR(libevdev_get_name(dev));
-						const InputDeviceType type = InputDeviceType.GameController; //getEvdevDeviceType(dev);
+						const InputDeviceType type = InputDeviceType.GameController;// getEvdevDeviceType(dev);
 						switch (type) {
 						case InputDeviceType.Keyboard:
 							if (osConfig & OSConfigFlags.libevdev_gconly) goto default;
 							InputDevice d = cast(InputDevice)nogc_new!Keyboard(name, keybCnrt++, fd, dev);
 							devList ~= d;
+							EvdevThread.evdevReaders ~= nogc_new!EvdevThread(d, 256);
 							break;
 						case InputDeviceType.Mouse:
 							if (osConfig & OSConfigFlags.libevdev_gconly) goto default;
 							InputDevice d = cast(InputDevice)nogc_new!Mouse(name, mouseCnrt++, fd, dev);
 							devList ~= d;
+							EvdevThread.evdevReaders ~= nogc_new!EvdevThread(d, 256);
 							break;
 						case InputDeviceType.GameController:
 							string uniqueID = cast(string)fromStringz(libevdev_get_uniq(dev));
@@ -234,6 +233,7 @@ public int initInput(uint config = 0, uint osConfig = 0, string gcmTable = null)
 							if (!mapping) mapping = mutCopy(defaultGCmapping);
 							InputDevice d = nogc_new!RawInputGameController(name, gcCnrt++, fd, dev, mapping);
 							devList ~= d;
+							EvdevThread.evdevReaders ~= nogc_new!EvdevThread(d, 256);
 							break;
 						default:	//Failed to infer type, close handle and all that stuff
 							libevdev_free(dev);
@@ -245,7 +245,8 @@ public int initInput(uint config = 0, uint osConfig = 0, string gcmTable = null)
 				//if (EvdevThread.threadObj is null) EvdevThread.threadObj = nogc_new!EvdevThread(&EvdevThread.postBox, &devList);
 				//if (!(keybCnrt + mouseCnrt + gcCnrt)) return InputInitializationStatus.libevdev_AccessDenied;
 				subPollingFun = &EvdevThread.poll;
-				EvdevThread.threadObj.start();
+				EvdevThread.startAllThreads();
+				//EvdevThread.threadObj.start();
 			} catch (Exception e) {
 				//debug writeln(e);
 				return InputInitializationStatus.libevdev_ErrorOpeningDev;
@@ -308,14 +309,18 @@ version (Windows) {
 		eventFlags |= libevdev_has_event_type(dev, EV_REP)<<0;
 		eventFlags |= libevdev_has_event_code(dev, EV_KEY, 28)<<1;
 		eventFlags |= libevdev_has_event_code(dev, EV_KEY, EvdevMouseButtons.LEFT)<<2;
-		eventFlags |= libevdev_has_event_code(dev, EV_REL, EvdevRelAxes.X)<<3;
-		eventFlags |= libevdev_has_event_code(dev, EV_REL, EvdevRelAxes.Y)<<4;
-		eventFlags |= libevdev_has_event_code(dev, EV_KEY, EvdevGamepadButtons.A)<<5;
+		eventFlags |= libevdev_has_event_code(dev, EV_REL, EvdevRelAxes.X)<<4;
+		eventFlags |= libevdev_has_event_code(dev, EV_REL, EvdevRelAxes.Y)<<5;
+		eventFlags |= libevdev_has_event_code(dev, EV_KEY, EvdevGamepadButtons.A)<<8;
+		eventFlags |= libevdev_has_event_code(dev, EV_ABS, EvdevAbsAxes.X)<<9;
+		eventFlags |= libevdev_has_event_code(dev, EV_ABS, EvdevAbsAxes.Y)<<10;
 		eventFlags |= libevdev_has_event_code(dev, EV_ABS, EvdevAbsAxes.PRESSURE)<<6;
-		if (eventFlags & 0x03) return InputDeviceType.Keyboard;
-		if (eventFlags & 0x1C) return InputDeviceType.Mouse;
+		//NOTE: be careful with this order, as some game controllers have trackpads (Dualsense, Steam, etc.), which
+		//will cause them to be detected as mice.
 		if (eventFlags & 0x20) return InputDeviceType.GameController;
+		if (eventFlags & 0x03) return InputDeviceType.Keyboard;
 		if (eventFlags & 0x40) return InputDeviceType.Pen;
+		if (eventFlags & 0x34) return InputDeviceType.Mouse;
 		return InputDeviceType.init;
 	}
 }
@@ -323,7 +328,7 @@ version (Windows) {
  * Goes through all the devices in the list, then removes them from the lists.
  * Returns: 0 on success, or a specific error code.
  */
-public int removeInvalidatedDevices() @nogc nothrow {
+public int removeInvalidatedDevices() @nogc {
 	try {
 		version (Windows) {
 
