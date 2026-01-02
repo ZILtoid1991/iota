@@ -1,3 +1,8 @@
+# 0.4.0-beta.7
+
+* Evdev: Added working range detection.
+* Evdev: Added per-device threading, multiple evdev devices no longer block each other.
+
 # 0.4.0-beta.6
 
 * Fixed issues that did not allow LDC2 to compile it.
