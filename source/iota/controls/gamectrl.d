@@ -248,6 +248,19 @@ public class RawInputGameController : GameController {
 			this.mapping = mapping;
 			_type = InputDeviceType.GameController;
 			status |= StatusFlags.IsConnected;
+			foreach (ref RawGCMapping m ; this.mapping) {
+				if (m.type == RawGCMappingType.Axis) {
+					if (libevdev_get_abs_maximum(hDevice, m.inNum) == 255) {
+						m.type = RawGCMappingType.Axis8Bit;
+					}
+				}
+			}
+			// debug {
+				// import core.stdc.stdio;
+				// printf("%s\n", _name.ptr);
+				// printf("XMAX:%i\n", libevdev_get_abs_maximum(hDevice, EvdevAbsAxes.X));
+				// printf("XMIN:%i\n", libevdev_get_abs_minimum(hDevice, EvdevAbsAxes.X));
+			// }
 		}
 	}
 	~this() @nogc nothrow {
