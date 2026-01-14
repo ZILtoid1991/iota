@@ -1,3 +1,7 @@
+**Disclaimer: This package has been moved to codeberg, development will be continued there.**
+
+https://codeberg.org/ZILtoid1991/iota
+
 # iota
 Input-output (audio, controls, etc) library for D. Intended as a D language native replacement for SDL, SFML, etc.
 
